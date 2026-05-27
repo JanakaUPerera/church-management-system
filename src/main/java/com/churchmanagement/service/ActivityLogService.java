@@ -14,6 +14,10 @@ public class ActivityLogService {
     public static final String NAVIGATE_USERS = "NAVIGATE_USERS";
     public static final String NAVIGATE_BACKUP_RESTORE = "NAVIGATE_BACKUP_RESTORE";
     public static final String NAVIGATE_ACTIVITY_LOGS = "NAVIGATE_ACTIVITY_LOGS";
+    public static final String REGION_CREATED = "REGION_CREATED";
+    public static final String REGION_UPDATED = "REGION_UPDATED";
+    public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
+    public static final String REGION_DEACTIVATED = "REGION_DEACTIVATED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -39,6 +43,10 @@ public class ActivityLogService {
 
     public void logNavigation(long userId, String action, String moduleName) {
         log(userId, action, "Navigated to module: " + moduleName);
+    }
+
+    public void logRegionAction(long userId, String action, String regionCode) {
+        log(userId, action, "Region code: " + regionCode);
     }
 
     private void log(Long userId, String action, String details) {

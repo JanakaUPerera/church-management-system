@@ -19,7 +19,7 @@
             <padding>
                 <Insets bottom="14" left="22" right="22" top="14"/>
             </padding>
-            <Label styleClass="app-name" text="Church Collection System"/>
+            <Label styleClass="app-name" text="Church Management System"/>
             <Region HBox.hgrow="ALWAYS"/>
             <VBox alignment="CENTER_RIGHT" spacing="2">
                 <Label fx:id="fullNameLabel" styleClass="header-user-name"/>

@@ -8,6 +8,9 @@ public class PermissionGuard {
 
     static {
         LEGACY_PERMISSION_ALIASES.put("region.view", new String[]{"REGION_MANAGE"});
+        LEGACY_PERMISSION_ALIASES.put("region.create", new String[]{"REGION_MANAGE"});
+        LEGACY_PERMISSION_ALIASES.put("region.update", new String[]{"REGION_MANAGE"});
+        LEGACY_PERMISSION_ALIASES.put("region.delete", new String[]{"REGION_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("church.view", new String[]{"CHURCH_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("receipt.create", new String[]{"RECEIPT_CREATE"});
         LEGACY_PERMISSION_ALIASES.put("receipt.view", new String[]{"RECEIPT_CREATE", "RECEIPT_CANCEL"});

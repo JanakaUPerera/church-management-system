@@ -175,7 +175,7 @@ public class DashboardController {
     private List<MenuDefinition> createMenuDefinitions() {
         return List.of(
                 new MenuDefinition("Dashboard", "/com/churchmanagement/view/dashboard-home-view.fxml",
-                        dashboardButton, null, null),
+                        dashboardButton, null),
                 new MenuDefinition("Regions", "/com/churchmanagement/view/region-view.fxml",
                         regionsButton, ActivityLogService.NAVIGATE_REGIONS, "region.view"),
                 new MenuDefinition("Churches", "/com/churchmanagement/view/church-view.fxml",
