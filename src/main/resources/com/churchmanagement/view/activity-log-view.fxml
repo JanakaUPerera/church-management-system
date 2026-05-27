@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10" styleClass="placeholder-page" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <padding>
+        <Insets bottom="28" left="28" right="28" top="28"/>
+    </padding>
+    <Label styleClass="placeholder-title" text="Activity Logs"/>
+    <Label styleClass="placeholder-text" text="System activity history will appear here."/>
+</VBox>

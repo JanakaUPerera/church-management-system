@@ -5,20 +5,31 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.churchmanagement.controller.LoginController">
+            fx:controller="com.churchmanagement.controller.LoginController"
+            style="-fx-background-color: #263241;">
     <center>
         <VBox alignment="CENTER" maxWidth="320" spacing="14">
             <padding>
                 <Insets bottom="32" left="32" right="32" top="32"/>
             </padding>
 
-            <Label style="-fx-font-size: 24px; -fx-font-weight: bold;" text="Church Management"/>
-            <Label style="-fx-text-fill: #5f6b7a;" text="Sign in to continue"/>
+            <ImageView fitHeight="150" fitWidth="150" preserveRatio="true" smooth="true">
+                <image>
+                    <Image url="@images/gethsemana_logo.jpg"/>
+                </image>
+                <clip>
+                    <Circle centerX="75" centerY="75" radius="75"/>
+                </clip>
+            </ImageView>
+            <Label style="-fx-text-fill: #d8e0e8;" text="Sign in to continue"/>
 
             <TextField fx:id="usernameField"
                        prefHeight="35"
@@ -33,9 +44,9 @@
                     maxWidth="Infinity"
                     onAction="#handleLogin"
                     prefHeight="35"
-                    style="-fx-font-size: 14px;"
+                    style="-fx-font-size: 14px; -fx-font-weight: bold;"
                     text="Login"/>
-            <Label fx:id="errorLabel" style="-fx-text-fill: #b42318;"/>
+            <Label fx:id="errorLabel" style="-fx-text-fill: #ffb4ab;"/>
         </VBox>
     </center>
 </BorderPane>

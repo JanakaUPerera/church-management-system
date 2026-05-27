@@ -7,6 +7,13 @@ public class ActivityLogService {
     public static final String LOGIN_SUCCESS = "LOGIN_SUCCESS";
     public static final String LOGIN_FAILED = "LOGIN_FAILED";
     public static final String LOGOUT = "LOGOUT";
+    public static final String NAVIGATE_REGIONS = "NAVIGATE_REGIONS";
+    public static final String NAVIGATE_CHURCHES = "NAVIGATE_CHURCHES";
+    public static final String NAVIGATE_RECEIPTS = "NAVIGATE_RECEIPTS";
+    public static final String NAVIGATE_REPORTS = "NAVIGATE_REPORTS";
+    public static final String NAVIGATE_USERS = "NAVIGATE_USERS";
+    public static final String NAVIGATE_BACKUP_RESTORE = "NAVIGATE_BACKUP_RESTORE";
+    public static final String NAVIGATE_ACTIVITY_LOGS = "NAVIGATE_ACTIVITY_LOGS";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -28,6 +35,10 @@ public class ActivityLogService {
 
     public void logLogout(long userId, String username) {
         log(userId, LOGOUT, "Logout for username: " + username);
+    }
+
+    public void logNavigation(long userId, String action, String moduleName) {
+        log(userId, action, "Navigated to module: " + moduleName);
     }
 
     private void log(Long userId, String action, String details) {

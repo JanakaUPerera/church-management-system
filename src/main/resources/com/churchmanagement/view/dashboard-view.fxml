@@ -3,38 +3,69 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21"
+<BorderPane styleClass="dashboard-root"
+            stylesheets="@app.css"
+            xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.churchmanagement.controller.DashboardController">
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-background-color: #263238;">
+        <HBox alignment="CENTER_LEFT" spacing="18" styleClass="app-header">
             <padding>
-                <Insets bottom="18" left="24" right="24" top="18"/>
+                <Insets bottom="14" left="22" right="22" top="14"/>
             </padding>
-            <Label style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"
-                   text="Church Management System"/>
+            <Label styleClass="app-name" text="Church Collection System"/>
             <Region HBox.hgrow="ALWAYS"/>
             <VBox alignment="CENTER_RIGHT" spacing="2">
-                <Label fx:id="fullNameLabel" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                <Label fx:id="roleNameLabel" style="-fx-font-size: 12px; -fx-text-fill: #cfd8dc;"/>
+                <Label fx:id="fullNameLabel" styleClass="header-user-name"/>
+                <Label fx:id="roleNameLabel" styleClass="header-user-role"/>
             </VBox>
-            <Button onAction="#handleLogout" text="Logout"/>
+            <Button onAction="#handleLogout" styleClass="logout-button" text="Logout"/>
         </HBox>
     </top>
 
-    <center>
-        <VBox spacing="10">
+    <left>
+        <VBox prefWidth="235" spacing="4" styleClass="sidebar">
             <padding>
-                <Insets bottom="28" left="28" right="28" top="28"/>
+                <Insets bottom="16" left="14" right="14" top="16"/>
             </padding>
-            <Label style="-fx-font-size: 28px; -fx-font-weight: bold;" text="Dashboard"/>
-            <Label fx:id="dateLabel" style="-fx-text-fill: #5f6b7a;"/>
-            <Label style="-fx-font-size: 16px;" text="Welcome. Dashboard modules will be added here."/>
+            <Button fx:id="dashboardButton" maxWidth="Infinity" onAction="#showDashboard" styleClass="menu-button" text="Dashboard"/>
+            <Button fx:id="regionsButton" maxWidth="Infinity" onAction="#showRegions" styleClass="menu-button" text="Regions"/>
+            <Button fx:id="churchesButton" maxWidth="Infinity" onAction="#showChurches" styleClass="menu-button" text="Churches"/>
+            <Button fx:id="weeklyReceiptsButton" maxWidth="Infinity" onAction="#showWeeklyReceipts" styleClass="menu-button" text="Weekly Receipts"/>
+            <Button fx:id="receiptHistoryButton" maxWidth="Infinity" onAction="#showReceiptHistory" styleClass="menu-button" text="Receipt History"/>
+            <Button fx:id="reportsButton" maxWidth="Infinity" onAction="#showReports" styleClass="menu-button" text="Reports"/>
+            <Button fx:id="usersButton" maxWidth="Infinity" onAction="#showUsers" styleClass="menu-button" text="Users"/>
+            <Button fx:id="rolesButton" maxWidth="Infinity" onAction="#showRoles" styleClass="menu-button" text="Roles &amp; Permissions"/>
+            <Button fx:id="backupButton" maxWidth="Infinity" onAction="#showBackup" styleClass="menu-button" text="Backup &amp; Restore"/>
+            <Button fx:id="activityLogsButton" maxWidth="Infinity" onAction="#showActivityLogs" styleClass="menu-button" text="Activity Logs"/>
+            <Button fx:id="settingsButton" maxWidth="Infinity" onAction="#showSettings" styleClass="menu-button" text="Settings"/>
+        </VBox>
+    </left>
+
+    <center>
+        <VBox spacing="16" styleClass="content-wrap">
+            <padding>
+                <Insets bottom="22" left="24" right="24" top="22"/>
+            </padding>
+            <Label fx:id="pageTitleLabel" styleClass="page-title"/>
+            <StackPane fx:id="contentPane" VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>
+
+    <bottom>
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="status-bar">
+            <padding>
+                <Insets bottom="8" left="18" right="18" top="8"/>
+            </padding>
+            <Label fx:id="statusLabel" text="Ready"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="dateLabel"/>
+        </HBox>
+    </bottom>
 </BorderPane>

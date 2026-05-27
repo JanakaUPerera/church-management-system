@@ -3,19 +3,29 @@ package com.churchmanagement.controller;
 import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
+import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
 
 public class DashboardController {
     private final ActivityLogService activityLogService = new ActivityLogService();
+    private AuthenticatedUser currentUser;
+    private PermissionGuard permissionGuard;
+    private List<MenuDefinition> menuDefinitions;
 
     @FXML
     private Label dateLabel;
@@ -27,13 +37,65 @@ public class DashboardController {
     private Label roleNameLabel;
 
     @FXML
+    private Label pageTitleLabel;
+
+    @FXML
+    private Label statusLabel;
+
+    @FXML
+    private StackPane contentPane;
+
+    @FXML
+    private Button dashboardButton;
+
+    @FXML
+    private Button regionsButton;
+
+    @FXML
+    private Button churchesButton;
+
+    @FXML
+    private Button weeklyReceiptsButton;
+
+    @FXML
+    private Button receiptHistoryButton;
+
+    @FXML
+    private Button reportsButton;
+
+    @FXML
+    private Button usersButton;
+
+    @FXML
+    private Button rolesButton;
+
+    @FXML
+    private Button backupButton;
+
+    @FXML
+    private Button activityLogsButton;
+
+    @FXML
+    private Button settingsButton;
+
+    @FXML
     private void initialize() {
         dateLabel.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
 
-        AuthContext.getCurrentUser().ifPresent(user -> {
-            fullNameLabel.setText(user.getFullName());
-            roleNameLabel.setText(user.getRoleName());
-        });
+        Optional<AuthenticatedUser> user = AuthContext.getCurrentUser();
+        if (user.isEmpty()) {
+            statusLabel.setText("Please sign in to continue.");
+            return;
+        }
+
+        currentUser = user.get();
+        permissionGuard = new PermissionGuard(currentUser);
+        fullNameLabel.setText(currentUser.getFullName());
+        roleNameLabel.setText(currentUser.getRoleName());
+
+        menuDefinitions = createMenuDefinitions();
+        applyMenuVisibility();
+        loadMenu(menuDefinitions.getFirst());
     }
 
     @FXML
@@ -53,5 +115,146 @@ public class DashboardController {
         stage.setWidth(AppConfig.LOGIN_WIDTH);
         stage.setHeight(AppConfig.LOGIN_HEIGHT);
         stage.centerOnScreen();
+    }
+
+    @FXML
+    private void showDashboard() {
+        loadMenu(findMenu(dashboardButton));
+    }
+
+    @FXML
+    private void showRegions() {
+        loadMenu(findMenu(regionsButton));
+    }
+
+    @FXML
+    private void showChurches() {
+        loadMenu(findMenu(churchesButton));
+    }
+
+    @FXML
+    private void showWeeklyReceipts() {
+        loadMenu(findMenu(weeklyReceiptsButton));
+    }
+
+    @FXML
+    private void showReceiptHistory() {
+        loadMenu(findMenu(receiptHistoryButton));
+    }
+
+    @FXML
+    private void showReports() {
+        loadMenu(findMenu(reportsButton));
+    }
+
+    @FXML
+    private void showUsers() {
+        loadMenu(findMenu(usersButton));
+    }
+
+    @FXML
+    private void showRoles() {
+        loadMenu(findMenu(rolesButton));
+    }
+
+    @FXML
+    private void showBackup() {
+        loadMenu(findMenu(backupButton));
+    }
+
+    @FXML
+    private void showActivityLogs() {
+        loadMenu(findMenu(activityLogsButton));
+    }
+
+    @FXML
+    private void showSettings() {
+        loadMenu(findMenu(settingsButton));
+    }
+
+    private List<MenuDefinition> createMenuDefinitions() {
+        return List.of(
+                new MenuDefinition("Dashboard", "/com/churchmanagement/view/dashboard-home-view.fxml",
+                        dashboardButton, null, null),
+                new MenuDefinition("Regions", "/com/churchmanagement/view/region-view.fxml",
+                        regionsButton, ActivityLogService.NAVIGATE_REGIONS, "region.view"),
+                new MenuDefinition("Churches", "/com/churchmanagement/view/church-view.fxml",
+                        churchesButton, ActivityLogService.NAVIGATE_CHURCHES, "church.view"),
+                new MenuDefinition("Weekly Receipts", "/com/churchmanagement/view/receipt-entry-view.fxml",
+                        weeklyReceiptsButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.create"),
+                new MenuDefinition("Receipt History", "/com/churchmanagement/view/receipt-history-view.fxml",
+                        receiptHistoryButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.view"),
+                new MenuDefinition("Reports", "/com/churchmanagement/view/reports-view.fxml",
+                        reportsButton, ActivityLogService.NAVIGATE_REPORTS, "report.view"),
+                new MenuDefinition("Users", "/com/churchmanagement/view/user-management-view.fxml",
+                        usersButton, ActivityLogService.NAVIGATE_USERS, "user.manage"),
+                new MenuDefinition("Roles & Permissions", "/com/churchmanagement/view/role-permission-view.fxml",
+                        rolesButton, ActivityLogService.NAVIGATE_USERS, "role.manage"),
+                new MenuDefinition("Backup & Restore", "/com/churchmanagement/view/backup-restore-view.fxml",
+                        backupButton, ActivityLogService.NAVIGATE_BACKUP_RESTORE, "backup.create", "backup.restore"),
+                new MenuDefinition("Activity Logs", "/com/churchmanagement/view/activity-log-view.fxml",
+                        activityLogsButton, ActivityLogService.NAVIGATE_ACTIVITY_LOGS, "activity.view"),
+                new MenuDefinition("Settings", "/com/churchmanagement/view/settings-view.fxml",
+                        settingsButton, null, "settings.manage")
+        );
+    }
+
+    private void applyMenuVisibility() {
+        for (MenuDefinition menuDefinition : menuDefinitions) {
+            boolean visible = permissionGuard.canAny((String[]) menuDefinition.permissionCodes());
+            menuDefinition.button().setVisible(visible);
+            menuDefinition.button().setManaged(visible);
+        }
+    }
+
+    private MenuDefinition findMenu(Button button) {
+        return menuDefinitions.stream()
+                .filter(menuDefinition -> menuDefinition.button() == button)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown menu item."));
+    }
+
+    private void loadMenu(MenuDefinition menuDefinition) {
+        if (!permissionGuard.canAny((String[]) menuDefinition.permissionCodes())) {
+            showError("Access denied", "You do not have permission to open " + menuDefinition.title() + ".");
+            return;
+        }
+
+        try {
+            Parent view = FXMLLoader.load(getClass().getResource(menuDefinition.viewPath()));
+            contentPane.getChildren().setAll(view);
+            pageTitleLabel.setText(menuDefinition.title());
+            statusLabel.setText("Ready");
+            highlightMenu(menuDefinition.button());
+            logNavigation(menuDefinition);
+        } catch (IOException | RuntimeException exception) {
+            statusLabel.setText("Could not load " + menuDefinition.title() + ".");
+            showError("Unable to load page", "Please try again or contact your administrator.");
+        }
+    }
+
+    private void highlightMenu(Button selectedButton) {
+        for (MenuDefinition menuDefinition : menuDefinitions) {
+            menuDefinition.button().getStyleClass().remove("active-menu-button");
+        }
+        selectedButton.getStyleClass().add("active-menu-button");
+    }
+
+    private void logNavigation(MenuDefinition menuDefinition) {
+        if (menuDefinition.activityAction() != null) {
+            activityLogService.logNavigation(currentUser.getUserId(), menuDefinition.activityAction(), menuDefinition.title());
+        }
+    }
+
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private record MenuDefinition(String title, String viewPath, Button button, String activityAction,
+                                  String... permissionCodes) {
     }
 }
