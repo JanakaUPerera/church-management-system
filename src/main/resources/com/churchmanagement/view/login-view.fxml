@@ -14,6 +14,7 @@
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.churchmanagement.controller.LoginController"
+            stylesheets="@app.css"
             style="-fx-background-color: #263241;">
     <center>
         <VBox alignment="CENTER" maxWidth="320" spacing="14">

@@ -11,9 +11,12 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -26,6 +29,10 @@ public class DashboardController {
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
     private List<MenuDefinition> menuDefinitions;
+    private boolean sidebarCollapsed;
+
+    private static final double SIDEBAR_EXPANDED_WIDTH = 235;
+    private static final double SIDEBAR_COLLAPSED_WIDTH = 72;
 
     @FXML
     private Label dateLabel;
@@ -44,6 +51,12 @@ public class DashboardController {
 
     @FXML
     private StackPane contentPane;
+
+    @FXML
+    private VBox sidebar;
+
+    @FXML
+    private Button sidebarToggleButton;
 
     @FXML
     private Button dashboardButton;
@@ -94,6 +107,8 @@ public class DashboardController {
         roleNameLabel.setText(currentUser.getRoleName());
 
         menuDefinitions = createMenuDefinitions();
+        applyMenuIcons();
+        configureSidebarToggle();
         applyMenuVisibility();
         loadMenu(menuDefinitions.getFirst());
     }
@@ -172,6 +187,23 @@ public class DashboardController {
         loadMenu(findMenu(settingsButton));
     }
 
+    @FXML
+    private void toggleSidebar() {
+        sidebarCollapsed = !sidebarCollapsed;
+        sidebar.setMinWidth(sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH);
+        sidebar.setPrefWidth(sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH);
+
+        for (MenuDefinition menuDefinition : menuDefinitions) {
+            Button button = menuDefinition.button();
+            button.setText(sidebarCollapsed ? "" : menuDefinition.title());
+            button.setContentDisplay(sidebarCollapsed ? ContentDisplay.GRAPHIC_ONLY : ContentDisplay.LEFT);
+            button.setGraphicTextGap(sidebarCollapsed ? 0 : 10);
+        }
+
+        sidebarToggleButton.setGraphic(createMenuIcon(sidebarCollapsed ? "fas-angle-double-right" : "fas-angle-double-left"));
+        sidebarToggleButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+    }
+
     private List<MenuDefinition> createMenuDefinitions() {
         return List.of(
                 new MenuDefinition("Dashboard", "/com/churchmanagement/view/dashboard-home-view.fxml",
@@ -205,6 +237,37 @@ public class DashboardController {
             menuDefinition.button().setVisible(visible);
             menuDefinition.button().setManaged(visible);
         }
+    }
+
+    private void applyMenuIcons() {
+        setMenuIcon(dashboardButton, "fas-home");
+        setMenuIcon(regionsButton, "fas-map");
+        setMenuIcon(churchesButton, "fas-church");
+        setMenuIcon(weeklyReceiptsButton, "fas-receipt");
+        setMenuIcon(receiptHistoryButton, "fas-history");
+        setMenuIcon(reportsButton, "fas-chart-bar");
+        setMenuIcon(usersButton, "fas-users");
+        setMenuIcon(rolesButton, "fas-user-lock");
+        setMenuIcon(backupButton, "fas-database");
+        setMenuIcon(activityLogsButton, "fas-list-alt");
+        setMenuIcon(settingsButton, "fas-cog");
+    }
+
+    private void configureSidebarToggle() {
+        sidebarToggleButton.setGraphic(createMenuIcon("fas-angle-double-left"));
+        sidebarToggleButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+    }
+
+    private void setMenuIcon(Button button, String iconLiteral) {
+        button.setGraphic(createMenuIcon(iconLiteral));
+        button.setContentDisplay(ContentDisplay.LEFT);
+        button.setGraphicTextGap(10);
+    }
+
+    private FontIcon createMenuIcon(String iconLiteral) {
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.getStyleClass().add("menu-icon");
+        return icon;
     }
 
     private MenuDefinition findMenu(Button button) {

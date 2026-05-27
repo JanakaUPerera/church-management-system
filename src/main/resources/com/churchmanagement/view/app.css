@@ -4,6 +4,15 @@
     -fx-font-size: 14px;
 }
 
+.text-field,
+.password-field,
+.combo-box-base,
+.button {
+    -fx-min-height: 35px;
+    -fx-pref-height: 35px;
+    -fx-max-height: 35px;
+}
+
 .app-header {
     -fx-background-color: #1f2933;
 }
@@ -41,14 +50,37 @@
     -fx-text-fill: #d8e0e8;
     -fx-font-size: 14px;
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 12 14;
+    -fx-padding: 0 14;
     -fx-background-radius: 6;
     -fx-cursor: hand;
+}
+
+.sidebar-toggle-button {
+    -fx-background-color: #344355;
+    -fx-padding: 0 14;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.sidebar-toggle-button:hover {
+    -fx-background-color: #42546a;
+}
+
+.menu-icon {
+    -fx-icon-color: #d8e0e8;
+    -fx-icon-size: 15px;
+    -fx-min-width: 18;
 }
 
 .menu-button:hover {
     -fx-background-color: #344355;
     -fx-text-fill: white;
+}
+
+.menu-button:hover .menu-icon,
+.sidebar-toggle-button:hover .menu-icon,
+.active-menu-button .menu-icon {
+    -fx-icon-color: white;
 }
 
 .active-menu-button {

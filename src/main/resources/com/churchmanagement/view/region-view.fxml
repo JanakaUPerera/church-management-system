@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -19,9 +20,13 @@
         <Insets bottom="22" left="22" right="22" top="22"/>
     </padding>
 
-    <Label styleClass="module-title" text="Region Management"/>
-
     <GridPane hgap="14" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints minWidth="100" prefWidth="110"/>
+            <ColumnConstraints minWidth="150" prefWidth="180"/>
+            <ColumnConstraints minWidth="110" prefWidth="120"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="280" prefWidth="420"/>
+        </columnConstraints>
         <Label text="Region Code" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
         <TextField fx:id="regionCodeField" promptText="REG001" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
         <Label text="Region Name" GridPane.columnIndex="2" GridPane.rowIndex="0"/>

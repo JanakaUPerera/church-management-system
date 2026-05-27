@@ -30,10 +30,11 @@
     </top>
 
     <left>
-        <VBox prefWidth="235" spacing="4" styleClass="sidebar">
+        <VBox fx:id="sidebar" minWidth="235" prefWidth="235" spacing="4" styleClass="sidebar">
             <padding>
                 <Insets bottom="16" left="14" right="14" top="16"/>
             </padding>
+            <Button fx:id="sidebarToggleButton" maxWidth="Infinity" onAction="#toggleSidebar" styleClass="sidebar-toggle-button"/>
             <Button fx:id="dashboardButton" maxWidth="Infinity" onAction="#showDashboard" styleClass="menu-button" text="Dashboard"/>
             <Button fx:id="regionsButton" maxWidth="Infinity" onAction="#showRegions" styleClass="menu-button" text="Regions"/>
             <Button fx:id="churchesButton" maxWidth="Infinity" onAction="#showChurches" styleClass="menu-button" text="Churches"/>
