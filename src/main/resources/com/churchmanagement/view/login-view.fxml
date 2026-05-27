@@ -25,6 +25,7 @@
                        promptText="Username"
                        style="-fx-font-size: 14px;"/>
             <PasswordField fx:id="passwordField"
+                           onAction="#handleLogin"
                            prefHeight="35"
                            promptText="Password"
                            style="-fx-font-size: 14px;"/>
@@ -34,7 +35,7 @@
                     prefHeight="35"
                     style="-fx-font-size: 14px;"
                     text="Login"/>
-            <Label fx:id="messageLabel" style="-fx-text-fill: #b42318;"/>
+            <Label fx:id="errorLabel" style="-fx-text-fill: #b42318;"/>
         </VBox>
     </center>
 </BorderPane>

@@ -1,0 +1,22 @@
+package com.churchmanagement.security;
+
+import java.util.Optional;
+
+public final class AuthContext {
+    private static AuthenticatedUser currentUser;
+
+    private AuthContext() {
+    }
+
+    public static Optional<AuthenticatedUser> getCurrentUser() {
+        return Optional.ofNullable(currentUser);
+    }
+
+    public static void setCurrentUser(AuthenticatedUser user) {
+        currentUser = user;
+    }
+
+    public static void clear() {
+        currentUser = null;
+    }
+}

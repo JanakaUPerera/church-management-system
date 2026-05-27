@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -16,6 +18,12 @@
             </padding>
             <Label style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"
                    text="Church Management System"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <VBox alignment="CENTER_RIGHT" spacing="2">
+                <Label fx:id="fullNameLabel" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label fx:id="roleNameLabel" style="-fx-font-size: 12px; -fx-text-fill: #cfd8dc;"/>
+            </VBox>
+            <Button onAction="#handleLogout" text="Logout"/>
         </HBox>
     </top>
 
