@@ -1,6 +1,7 @@
 package com.churchmanagement.dto;
 
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.enums.AuthorizedPersonPosition;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,10 +16,16 @@ public class ChurchDto {
     private final String regionCode;
     private final String regionName;
     private final String status;
+    private final String authorizedPersonName;
+    private final AuthorizedPersonPosition authorizedPersonPosition;
+    private final String authorizedPersonPositionOther;
+    private final String smsMobileNumber;
     private final LocalDateTime createdAt;
 
     public ChurchDto(Long id, String churchCode, String churchName, Long regionId, String regionCode,
-                     String regionName, String status, LocalDateTime createdAt) {
+                     String regionName, String status, String authorizedPersonName,
+                     AuthorizedPersonPosition authorizedPersonPosition, String authorizedPersonPositionOther,
+                     String smsMobileNumber, LocalDateTime createdAt) {
         this.id = id;
         this.churchCode = churchCode;
         this.churchName = churchName;
@@ -26,6 +33,10 @@ public class ChurchDto {
         this.regionCode = regionCode;
         this.regionName = regionName;
         this.status = status;
+        this.authorizedPersonName = authorizedPersonName;
+        this.authorizedPersonPosition = authorizedPersonPosition;
+        this.authorizedPersonPositionOther = authorizedPersonPositionOther;
+        this.smsMobileNumber = smsMobileNumber;
         this.createdAt = createdAt;
     }
 
@@ -38,6 +49,10 @@ public class ChurchDto {
                 church.getRegionCode(),
                 church.getRegionName(),
                 church.getStatus().name(),
+                church.getAuthorizedPersonName(),
+                church.getAuthorizedPersonPosition(),
+                church.getAuthorizedPersonPositionOther(),
+                church.getSmsMobileNumber(),
                 church.getCreatedAt()
         );
     }
@@ -68,6 +83,34 @@ public class ChurchDto {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getAuthorizedPersonName() {
+        return authorizedPersonName;
+    }
+
+    public AuthorizedPersonPosition getAuthorizedPersonPosition() {
+        return authorizedPersonPosition;
+    }
+
+    public String getAuthorizedPersonPositionLabel() {
+        if (authorizedPersonPosition == null) {
+            return "";
+        }
+
+        if (authorizedPersonPosition == AuthorizedPersonPosition.OTHER && authorizedPersonPositionOther != null) {
+            return authorizedPersonPositionOther;
+        }
+
+        return authorizedPersonPosition.getDisplayLabel();
+    }
+
+    public String getAuthorizedPersonPositionOther() {
+        return authorizedPersonPositionOther;
+    }
+
+    public String getSmsMobileNumber() {
+        return smsMobileNumber;
     }
 
     public String getCreatedAt() {

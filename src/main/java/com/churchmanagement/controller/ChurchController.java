@@ -3,6 +3,7 @@ package com.churchmanagement.controller;
 import com.churchmanagement.dto.ChurchDto;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
+import com.churchmanagement.enums.AuthorizedPersonPosition;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
@@ -47,6 +48,21 @@ public class ChurchController {
     private ComboBox<Church.Status> statusComboBox;
 
     @FXML
+    private TextField authorizedPersonNameField;
+
+    @FXML
+    private ComboBox<AuthorizedPersonPosition> authorizedPersonPositionComboBox;
+
+    @FXML
+    private Label otherPositionLabel;
+
+    @FXML
+    private TextField authorizedPersonPositionOtherField;
+
+    @FXML
+    private TextField smsMobileNumberField;
+
+    @FXML
     private Button saveButton;
 
     @FXML
@@ -68,16 +84,16 @@ public class ChurchController {
     private TableColumn<ChurchDto, String> nameColumn;
 
     @FXML
-    private TableColumn<ChurchDto, String> regionCodeColumn;
+    private TableColumn<ChurchDto, String> regionColumn;
 
     @FXML
-    private TableColumn<ChurchDto, String> regionNameColumn;
+    private TableColumn<ChurchDto, String> authorizedPersonColumn;
+
+    @FXML
+    private TableColumn<ChurchDto, String> smsMobileNumberColumn;
 
     @FXML
     private TableColumn<ChurchDto, String> statusColumn;
-
-    @FXML
-    private TableColumn<ChurchDto, String> createdAtColumn;
 
     @FXML
     private TableColumn<ChurchDto, Void> actionColumn;
@@ -113,7 +129,9 @@ public class ChurchController {
     private void handleSave() {
         try {
             churchService.create(churchCodeField.getText(), churchNameField.getText(), selectedRegionId(),
-                    statusComboBox.getValue(), currentUser.getUserId());
+                    statusComboBox.getValue(), authorizedPersonNameField.getText(),
+                    authorizedPersonPositionComboBox.getValue(), authorizedPersonPositionOtherField.getText(),
+                    smsMobileNumberField.getText(), currentUser.getUserId());
             setMessage("Church created successfully.");
             clearForm();
             refreshChurches();
@@ -131,7 +149,9 @@ public class ChurchController {
 
         try {
             churchService.update(selectedChurch.getId(), churchCodeField.getText(), churchNameField.getText(),
-                    selectedRegionId(), statusComboBox.getValue(), currentUser.getUserId());
+                    selectedRegionId(), statusComboBox.getValue(), authorizedPersonNameField.getText(),
+                    authorizedPersonPositionComboBox.getValue(), authorizedPersonPositionOtherField.getText(),
+                    smsMobileNumberField.getText(), currentUser.getUserId());
             setMessage("Church updated successfully.");
             clearForm();
             refreshChurches();
@@ -167,20 +187,28 @@ public class ChurchController {
     private void configureForm() {
         statusComboBox.setItems(FXCollections.observableArrayList(Church.Status.ACTIVE, Church.Status.INACTIVE));
         statusComboBox.setValue(Church.Status.ACTIVE);
+        authorizedPersonPositionComboBox.setItems(FXCollections.observableArrayList(AuthorizedPersonPosition.values()));
+        authorizedPersonPositionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateOtherPositionVisibility());
         regionComboBox.setItems(activeRegions);
         regionComboBox.setCellFactory(listView -> new RegionListCell());
         regionComboBox.setButtonCell(new RegionListCell());
+        updateOtherPositionVisibility();
     }
 
     private void configureTable() {
         codeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getChurchCode()));
         nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getChurchName()));
-        regionCodeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getRegionCode()));
-        regionNameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getRegionName()));
+        regionColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                cellData.getValue().getRegionCode() + " - " + cellData.getValue().getRegionName()
+        ));
+        authorizedPersonColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                nullToBlank(cellData.getValue().getAuthorizedPersonName())
+        ));
+        smsMobileNumberColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                nullToBlank(cellData.getValue().getSmsMobileNumber())
+        ));
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus()));
         statusColumn.setCellFactory(column -> new StatusBadgeCell());
-        createdAtColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCreatedAt()));
-        createdAtColumn.setCellFactory(column -> new CenteredTextCell());
         actionColumn.setCellFactory(column -> new ActionButtonCell());
 
         churchTable.setItems(churches);
@@ -224,6 +252,10 @@ public class ChurchController {
         churchCodeField.setText(church.getChurchCode());
         churchNameField.setText(church.getChurchName());
         statusComboBox.setValue(Church.Status.valueOf(church.getStatus()));
+        authorizedPersonNameField.setText(church.getAuthorizedPersonName());
+        authorizedPersonPositionComboBox.setValue(church.getAuthorizedPersonPosition());
+        authorizedPersonPositionOtherField.setText(church.getAuthorizedPersonPositionOther());
+        smsMobileNumberField.setText(church.getSmsMobileNumber());
         regionComboBox.getSelectionModel().select(findRegion(church.getRegionId()));
         setMessage("Selected church " + church.getChurchCode() + ".");
         updateActionButtons();
@@ -281,6 +313,11 @@ public class ChurchController {
         churchNameField.clear();
         regionComboBox.getSelectionModel().clearSelection();
         statusComboBox.setValue(Church.Status.ACTIVE);
+        authorizedPersonNameField.clear();
+        authorizedPersonPositionComboBox.getSelectionModel().clearSelection();
+        authorizedPersonPositionOtherField.clear();
+        smsMobileNumberField.clear();
+        updateOtherPositionVisibility();
         setMessage("");
         updateActionButtons();
     }
@@ -300,6 +337,10 @@ public class ChurchController {
         churchNameField.setDisable(disabled);
         regionComboBox.setDisable(disabled);
         statusComboBox.setDisable(disabled);
+        authorizedPersonNameField.setDisable(disabled);
+        authorizedPersonPositionComboBox.setDisable(disabled);
+        authorizedPersonPositionOtherField.setDisable(disabled);
+        smsMobileNumberField.setDisable(disabled);
         saveButton.setDisable(disabled);
         updateButton.setDisable(disabled);
         clearButton.setDisable(disabled);
@@ -320,24 +361,27 @@ public class ChurchController {
         alert.showAndWait();
     }
 
+    private void updateOtherPositionVisibility() {
+        boolean otherSelected = authorizedPersonPositionComboBox.getValue() == AuthorizedPersonPosition.OTHER;
+        otherPositionLabel.setVisible(otherSelected);
+        otherPositionLabel.setManaged(otherSelected);
+        authorizedPersonPositionOtherField.setVisible(otherSelected);
+        authorizedPersonPositionOtherField.setManaged(otherSelected);
+        authorizedPersonPositionOtherField.setDisable(!otherSelected);
+        if (!otherSelected) {
+            authorizedPersonPositionOtherField.clear();
+        }
+    }
+
+    private String nullToBlank(String value) {
+        return value == null ? "" : value;
+    }
+
     private static class RegionListCell extends ListCell<Region> {
         @Override
         protected void updateItem(Region region, boolean empty) {
             super.updateItem(region, empty);
             setText(empty || region == null ? null : region.getRegionCode() + " - " + region.getRegionName());
-        }
-    }
-
-    private static class CenteredTextCell extends TableCell<ChurchDto, String> {
-        private CenteredTextCell() {
-            getStyleClass().add("centered-table-cell");
-            setAlignment(Pos.CENTER);
-        }
-
-        @Override
-        protected void updateItem(String value, boolean empty) {
-            super.updateItem(value, empty);
-            setText(empty ? null : value);
         }
     }
 

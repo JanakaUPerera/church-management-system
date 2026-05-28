@@ -2,6 +2,7 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
+import com.churchmanagement.enums.AuthorizedPersonPosition;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.RegionRepository;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,93 @@ class ChurchServiceTest {
         assertEquals(1L, church.getRegionId());
         assertEquals(Church.Status.ACTIVE, church.getStatus());
         assertEquals(ActivityLogService.CHURCH_CREATED, activityLogService.loggedActions.getFirst());
+    }
+
+    @Test
+    void createChurchWithoutAuthorizedPersonDetails() {
+        Church church = churchService.create("CH010", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, null, 1L);
+
+        assertEquals(null, church.getAuthorizedPersonName());
+        assertEquals(null, church.getAuthorizedPersonPosition());
+        assertEquals(null, church.getSmsMobileNumber());
+    }
+
+    @Test
+    void createChurchWithValidAuthorizedPersonDetails() {
+        Church church = churchService.create("CH011", "Main Church", 1L, Church.Status.ACTIVE,
+                "  Nimal  ", AuthorizedPersonPosition.TREASURER, null, "0771234567", 1L);
+
+        assertEquals("Nimal", church.getAuthorizedPersonName());
+        assertEquals(AuthorizedPersonPosition.TREASURER, church.getAuthorizedPersonPosition());
+        assertEquals("+94771234567", church.getSmsMobileNumber());
+    }
+
+    @Test
+    void rejectOtherPositionWithoutOtherPositionText() {
+        ChurchService.ChurchException exception = assertThrows(
+                ChurchService.ChurchException.class,
+                () -> churchService.create("CH012", "Main Church", 1L, Church.Status.ACTIVE,
+                        "Nimal", AuthorizedPersonPosition.OTHER, " ", null, 1L)
+        );
+
+        assertTrue(exception.getMessage().contains("Other position is required"));
+    }
+
+    @Test
+    void saveOtherPositionAsNullWhenPositionIsNotOther() {
+        Church church = churchService.create("CH013", "Main Church", 1L, Church.Status.ACTIVE,
+                "Nimal", AuthorizedPersonPosition.PASTOR, "Ignored", null, 1L);
+
+        assertEquals(null, church.getAuthorizedPersonPositionOther());
+    }
+
+    @Test
+    void acceptSmsNumberStartingWithZeroAndNormalize() {
+        Church church = churchService.create("CH014", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, "0771234567", 1L);
+
+        assertEquals("+94771234567", church.getSmsMobileNumber());
+    }
+
+    @Test
+    void acceptSmsNumberStartingWithCountryCodeAndNormalize() {
+        Church church = churchService.create("CH015", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, "94771234567", 1L);
+
+        assertEquals("+94771234567", church.getSmsMobileNumber());
+    }
+
+    @Test
+    void acceptSmsNumberStartingWithPlusCountryCode() {
+        Church church = churchService.create("CH016", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, "+94771234567", 1L);
+
+        assertEquals("+94771234567", church.getSmsMobileNumber());
+    }
+
+    @Test
+    void rejectInvalidSmsNumber() {
+        ChurchService.ChurchException exception = assertThrows(
+                ChurchService.ChurchException.class,
+                () -> churchService.create("CH017", "Main Church", 1L, Church.Status.ACTIVE,
+                        null, null, null, "071234", 1L)
+        );
+
+        assertTrue(exception.getMessage().contains("SMS mobile number"));
+    }
+
+    @Test
+    void updateChurchContactSmsDetails() {
+        Church church = churchService.create("CH018", "Main Church", 1L, Church.Status.ACTIVE, 1L);
+
+        Church updated = churchService.update(church.getId(), "CH018", "Main Church", 1L, Church.Status.ACTIVE,
+                "Kamal", AuthorizedPersonPosition.OTHER, "Coordinator", "94771234567", 1L);
+
+        assertEquals("Kamal", updated.getAuthorizedPersonName());
+        assertEquals(AuthorizedPersonPosition.OTHER, updated.getAuthorizedPersonPosition());
+        assertEquals("Coordinator", updated.getAuthorizedPersonPositionOther());
+        assertEquals("+94771234567", updated.getSmsMobileNumber());
     }
 
     @Test
@@ -154,6 +242,10 @@ class ChurchServiceTest {
             existing.setChurchName(church.getChurchName());
             existing.setRegionId(church.getRegionId());
             existing.setStatus(church.getStatus());
+            existing.setAuthorizedPersonName(church.getAuthorizedPersonName());
+            existing.setAuthorizedPersonPosition(church.getAuthorizedPersonPosition());
+            existing.setAuthorizedPersonPositionOther(church.getAuthorizedPersonPositionOther());
+            existing.setSmsMobileNumber(church.getSmsMobileNumber());
             existing.setUpdatedAt(church.getUpdatedAt());
             return existing;
         }

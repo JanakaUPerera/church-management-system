@@ -2,6 +2,7 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
+import com.churchmanagement.enums.AuthorizedPersonPosition;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.RegionRepository;
@@ -59,7 +60,14 @@ public class ChurchService {
     }
 
     public Church create(String churchCode, String churchName, Long regionId, Church.Status status, long userId) {
-        Church church = normalize(churchCode, churchName, regionId, status);
+        return create(churchCode, churchName, regionId, status, null, null, null, null, userId);
+    }
+
+    public Church create(String churchCode, String churchName, Long regionId, Church.Status status,
+                         String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
+                         String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
+        Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
+                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber);
         validate(church);
 
         try {
@@ -80,7 +88,14 @@ public class ChurchService {
     }
 
     public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status, long userId) {
-        Church church = normalize(churchCode, churchName, regionId, status);
+        return update(id, churchCode, churchName, regionId, status, null, null, null, null, userId);
+    }
+
+    public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status,
+                         String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
+                         String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
+        Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
+                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber);
         church.setId(id);
         validate(church);
 
@@ -120,10 +135,19 @@ public class ChurchService {
         }
     }
 
-    private Church normalize(String churchCode, String churchName, Long regionId, Church.Status status) {
+    private Church normalize(String churchCode, String churchName, Long regionId, Church.Status status,
+                             String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
+                             String authorizedPersonPositionOther, String smsMobileNumber) {
         String normalizedCode = churchCode == null ? "" : churchCode.strip().toUpperCase(Locale.ROOT);
         String normalizedName = churchName == null ? "" : churchName.strip();
-        return new Church(null, normalizedCode, normalizedName, regionId, null, null, status, null, null);
+        Church church = new Church(null, normalizedCode, normalizedName, regionId, null, null, status, null, null);
+        church.setAuthorizedPersonName(blankToNull(authorizedPersonName));
+        church.setAuthorizedPersonPosition(authorizedPersonPosition);
+        church.setAuthorizedPersonPositionOther(authorizedPersonPosition == AuthorizedPersonPosition.OTHER
+                ? blankToNull(authorizedPersonPositionOther)
+                : null);
+        church.setSmsMobileNumber(normalizeSmsMobileNumber(smsMobileNumber));
+        return church;
     }
 
     private void validate(Church church) {
@@ -131,7 +155,10 @@ public class ChurchService {
                 church.getChurchCode(),
                 church.getChurchName(),
                 church.getRegionId(),
-                church.getStatus()
+                church.getStatus(),
+                church.getAuthorizedPersonPosition(),
+                church.getAuthorizedPersonPositionOther(),
+                church.getSmsMobileNumber()
         );
 
         if (!errors.isEmpty()) {
@@ -145,6 +172,31 @@ public class ChurchService {
         if (region.getStatus() != Region.Status.ACTIVE) {
             throw new ChurchException("Selected region is inactive. Choose an active region.");
         }
+    }
+
+    private String normalizeSmsMobileNumber(String smsMobileNumber) {
+        String value = blankToNull(smsMobileNumber);
+        if (value == null) {
+            return null;
+        }
+
+        if (value.startsWith("+")) {
+            return value;
+        }
+
+        if (value.startsWith("0")) {
+            return "+94" + value.substring(1);
+        }
+
+        return "+" + value;
+    }
+
+    private String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.strip();
     }
 
     public static class ChurchException extends RuntimeException {

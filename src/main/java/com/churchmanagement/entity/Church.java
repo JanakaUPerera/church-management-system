@@ -1,5 +1,7 @@
 package com.churchmanagement.entity;
 
+import com.churchmanagement.enums.AuthorizedPersonPosition;
+
 import java.time.LocalDateTime;
 
 public class Church {
@@ -10,6 +12,10 @@ public class Church {
     private String regionCode;
     private String regionName;
     private Status status;
+    private String authorizedPersonName;
+    private AuthorizedPersonPosition authorizedPersonPosition;
+    private String authorizedPersonPositionOther;
+    private String smsMobileNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -88,6 +94,38 @@ public class Church {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public String getAuthorizedPersonName() {
+        return authorizedPersonName;
+    }
+
+    public void setAuthorizedPersonName(String authorizedPersonName) {
+        this.authorizedPersonName = authorizedPersonName;
+    }
+
+    public AuthorizedPersonPosition getAuthorizedPersonPosition() {
+        return authorizedPersonPosition;
+    }
+
+    public void setAuthorizedPersonPosition(AuthorizedPersonPosition authorizedPersonPosition) {
+        this.authorizedPersonPosition = authorizedPersonPosition;
+    }
+
+    public String getAuthorizedPersonPositionOther() {
+        return authorizedPersonPositionOther;
+    }
+
+    public void setAuthorizedPersonPositionOther(String authorizedPersonPositionOther) {
+        this.authorizedPersonPositionOther = authorizedPersonPositionOther;
+    }
+
+    public String getSmsMobileNumber() {
+        return smsMobileNumber;
+    }
+
+    public void setSmsMobileNumber(String smsMobileNumber) {
+        this.smsMobileNumber = smsMobileNumber;
     }
 
     public LocalDateTime getCreatedAt() {
