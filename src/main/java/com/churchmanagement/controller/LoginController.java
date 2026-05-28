@@ -4,6 +4,7 @@ import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.service.AuthService;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -48,8 +49,7 @@ public class LoginController {
         stage.setScene(scene);
         stage.setMinWidth(AppConfig.DASHBOARD_WIDTH);
         stage.setMinHeight(AppConfig.DASHBOARD_HEIGHT);
-        stage.setWidth(AppConfig.DASHBOARD_WIDTH);
-        stage.setHeight(AppConfig.DASHBOARD_HEIGHT);
         stage.centerOnScreen();
+        Platform.runLater(() -> stage.setMaximized(true));
     }
 }

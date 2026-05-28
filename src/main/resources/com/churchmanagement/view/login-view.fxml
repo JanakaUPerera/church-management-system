@@ -30,7 +30,7 @@
                     <Circle centerX="75" centerY="75" radius="75"/>
                 </clip>
             </ImageView>
-            <Label style="-fx-text-fill: #d8e0e8;" text="Sign in to continue"/>
+            <Label style="-fx-text-fill: #d8e0e8; -fx-font-size: 15px;" text="Sign in to continue"/>
 
             <TextField fx:id="usernameField"
                        prefHeight="35"

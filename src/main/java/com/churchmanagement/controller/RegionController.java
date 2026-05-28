@@ -172,6 +172,7 @@ public class RegionController {
             private final Label badge = new Label();
 
             {
+                getStyleClass().add("centered-table-cell");
                 setAlignment(Pos.CENTER);
                 badge.getStyleClass().add("status-badge");
             }
@@ -193,6 +194,7 @@ public class RegionController {
         createdAtColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCreatedAt()));
         createdAtColumn.setCellFactory(column -> new TableCell<>() {
             {
+                getStyleClass().add("centered-table-cell");
                 setAlignment(Pos.CENTER);
             }
 
@@ -206,6 +208,7 @@ public class RegionController {
             private final Button actionButton = new Button();
 
             {
+                getStyleClass().add("centered-table-cell");
                 setAlignment(Pos.CENTER);
                 actionButton.getStyleClass().add("table-action-button");
                 actionButton.setOnAction(event -> toggleRegionStatus(getTableView().getItems().get(getIndex())));

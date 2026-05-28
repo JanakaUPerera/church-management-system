@@ -146,6 +146,14 @@
     -fx-padding: 5 10;
 }
 
+.table-view .table-cell {
+    -fx-alignment: CENTER_LEFT;
+}
+
+.table-view .table-cell.centered-table-cell {
+    -fx-alignment: CENTER;
+}
+
 .status-badge {
     -fx-background-radius: 999;
     -fx-font-size: 14px;

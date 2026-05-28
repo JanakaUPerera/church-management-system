@@ -36,6 +36,16 @@ public class RegionRepository {
         return queryRegions(sql);
     }
 
+    public List<Region> findActiveRegions() {
+        String sql = """
+                SELECT id, region_code, region_name, status, created_at, updated_at
+                FROM regions
+                WHERE status = 'ACTIVE'
+                ORDER BY region_code
+                """;
+        return queryRegions(sql);
+    }
+
     public List<Region> search(String searchText) {
         String sql = """
                 SELECT id, region_code, region_name, status, created_at, updated_at

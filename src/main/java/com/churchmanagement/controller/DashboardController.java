@@ -124,6 +124,9 @@ public class DashboardController {
         Stage stage = (Stage) dateLabel.getScene().getWindow();
 
         stage.setTitle(AppConfig.APPLICATION_NAME);
+        stage.setFullScreen(false);
+        stage.setMaximized(false);
+        stage.setIconified(false);
         stage.setScene(scene);
         stage.setMinWidth(AppConfig.LOGIN_WIDTH);
         stage.setMinHeight(AppConfig.LOGIN_HEIGHT);

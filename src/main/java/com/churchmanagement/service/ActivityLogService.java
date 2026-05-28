@@ -18,6 +18,10 @@ public class ActivityLogService {
     public static final String REGION_UPDATED = "REGION_UPDATED";
     public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
     public static final String REGION_DEACTIVATED = "REGION_DEACTIVATED";
+    public static final String CHURCH_CREATED = "CHURCH_CREATED";
+    public static final String CHURCH_UPDATED = "CHURCH_UPDATED";
+    public static final String CHURCH_ACTIVATED = "CHURCH_ACTIVATED";
+    public static final String CHURCH_DEACTIVATED = "CHURCH_DEACTIVATED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -47,6 +51,10 @@ public class ActivityLogService {
 
     public void logRegionAction(long userId, String action, String regionCode) {
         log(userId, action, "Region code: " + regionCode);
+    }
+
+    public void logChurchAction(long userId, String action, String churchCode) {
+        log(userId, action, "Church code: " + churchCode);
     }
 
     private void log(Long userId, String action, String details) {
