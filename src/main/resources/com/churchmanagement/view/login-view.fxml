@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
-<BorderPane style="-fx-background-color: #263241;" stylesheets="@app.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.churchmanagement.controller.LoginController">
+<BorderPane style="-fx-background-color: #78350f;" stylesheets="@app.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.churchmanagement.controller.LoginController">
     <center>
         <VBox alignment="CENTER" maxWidth="320" spacing="10">
             <padding>
@@ -28,7 +28,7 @@
                        <Circle centerX="60" centerY="60" radius="60" />
                    </clip>
                </ImageView>
-               <Label style="-fx-text-fill: #d8e0e8; -fx-font-size: 15px; -fx-font-weight: bold;" text="Sign in to continue" />
+               <Label style="-fx-text-fill: #fde68a; -fx-font-size: 15px; -fx-font-weight: bold;" text="Sign in to continue" />
    
                <VBox maxWidth="Infinity" spacing="6">
       <children>
