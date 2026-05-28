@@ -41,6 +41,35 @@
     -fx-padding: 8 16;
 }
 
+.login-field-label {
+    -fx-text-fill: #d8e0e8;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.login-password-input {
+    -fx-padding: 0 42 0 10;
+}
+
+.password-toggle-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 8 0 4;
+    -fx-cursor: hand;
+}
+
+.password-toggle-button:hover {
+    -fx-background-color: #eef2f6;
+}
+
+.password-toggle-icon {
+    -fx-icon-color: #52606d;
+    -fx-icon-size: 14px;
+}
+
+.password-toggle-button:hover .password-toggle-icon {
+    -fx-icon-color: #1f2933;
+}
+
 .sidebar {
     -fx-background-color: #263241;
 }

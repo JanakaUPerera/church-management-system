@@ -6,7 +6,7 @@ public final class AppConfig {
     public static final String DASHBOARD_VIEW = "/com/churchmanagement/view/dashboard-view.fxml";
 
     public static final double LOGIN_WIDTH = 520;
-    public static final double LOGIN_HEIGHT = 420;
+    public static final double LOGIN_HEIGHT = 470;
     public static final double DASHBOARD_WIDTH = 1100;
     public static final double DASHBOARD_HEIGHT = 720;
 

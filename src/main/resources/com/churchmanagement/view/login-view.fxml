@@ -8,46 +8,54 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.churchmanagement.controller.LoginController"
-            stylesheets="@app.css"
-            style="-fx-background-color: #263241;">
+<BorderPane style="-fx-background-color: #263241;" stylesheets="@app.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.churchmanagement.controller.LoginController">
     <center>
-        <VBox alignment="CENTER" maxWidth="320" spacing="14">
+        <VBox alignment="CENTER" maxWidth="320" spacing="10">
             <padding>
-                <Insets bottom="32" left="32" right="32" top="32"/>
+                <Insets bottom="28" left="32" right="32" top="20" />
             </padding>
-
-            <ImageView fitHeight="150" fitWidth="150" preserveRatio="true" smooth="true">
-                <image>
-                    <Image url="@images/gethsemana_logo.jpg"/>
-                </image>
-                <clip>
-                    <Circle centerX="75" centerY="75" radius="75"/>
-                </clip>
-            </ImageView>
-            <Label style="-fx-text-fill: #d8e0e8; -fx-font-size: 15px;" text="Sign in to continue"/>
-
-            <TextField fx:id="usernameField"
-                       prefHeight="35"
-                       promptText="Username"
-                       style="-fx-font-size: 14px;"/>
-            <PasswordField fx:id="passwordField"
-                           onAction="#handleLogin"
-                           prefHeight="35"
-                           promptText="Password"
-                           style="-fx-font-size: 14px;"/>
-            <Button defaultButton="true"
-                    maxWidth="Infinity"
-                    onAction="#handleLogin"
-                    prefHeight="35"
-                    style="-fx-font-size: 14px; -fx-font-weight: bold;"
-                    text="Login"/>
-            <Label fx:id="errorLabel" style="-fx-text-fill: #ffb4ab;"/>
+           <children>
+   
+               <ImageView fitHeight="120" fitWidth="120" preserveRatio="true" smooth="true">
+                   <image>
+                       <Image url="@images/gethsemana_logo.jpg" />
+                   </image>
+                   <clip>
+                       <Circle centerX="60" centerY="60" radius="60" />
+                   </clip>
+               </ImageView>
+               <Label style="-fx-text-fill: #d8e0e8; -fx-font-size: 15px; -fx-font-weight: bold;" text="Sign in to continue" />
+   
+               <VBox maxWidth="Infinity" spacing="6">
+      <children>
+                      <Label styleClass="login-field-label" text="Username" />
+                      <TextField fx:id="usernameField" prefHeight="35" promptText="Username" style="-fx-font-size: 14px;" />
+      </children>
+               </VBox>
+   
+               <VBox maxWidth="Infinity" spacing="6">
+      <children>
+                      <Label styleClass="login-field-label" text="Password" />
+                      <StackPane>
+                         <children>
+                             <PasswordField fx:id="passwordField" onAction="#handleLogin" prefHeight="35" promptText="Password" style="-fx-font-size: 14px;" styleClass="login-password-input" />
+                             <TextField fx:id="visiblePasswordField" managed="false" onAction="#handleLogin" prefHeight="35" promptText="Password" style="-fx-font-size: 14px;" styleClass="login-password-input" visible="false" />
+                             <Button fx:id="togglePasswordButton" alignment="CENTER" contentDisplay="GRAPHIC_ONLY" maxHeight="28" maxWidth="32" mnemonicParsing="false" onAction="#togglePasswordVisibility" prefHeight="28" prefWidth="32" styleClass="password-toggle-button" StackPane.alignment="CENTER_RIGHT" />
+                         </children>
+                      </StackPane>
+      </children>
+               </VBox>
+               <Button defaultButton="true" maxWidth="Infinity" onAction="#handleLogin" prefHeight="35" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Login">
+                   <VBox.margin>
+                       <Insets bottom="4" />
+                   </VBox.margin>
+               </Button>
+               <Label fx:id="errorLabel" maxWidth="Infinity" minHeight="32" style="-fx-text-fill: #ffb4ab;" wrapText="true" />
+           </children>
         </VBox>
     </center>
 </BorderPane>
