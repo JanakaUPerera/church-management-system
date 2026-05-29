@@ -231,7 +231,7 @@ public class DashboardController {
                         regionsButton, ActivityLogService.NAVIGATE_REGIONS, "region.view"),
                 new MenuDefinition("Churches", "/com/churchmanagement/view/church-view.fxml",
                         churchesButton, ActivityLogService.NAVIGATE_CHURCHES, "church.view"),
-                new MenuDefinition("Weekly Receipts", "/com/churchmanagement/view/receipt-entry-view.fxml",
+                new MenuDefinition("Receipt", "/com/churchmanagement/view/receipt-entry-view.fxml",
                         weeklyReceiptsButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.create"),
                 new MenuDefinition("Receipt History", "/com/churchmanagement/view/receipt-history-view.fxml",
                         receiptHistoryButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.view"),

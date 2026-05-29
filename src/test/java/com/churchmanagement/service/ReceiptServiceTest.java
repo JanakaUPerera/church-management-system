@@ -1,0 +1,491 @@
+package com.churchmanagement.service;
+
+import com.churchmanagement.dto.CreateReceiptRequest;
+import com.churchmanagement.dto.ReceiptItemDto;
+import com.churchmanagement.dto.ReceiptResponseDto;
+import com.churchmanagement.entity.Church;
+import com.churchmanagement.entity.Receipt;
+import com.churchmanagement.entity.ReceiptItem;
+import com.churchmanagement.enums.CollectionType;
+import com.churchmanagement.enums.ReceiptStatus;
+import com.churchmanagement.repository.ChurchRepository;
+import com.churchmanagement.repository.ReceiptRepository;
+import com.churchmanagement.security.AuthContext;
+import com.churchmanagement.security.AuthenticatedUser;
+import com.churchmanagement.util.ReceiptNumberFormatter;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import javax.sql.DataSource;
+import java.io.PrintWriter;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ReceiptServiceTest {
+    private static final LocalDate NORMAL_WEEK_START = LocalDate.of(2026, 5, 11);
+    private static final LocalDate NORMAL_WEEK_END = LocalDate.of(2026, 5, 17);
+    private static final LocalDate BACK_WEEK_START = LocalDate.of(2026, 5, 4);
+    private static final LocalDate BACK_WEEK_END = LocalDate.of(2026, 5, 10);
+
+    private FakeReceiptRepository receiptRepository;
+    private FakeChurchRepository churchRepository;
+    private FakeReceiptNumberGeneratorService receiptNumberGeneratorService;
+    private FakeActivityLogService activityLogService;
+    private FakeDataSource dataSource;
+    private ReceiptService receiptService;
+
+    @BeforeEach
+    void setUp() {
+        receiptRepository = new FakeReceiptRepository();
+        churchRepository = new FakeChurchRepository();
+        receiptNumberGeneratorService = new FakeReceiptNumberGeneratorService();
+        activityLogService = new FakeActivityLogService();
+        dataSource = new FakeDataSource();
+        receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
+                activityLogService, fixedClock(), dataSource);
+        AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
+                "Admin", List.of("RECEIPT_CREATE")));
+    }
+
+    @AfterEach
+    void tearDown() {
+        AuthContext.clear();
+    }
+
+    @Test
+    void createValidReceiptForNormalPreviousWeek() {
+        ReceiptResponseDto response = receiptService.createReceipt(validRequest());
+
+        assertEquals("REC26000001", response.getReceiptNo());
+        assertEquals(1, receiptRepository.insertedReceipts.size());
+        assertEquals(2, receiptRepository.insertedItems.size());
+        assertFalse(receiptRepository.insertedReceipts.getFirst().isLateSubmission());
+        assertTrue(dataSource.connection.committed);
+        assertEquals(ActivityLogService.RECEIPT_CREATED, activityLogService.createdAction);
+    }
+
+    @Test
+    void rejectFutureWeek() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekStartDate(LocalDate.of(2026, 5, 18));
+        request.setWeekEndDate(LocalDate.of(2026, 5, 24));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Future weeks are not allowed."));
+        assertEquals(0, receiptNumberGeneratorService.generateCount);
+    }
+
+    @Test
+    void rejectWeekStartThatIsNotMonday() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekStartDate(LocalDate.of(2026, 5, 12));
+        request.setWeekEndDate(LocalDate.of(2026, 5, 17));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Week start date must be a Monday."));
+    }
+
+    @Test
+    void rejectWeekEndThatIsNotSunday() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekEndDate(LocalDate.of(2026, 5, 16));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Week end date must be a Sunday."));
+    }
+
+    @Test
+    void rejectWeekEndNotEqualToStartPlusSixDays() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekStartDate(LocalDate.of(2026, 5, 4));
+        request.setWeekEndDate(LocalDate.of(2026, 5, 17));
+        request.setLateSubmissionReason("Submitted after reconciliation.");
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Week end date must be 6 days after week start date."));
+    }
+
+    @Test
+    void rejectMissingSubmittedByName() {
+        CreateReceiptRequest request = validRequest();
+        request.setSubmittedByName(" ");
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Submitted by name is required."));
+    }
+
+    @Test
+    void rejectReceiptWithoutItems() {
+        CreateReceiptRequest request = validRequest();
+        request.setItems(List.of());
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("At least one collection item is required."));
+    }
+
+    @Test
+    void rejectDuplicateCollectionTypes() {
+        CreateReceiptRequest request = validRequest();
+        request.setItems(List.of(
+                item(CollectionType.OFFERTORY, "100.00"),
+                item(CollectionType.OFFERTORY, "50.00")
+        ));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Duplicate collection type is not allowed."));
+    }
+
+    @Test
+    void rejectZeroAmount() {
+        CreateReceiptRequest request = validRequest();
+        request.setItems(List.of(item(CollectionType.OFFERTORY, "0.00")));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Amount must be greater than zero."));
+    }
+
+    @Test
+    void rejectNegativeAmount() {
+        CreateReceiptRequest request = validRequest();
+        request.setItems(List.of(item(CollectionType.OFFERTORY, "-1.00")));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Amount must be greater than zero."));
+    }
+
+    @Test
+    void rejectCreatingSecondActiveReceiptForSameChurchAndWeek() {
+        receiptRepository.existingActiveReceipt = true;
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(validRequest()));
+
+        assertTrue(exception.getMessage().contains("An active receipt already exists"));
+        assertTrue(dataSource.connection.rolledBack);
+        assertEquals(0, receiptNumberGeneratorService.generateCount);
+    }
+
+    @Test
+    void rejectActiveReceiptBeforeConfirmation() {
+        receiptRepository.existingActiveReceiptForExistsCheck = true;
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.validateReceiptBeforeConfirmation(validRequest()));
+
+        assertTrue(exception.getMessage().contains("An active receipt already exists"));
+        assertEquals(0, receiptNumberGeneratorService.generateCount);
+        assertFalse(dataSource.connection.committed);
+    }
+
+    @Test
+    void allowBackWeekReceiptAndMarkAsLate() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekStartDate(BACK_WEEK_START);
+        request.setWeekEndDate(BACK_WEEK_END);
+        request.setLateSubmissionReason("Submitted after treasurer travel.");
+
+        ReceiptResponseDto response = receiptService.createReceipt(request);
+
+        assertTrue(response.isLateSubmission());
+        assertEquals("Submitted after treasurer travel.", response.getLateSubmissionReason());
+    }
+
+    @Test
+    void rejectBackWeekReceiptWithoutLateSubmissionReason() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekStartDate(BACK_WEEK_START);
+        request.setWeekEndDate(BACK_WEEK_END);
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Late submission reason is required for back week receipts."));
+    }
+
+    @Test
+    void generateReceiptNumberOnlyAfterValidationPasses() {
+        CreateReceiptRequest request = validRequest();
+        request.setItems(List.of(item(CollectionType.OFFERTORY, "0")));
+
+        assertThrows(ReceiptService.ReceiptException.class, () -> receiptService.createReceipt(request));
+
+        assertEquals(0, receiptNumberGeneratorService.generateCount);
+        assertEquals(0, receiptRepository.insertedReceipts.size());
+    }
+
+    @Test
+    void rollbackReceiptNumberAndReceiptInsertIfItemInsertFails() {
+        receiptRepository.failItemInsert = true;
+
+        assertThrows(ReceiptService.ReceiptException.class, () -> receiptService.createReceipt(validRequest()));
+
+        assertEquals(1, receiptNumberGeneratorService.generateCount);
+        assertTrue(dataSource.connection.rolledBack);
+        assertFalse(dataSource.connection.committed);
+    }
+
+    @Test
+    void cancelledReceiptHandlingWillBeSupportedLater() {
+        assertEquals(ReceiptStatus.CANCELLED, ReceiptStatus.valueOf("CANCELLED"));
+    }
+
+    private CreateReceiptRequest validRequest() {
+        CreateReceiptRequest request = new CreateReceiptRequest();
+        request.setChurchId(10L);
+        request.setWeekStartDate(NORMAL_WEEK_START);
+        request.setWeekEndDate(NORMAL_WEEK_END);
+        request.setSubmittedByName("Treasurer");
+        request.setItems(List.of(
+                item(CollectionType.OFFERTORY, "100.00"),
+                item(CollectionType.TITHES, "250.00")
+        ));
+        return request;
+    }
+
+    private ReceiptItemDto item(CollectionType type, String amount) {
+        return new ReceiptItemDto(type, new BigDecimal(amount), null);
+    }
+
+    private Clock fixedClock() {
+        return Clock.fixed(Instant.parse("2026-05-18T09:00:00Z"), ZoneId.of("UTC"));
+    }
+
+    private static class FakeReceiptRepository extends ReceiptRepository {
+        private boolean existingActiveReceipt;
+        private boolean existingActiveReceiptForExistsCheck;
+        private boolean failItemInsert;
+        private final List<Receipt> insertedReceipts = new ArrayList<>();
+        private final List<ReceiptItem> insertedItems = new ArrayList<>();
+        private Receipt lastReceipt;
+
+        private FakeReceiptRepository() {
+            super((DataSource) null);
+        }
+
+        @Override
+        public boolean existsActiveReceiptForChurchAndWeek(long churchId, LocalDate weekStartDate) {
+            return existingActiveReceiptForExistsCheck;
+        }
+
+        @Override
+        public Optional<Receipt> findActiveReceiptForChurchAndWeekForUpdate(long churchId, LocalDate weekStartDate,
+                                                                            Connection connection) {
+            return existingActiveReceipt ? Optional.of(new Receipt()) : Optional.empty();
+        }
+
+        @Override
+        public long insertReceipt(Receipt receipt, Connection connection) {
+            receipt.setId(100L);
+            insertedReceipts.add(receipt);
+            lastReceipt = receipt;
+            return 100L;
+        }
+
+        @Override
+        public void insertReceiptItem(long receiptId, ReceiptItem item, Connection connection) {
+            if (failItemInsert) {
+                throw new RuntimeException("Item insert failed");
+            }
+            item.setReceiptId(receiptId);
+            insertedItems.add(item);
+        }
+
+        @Override
+        public Optional<ReceiptResponseDto> findReceiptDetailsById(long receiptId) {
+            ReceiptResponseDto response = new ReceiptResponseDto();
+            response.setId(receiptId);
+            response.setReceiptNo(lastReceipt.getReceiptNo());
+            response.setChurchCode("CH010");
+            response.setChurchName("Central Church");
+            response.setRegionCode("REG001");
+            response.setRegionName("North");
+            response.setWeekStartDate(lastReceipt.getWeekStartDate());
+            response.setWeekEndDate(lastReceipt.getWeekEndDate());
+            response.setReceiptDateTime(lastReceipt.getReceiptDateTime());
+            response.setSubmittedByName(lastReceipt.getSubmittedByName());
+            response.setIssuedByFullName("System Administrator");
+            response.setStatus(lastReceipt.getStatus());
+            response.setLateSubmission(lastReceipt.isLateSubmission());
+            response.setLateSubmissionReason(lastReceipt.getLateSubmissionReason());
+            response.setItems(insertedItems.stream()
+                    .map(item -> new ReceiptItemDto(item.getCollectionType(), item.getAmount(), item.getNote()))
+                    .toList());
+            response.setTotalAmount(insertedItems.stream()
+                    .map(ReceiptItem::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+            return Optional.of(response);
+        }
+    }
+
+    private static class FakeChurchRepository extends ChurchRepository {
+        private FakeChurchRepository() {
+            super((DataSource) null);
+        }
+
+        @Override
+        public Optional<Church> findById(long id) {
+            Church church = new Church(id, "CH010", "Central Church", 2L, "REG001", "North",
+                    Church.Status.ACTIVE, LocalDateTime.now(), null);
+            return Optional.of(church);
+        }
+    }
+
+    private static class FakeReceiptNumberGeneratorService extends ReceiptNumberGeneratorService {
+        private int generateCount;
+
+        private FakeReceiptNumberGeneratorService() {
+            super(null, null, new ReceiptNumberFormatter(), Clock.systemUTC());
+        }
+
+        @Override
+        public String generateReceiptNumber(Connection connection) {
+            generateCount++;
+            return "REC26000001";
+        }
+    }
+
+    private static class FakeActivityLogService extends ActivityLogService {
+        private String createdAction;
+
+        private FakeActivityLogService() {
+            super(null);
+        }
+
+        @Override
+        public void logReceiptCreated(Long userId, ReceiptResponseDto receipt, Long churchId, BigDecimal totalAmount) {
+            createdAction = RECEIPT_CREATED;
+        }
+
+        @Override
+        public void logReceiptCreateFailed(Long userId, CreateReceiptRequest request, Church church,
+                                           BigDecimal totalAmount, boolean lateSubmission, String reason) {
+        }
+    }
+
+    private static class FakeDataSource implements DataSource {
+        private final FakeConnection connection = new FakeConnection();
+
+        @Override
+        public Connection getConnection() {
+            return connection.proxy();
+        }
+
+        @Override
+        public Connection getConnection(String username, String password) {
+            return connection.proxy();
+        }
+
+        @Override
+        public PrintWriter getLogWriter() {
+            return null;
+        }
+
+        @Override
+        public void setLogWriter(PrintWriter out) {
+        }
+
+        @Override
+        public void setLoginTimeout(int seconds) {
+        }
+
+        @Override
+        public int getLoginTimeout() {
+            return 0;
+        }
+
+        @Override
+        public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+            throw new SQLFeatureNotSupportedException();
+        }
+
+        @Override
+        public <T> T unwrap(Class<T> iface) throws SQLException {
+            throw new SQLException("Not wrapped");
+        }
+
+        @Override
+        public boolean isWrapperFor(Class<?> iface) {
+            return false;
+        }
+    }
+
+    private static class FakeConnection {
+        private boolean autoCommit = true;
+        private boolean committed;
+        private boolean rolledBack;
+
+        private Connection proxy() {
+            return (Connection) Proxy.newProxyInstance(
+                    Connection.class.getClassLoader(),
+                    new Class<?>[]{Connection.class},
+                    (proxy, method, args) -> switch (method.getName()) {
+                        case "getAutoCommit" -> autoCommit;
+                        case "setAutoCommit" -> {
+                            autoCommit = (boolean) args[0];
+                            yield null;
+                        }
+                        case "commit" -> {
+                            committed = true;
+                            yield null;
+                        }
+                        case "rollback" -> {
+                            rolledBack = true;
+                            yield null;
+                        }
+                        case "close" -> null;
+                        case "isClosed" -> false;
+                        default -> defaultValue(method.getReturnType());
+                    }
+            );
+        }
+
+        private Object defaultValue(Class<?> returnType) {
+            if (returnType == boolean.class) {
+                return false;
+            }
+            if (returnType == int.class) {
+                return 0;
+            }
+            if (returnType == long.class) {
+                return 0L;
+            }
+            return null;
+        }
+    }
+}

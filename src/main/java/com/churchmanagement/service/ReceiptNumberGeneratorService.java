@@ -76,6 +76,10 @@ public class ReceiptNumberGeneratorService {
         }
     }
 
+    public String generateReceiptNumber(Connection connection) {
+        return generate(connection).receiptNumber();
+    }
+
     private synchronized String generateWithoutJdbcTransaction() {
         int year = Year.now(clock).getValue();
         ReceiptSequence sequence = receiptSequenceRepository.lockByYear(year);

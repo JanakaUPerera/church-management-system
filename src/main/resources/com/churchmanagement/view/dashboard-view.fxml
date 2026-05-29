@@ -39,7 +39,7 @@
             <Button fx:id="dashboardButton" maxWidth="Infinity" onAction="#showDashboard" styleClass="menu-button" text="Dashboard"/>
             <Button fx:id="regionsButton" maxWidth="Infinity" onAction="#showRegions" styleClass="menu-button" text="Regions"/>
             <Button fx:id="churchesButton" maxWidth="Infinity" onAction="#showChurches" styleClass="menu-button" text="Churches"/>
-            <Button fx:id="weeklyReceiptsButton" maxWidth="Infinity" onAction="#showWeeklyReceipts" styleClass="menu-button" text="Weekly Receipts"/>
+            <Button fx:id="weeklyReceiptsButton" maxWidth="Infinity" onAction="#showWeeklyReceipts" styleClass="menu-button" text="Receipt"/>
             <Button fx:id="receiptHistoryButton" maxWidth="Infinity" onAction="#showReceiptHistory" styleClass="menu-button" text="Receipt History"/>
             <Button fx:id="reportsButton" maxWidth="Infinity" onAction="#showReports" styleClass="menu-button" text="Reports"/>
             <Button fx:id="usersButton" maxWidth="Infinity" onAction="#showUsers" styleClass="menu-button" text="Users"/>

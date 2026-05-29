@@ -1,13 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="10" styleClass="placeholder-page" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<VBox spacing="16" styleClass="module-page"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.churchmanagement.controller.ReceiptEntryController">
     <padding>
-        <Insets bottom="28" left="28" right="28" top="28"/>
+        <Insets bottom="22" left="22" right="22" top="22"/>
     </padding>
-    <Label styleClass="placeholder-title" text="Weekly Receipts"/>
-    <Label styleClass="placeholder-text" text="Weekly receipt entry will appear here."/>
+
+    <GridPane hgap="14" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints minWidth="145" prefWidth="160"/>
+            <ColumnConstraints minWidth="230" prefWidth="280"/>
+            <ColumnConstraints minWidth="145" prefWidth="160"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="230" prefWidth="320"/>
+        </columnConstraints>
+
+        <Label text="Church" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="churchComboBox" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Region" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+        <Label fx:id="regionLabel" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+        <Label text="Week Start Date" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <DatePicker fx:id="weekStartDatePicker" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Week End Date" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+        <Label fx:id="weekEndDateLabel" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+
+        <Label text="Submitted By Name" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <TextField fx:id="submittedByNameField" promptText="Name of person submitting" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="Late Submission" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+        <Label fx:id="lateSubmissionLabel" styleClass="status-badge" text="NO" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+
+        <Label fx:id="lateReasonLabel" text="Late Submission Reason" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <TextArea fx:id="lateSubmissionReasonArea" prefRowCount="3" promptText="Reason for back week submission"
+                  wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="3"/>
+    </GridPane>
+
+    <Label styleClass="section-title" text="Collection Items"/>
+
+    <GridPane hgap="12" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints minWidth="145" prefWidth="170"/>
+            <ColumnConstraints minWidth="160" prefWidth="190"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="260" prefWidth="420"/>
+        </columnConstraints>
+
+        <Label text="Offertory" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="offertoryAmountField" alignment="CENTER_RIGHT" promptText="Amount" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <TextField fx:id="offertoryNoteField" promptText="Note" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+
+        <Label text="Tithes" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="tithesAmountField" alignment="CENTER_RIGHT" promptText="Amount" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <TextField fx:id="tithesNoteField" promptText="Note" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+
+        <Label text="Other Donations" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <TextField fx:id="otherDonationsAmountField" alignment="CENTER_RIGHT" promptText="Amount" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <TextField fx:id="otherDonationsNoteField" promptText="Note" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+
+        <Label styleClass="section-title" text="Total Amount" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <Label fx:id="totalAmountLabel" alignment="CENTER_RIGHT" maxWidth="Infinity" styleClass="section-title" text="0.00"
+               GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+    </GridPane>
+
+    <HBox spacing="10">
+        <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="Save Receipt"/>
+        <Button onAction="#handleClear" text="Clear"/>
+    </HBox>
+
+    <Label fx:id="messageLabel" styleClass="form-message"/>
 </VBox>

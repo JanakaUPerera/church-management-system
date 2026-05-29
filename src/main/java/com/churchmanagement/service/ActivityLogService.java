@@ -1,7 +1,12 @@
 package com.churchmanagement.service;
 
+import com.churchmanagement.dto.CreateReceiptRequest;
+import com.churchmanagement.dto.ReceiptResponseDto;
+import com.churchmanagement.entity.Church;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ActivityLogRepository;
+
+import java.math.BigDecimal;
 
 public class ActivityLogService {
     public static final String LOGIN_SUCCESS = "LOGIN_SUCCESS";
@@ -23,6 +28,8 @@ public class ActivityLogService {
     public static final String CHURCH_ACTIVATED = "CHURCH_ACTIVATED";
     public static final String CHURCH_DEACTIVATED = "CHURCH_DEACTIVATED";
     public static final String RECEIPT_NUMBER_GENERATED = "RECEIPT_NUMBER_GENERATED";
+    public static final String RECEIPT_CREATED = "RECEIPT_CREATED";
+    public static final String RECEIPT_CREATE_FAILED = "RECEIPT_CREATE_FAILED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -63,6 +70,30 @@ public class ActivityLogService {
                 "Year: " + year + ", Sequence: " + sequence + ", Generated Receipt Number: " + receiptNumber);
     }
 
+    public void logReceiptCreated(Long userId, ReceiptResponseDto receipt, Long churchId, BigDecimal totalAmount) {
+        log(userId, RECEIPT_CREATED,
+                "receipt_no: " + receipt.getReceiptNo()
+                        + ", church_id: " + churchId
+                        + ", church_code: " + receipt.getChurchCode()
+                        + ", week_start_date: " + receipt.getWeekStartDate()
+                        + ", week_end_date: " + receipt.getWeekEndDate()
+                        + ", total_amount: " + totalAmount
+                        + ", is_late_submission: " + receipt.isLateSubmission());
+    }
+
+    public void logReceiptCreateFailed(Long userId, CreateReceiptRequest request, Church church,
+                                       BigDecimal totalAmount, boolean lateSubmission, String reason) {
+        log(userId, RECEIPT_CREATE_FAILED,
+                "receipt_no: <not generated>"
+                        + ", church_id: " + (request == null ? "" : request.getChurchId())
+                        + ", church_code: " + (church == null ? "" : church.getChurchCode())
+                        + ", week_start_date: " + (request == null ? "" : request.getWeekStartDate())
+                        + ", week_end_date: " + (request == null ? "" : request.getWeekEndDate())
+                        + ", total_amount: " + totalAmount
+                        + ", is_late_submission: " + lateSubmission
+                        + ", reason: " + reason);
+    }
+
     private void log(Long userId, String action, String details) {
         try {
             activityLogRepository.save(userId, action, details);
@@ -78,4 +109,5 @@ public class ActivityLogService {
 
         return username.strip();
     }
+
 }
