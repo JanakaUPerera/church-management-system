@@ -6,6 +6,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.util.DialogStyler;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -292,7 +293,7 @@ public class RegionController {
     }
 
     private boolean confirmDeactivate(RegionDto region) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.CONFIRMATION));
         alert.setTitle("Deactivate Region");
         alert.setHeaderText("Deactivate " + region.getRegionCode() + "?");
         alert.setContentText("This region will be hidden from active workflows, but it will not be deleted.");
@@ -336,7 +337,7 @@ public class RegionController {
 
     private void showFriendlyError(String message) {
         setMessage(message);
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle("Region Management");
         alert.setHeaderText("Unable to complete action");
         alert.setContentText(message);

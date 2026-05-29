@@ -4,6 +4,7 @@ import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.config.MigrationRunner;
 import com.churchmanagement.exception.DatabaseException;
+import com.churchmanagement.util.DialogStyler;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -53,7 +54,7 @@ public class MainApplication extends Application {
     }
 
     private void showStartupError(DatabaseException exception) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle("Database Startup Error");
         alert.setHeaderText("Unable to start the database layer");
         alert.setContentText(exception.getMessage());

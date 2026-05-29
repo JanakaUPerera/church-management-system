@@ -10,6 +10,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptService;
+import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.WeekUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -240,7 +241,7 @@ public class ReceiptEntryController {
     }
 
     private boolean confirmSummary(CreateReceiptRequest request) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.CONFIRMATION));
         alert.setTitle("Save Receipt");
         alert.setHeaderText("Confirm receipt submission");
         alert.getDialogPane().setContent(summaryGrid(request));
@@ -355,7 +356,7 @@ public class ReceiptEntryController {
 
     private void showFriendlyError(String message) {
         setMessage(message);
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle("Receipt Submission");
         alert.setHeaderText("Unable to save receipt");
         alert.setContentText(message);
@@ -363,7 +364,7 @@ public class ReceiptEntryController {
     }
 
     private void showInfo(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.INFORMATION));
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(message);

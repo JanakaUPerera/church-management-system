@@ -6,6 +6,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.ReceiptNumberGeneratorService;
+import com.churchmanagement.util.DialogStyler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -196,7 +197,7 @@ public class DashboardController {
     private void handleGenerateTestReceiptNumber() {
         try {
             String receiptNumber = receiptNumberGeneratorService.generateReceiptNumber();
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.INFORMATION));
             alert.setTitle("Generated Receipt Number");
             alert.setHeaderText("Generated Receipt Number:");
             alert.setContentText(receiptNumber);
@@ -329,7 +330,7 @@ public class DashboardController {
     }
 
     private void showError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(message);

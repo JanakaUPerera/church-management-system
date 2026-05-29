@@ -8,6 +8,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
+import com.churchmanagement.util.DialogStyler;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -299,7 +300,7 @@ public class ChurchController {
     }
 
     private boolean confirmDeactivate(ChurchDto church) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.CONFIRMATION));
         alert.setTitle("Deactivate Church");
         alert.setHeaderText("Deactivate " + church.getChurchCode() + "?");
         alert.setContentText("This church will be hidden from active workflows, but it will not be deleted.");
@@ -354,7 +355,7 @@ public class ChurchController {
 
     private void showFriendlyError(String message) {
         setMessage(message);
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle("Church Management");
         alert.setHeaderText("Unable to complete action");
         alert.setContentText(message);

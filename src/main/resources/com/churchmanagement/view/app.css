@@ -8,6 +8,19 @@
     -fx-font-size: 14px;
 }
 
+.app-dialog-pane,
+.app-dialog-pane .label,
+.app-dialog-pane .button,
+.app-dialog-pane .text-field,
+.app-dialog-pane .text-area,
+.app-dialog-pane .combo-box-base,
+.context-menu,
+.context-menu .menu-item .label,
+.tooltip,
+.combo-box-popup .list-view .list-cell {
+    -fx-font-size: 14px;
+}
+
 /* ═══════════════════════════════════════════════
    CONTROL SIZING  (applied before appearance rules)
    ═══════════════════════════════════════════════ */
