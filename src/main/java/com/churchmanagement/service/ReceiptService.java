@@ -80,6 +80,7 @@ public class ReceiptService {
                     church.getId(), request.getWeekStartDate(), connection).isPresent()) {
                 throw new ReceiptException(DUPLICATE_ACTIVE_RECEIPT_MESSAGE);
             }
+            validateCorrectionReceipt(request, church, connection);
 
             LocalDateTime now = LocalDateTime.now(clock);
             Receipt receipt = buildReceipt(request, church, currentUser.getUserId(), lateSubmission, now);
@@ -163,8 +164,26 @@ public class ReceiptService {
         receipt.setStatus(ReceiptStatus.ACTIVE);
         receipt.setLateSubmission(lateSubmission);
         receipt.setLateSubmissionReason(lateSubmission ? request.getLateSubmissionReason().strip() : null);
+        receipt.setCorrectedFromReceiptId(request.getCorrectedFromReceiptId());
         receipt.setCreatedAt(now);
         return receipt;
+    }
+
+    private void validateCorrectionReceipt(CreateReceiptRequest request, Church church, Connection connection) {
+        Long correctedFromReceiptId = request.getCorrectedFromReceiptId();
+        if (correctedFromReceiptId == null) {
+            return;
+        }
+
+        Receipt correctedReceipt = receiptRepository.findReceiptByIdForUpdate(correctedFromReceiptId, connection)
+                .orElseThrow(() -> new ReceiptException("Corrected receipt could not be found."));
+        if (correctedReceipt.getStatus() != ReceiptStatus.CANCELLED) {
+            throw new ReceiptException("Corrected receipt must be cancelled before creating a new receipt.");
+        }
+        if (!church.getId().equals(correctedReceipt.getChurchId())
+                || !request.getWeekStartDate().equals(correctedReceipt.getWeekStartDate())) {
+            throw new ReceiptException("Corrected receipt must belong to the same church and week.");
+        }
     }
 
     private List<ReceiptItem> toReceiptItems(List<ReceiptItemDto> itemDtos) {

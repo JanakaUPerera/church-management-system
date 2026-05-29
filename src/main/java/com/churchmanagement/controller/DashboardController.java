@@ -5,7 +5,6 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
-import com.churchmanagement.service.ReceiptNumberGeneratorService;
 import com.churchmanagement.util.DialogStyler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -27,8 +26,9 @@ import java.util.List;
 import java.util.Optional;
 
 public class DashboardController {
+    private static DashboardController activeController;
+
     private final ActivityLogService activityLogService = new ActivityLogService();
-    private final ReceiptNumberGeneratorService receiptNumberGeneratorService = new ReceiptNumberGeneratorService();
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
     private List<MenuDefinition> menuDefinitions;
@@ -105,6 +105,7 @@ public class DashboardController {
         }
 
         currentUser = user.get();
+        activeController = this;
         permissionGuard = new PermissionGuard(currentUser);
         fullNameLabel.setText(currentUser.getFullName());
         roleNameLabel.setText(currentUser.getRoleName());
@@ -191,20 +192,6 @@ public class DashboardController {
     @FXML
     private void showSettings() {
         loadMenu(findMenu(settingsButton));
-    }
-
-    @FXML
-    private void handleGenerateTestReceiptNumber() {
-        try {
-            String receiptNumber = receiptNumberGeneratorService.generateReceiptNumber();
-            Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.INFORMATION));
-            alert.setTitle("Generated Receipt Number");
-            alert.setHeaderText("Generated Receipt Number:");
-            alert.setContentText(receiptNumber);
-            alert.showAndWait();
-        } catch (RuntimeException exception) {
-            showError("Unable to generate receipt number", exception.getMessage());
-        }
     }
 
     @FXML
@@ -335,6 +322,15 @@ public class DashboardController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public static void openReceiptCorrection(long cancelledReceiptId) {
+        if (activeController == null) {
+            return;
+        }
+
+        ReceiptEntryController.prepareCorrection(cancelledReceiptId);
+        activeController.loadMenu(activeController.findMenu(activeController.weeklyReceiptsButton));
     }
 
     private record MenuDefinition(String title, String viewPath, Button button, String activityAction,

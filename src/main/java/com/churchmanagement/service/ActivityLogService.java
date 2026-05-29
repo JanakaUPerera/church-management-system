@@ -30,6 +30,8 @@ public class ActivityLogService {
     public static final String RECEIPT_NUMBER_GENERATED = "RECEIPT_NUMBER_GENERATED";
     public static final String RECEIPT_CREATED = "RECEIPT_CREATED";
     public static final String RECEIPT_CREATE_FAILED = "RECEIPT_CREATE_FAILED";
+    public static final String RECEIPT_CANCELLED = "RECEIPT_CANCELLED";
+    public static final String CORRECTED_RECEIPT_CREATED = "CORRECTED_RECEIPT_CREATED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -71,14 +73,27 @@ public class ActivityLogService {
     }
 
     public void logReceiptCreated(Long userId, ReceiptResponseDto receipt, Long churchId, BigDecimal totalAmount) {
-        log(userId, RECEIPT_CREATED,
+        String action = receipt.getCorrectedFromReceiptId() == null ? RECEIPT_CREATED : CORRECTED_RECEIPT_CREATED;
+        log(userId, action,
                 "receipt_no: " + receipt.getReceiptNo()
                         + ", church_id: " + churchId
                         + ", church_code: " + receipt.getChurchCode()
                         + ", week_start_date: " + receipt.getWeekStartDate()
                         + ", week_end_date: " + receipt.getWeekEndDate()
                         + ", total_amount: " + totalAmount
-                        + ", is_late_submission: " + receipt.isLateSubmission());
+                        + ", is_late_submission: " + receipt.isLateSubmission()
+                        + ", corrected_from_receipt_id: " + nullToBlank(receipt.getCorrectedFromReceiptId())
+                        + ", corrected_from_receipt_no: " + nullToBlank(receipt.getCorrectedFromReceiptNo()));
+    }
+
+    public void logReceiptCancelled(Long userId, ReceiptResponseDto receipt, String cancelReason) {
+        log(userId, RECEIPT_CANCELLED,
+                "receipt_no: " + receipt.getReceiptNo()
+                        + ", receipt_id: " + receipt.getId()
+                        + ", church_code: " + receipt.getChurchCode()
+                        + ", week_start_date: " + receipt.getWeekStartDate()
+                        + ", week_end_date: " + receipt.getWeekEndDate()
+                        + ", reason: " + cancelReason);
     }
 
     public void logReceiptCreateFailed(Long userId, CreateReceiptRequest request, Church church,
@@ -108,6 +123,10 @@ public class ActivityLogService {
         }
 
         return username.strip();
+    }
+
+    private String nullToBlank(Object value) {
+        return value == null ? "" : value.toString();
     }
 
 }

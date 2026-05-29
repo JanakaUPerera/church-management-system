@@ -261,8 +261,48 @@ class ReceiptServiceTest {
     }
 
     @Test
-    void cancelledReceiptHandlingWillBeSupportedLater() {
-        assertEquals(ReceiptStatus.CANCELLED, ReceiptStatus.valueOf("CANCELLED"));
+    void allowCorrectedReceiptAfterCancellation() {
+        Receipt cancelledReceipt = cancelledReceiptForCorrection();
+        receiptRepository.correctionReceipt = cancelledReceipt;
+        CreateReceiptRequest request = validRequest();
+        request.setCorrectedFromReceiptId(cancelledReceipt.getId());
+
+        ReceiptResponseDto response = receiptService.createReceipt(request);
+
+        assertEquals(cancelledReceipt.getId(), receiptRepository.insertedReceipts.getFirst().getCorrectedFromReceiptId());
+        assertEquals(cancelledReceipt.getId(), response.getCorrectedFromReceiptId());
+        assertEquals("REC26000001", response.getReceiptNo());
+        assertEquals(ActivityLogService.CORRECTED_RECEIPT_CREATED, activityLogService.createdAction);
+    }
+
+    @Test
+    void rejectCorrectedReceiptThatIsNotCancelled() {
+        Receipt activeReceipt = cancelledReceiptForCorrection();
+        activeReceipt.setStatus(ReceiptStatus.ACTIVE);
+        receiptRepository.correctionReceipt = activeReceipt;
+        CreateReceiptRequest request = validRequest();
+        request.setCorrectedFromReceiptId(activeReceipt.getId());
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("must be cancelled"));
+        assertEquals(0, receiptRepository.insertedReceipts.size());
+    }
+
+    @Test
+    void receiptNumberIsNotReusedForCorrectedReceipt() {
+        ReceiptResponseDto original = receiptService.createReceipt(validRequest());
+        receiptRepository.insertedItems.clear();
+        receiptRepository.correctionReceipt = cancelledReceiptForCorrection();
+        CreateReceiptRequest correction = validRequest();
+        correction.setCorrectedFromReceiptId(receiptRepository.correctionReceipt.getId());
+
+        ReceiptResponseDto corrected = receiptService.createReceipt(correction);
+
+        assertEquals("REC26000001", original.getReceiptNo());
+        assertEquals("REC26000002", corrected.getReceiptNo());
+        assertFalse(original.getReceiptNo().equals(corrected.getReceiptNo()));
     }
 
     private CreateReceiptRequest validRequest() {
@@ -282,6 +322,19 @@ class ReceiptServiceTest {
         return new ReceiptItemDto(type, new BigDecimal(amount), null);
     }
 
+    private Receipt cancelledReceiptForCorrection() {
+        Receipt receipt = new Receipt();
+        receipt.setId(50L);
+        receipt.setReceiptNo("REC26000000");
+        receipt.setChurchId(10L);
+        receipt.setRegionId(2L);
+        receipt.setWeekStartDate(NORMAL_WEEK_START);
+        receipt.setWeekEndDate(NORMAL_WEEK_END);
+        receipt.setStatus(ReceiptStatus.CANCELLED);
+        receipt.setCreatedAt(LocalDateTime.now());
+        return receipt;
+    }
+
     private Clock fixedClock() {
         return Clock.fixed(Instant.parse("2026-05-18T09:00:00Z"), ZoneId.of("UTC"));
     }
@@ -290,6 +343,7 @@ class ReceiptServiceTest {
         private boolean existingActiveReceipt;
         private boolean existingActiveReceiptForExistsCheck;
         private boolean failItemInsert;
+        private Receipt correctionReceipt;
         private final List<Receipt> insertedReceipts = new ArrayList<>();
         private final List<ReceiptItem> insertedItems = new ArrayList<>();
         private Receipt lastReceipt;
@@ -307,6 +361,13 @@ class ReceiptServiceTest {
         public Optional<Receipt> findActiveReceiptForChurchAndWeekForUpdate(long churchId, LocalDate weekStartDate,
                                                                             Connection connection) {
             return existingActiveReceipt ? Optional.of(new Receipt()) : Optional.empty();
+        }
+
+        @Override
+        public Optional<Receipt> findReceiptByIdForUpdate(long receiptId, Connection connection) {
+            return correctionReceipt != null && correctionReceipt.getId().equals(receiptId)
+                    ? Optional.of(correctionReceipt)
+                    : Optional.empty();
         }
 
         @Override
@@ -343,6 +404,8 @@ class ReceiptServiceTest {
             response.setStatus(lastReceipt.getStatus());
             response.setLateSubmission(lastReceipt.isLateSubmission());
             response.setLateSubmissionReason(lastReceipt.getLateSubmissionReason());
+            response.setCorrectedFromReceiptId(lastReceipt.getCorrectedFromReceiptId());
+            response.setCorrectedFromReceiptNo(lastReceipt.getCorrectedFromReceiptId() == null ? null : "REC26000000");
             response.setItems(insertedItems.stream()
                     .map(item -> new ReceiptItemDto(item.getCollectionType(), item.getAmount(), item.getNote()))
                     .toList());
@@ -376,7 +439,7 @@ class ReceiptServiceTest {
         @Override
         public String generateReceiptNumber(Connection connection) {
             generateCount++;
-            return "REC26000001";
+            return "REC2600000" + generateCount;
         }
     }
 
@@ -389,7 +452,7 @@ class ReceiptServiceTest {
 
         @Override
         public void logReceiptCreated(Long userId, ReceiptResponseDto receipt, Long churchId, BigDecimal totalAmount) {
-            createdAction = RECEIPT_CREATED;
+            createdAction = receipt.getCorrectedFromReceiptId() == null ? RECEIPT_CREATED : CORRECTED_RECEIPT_CREATED;
         }
 
         @Override

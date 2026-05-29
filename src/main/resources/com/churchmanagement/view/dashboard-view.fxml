@@ -25,7 +25,6 @@
                 <Label fx:id="fullNameLabel" styleClass="header-user-name"/>
                 <Label fx:id="roleNameLabel" styleClass="header-user-role"/>
             </VBox>
-            <Button onAction="#handleGenerateTestReceiptNumber" styleClass="primary-button" text="Generate Test Receipt Number"/>
             <Button onAction="#handleLogout" styleClass="logout-button" text="Logout"/>
         </HBox>
     </top>

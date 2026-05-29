@@ -23,6 +23,12 @@ public class ReceiptResponseDto {
     private ReceiptStatus status;
     private boolean lateSubmission;
     private String lateSubmissionReason;
+    private Long correctedFromReceiptId;
+    private String correctedFromReceiptNo;
+    private String correctionReceiptNo;
+    private String cancelReason;
+    private String cancelledByFullName;
+    private LocalDateTime cancelledAt;
     private BigDecimal totalAmount = BigDecimal.ZERO;
     private List<ReceiptItemDto> items = new ArrayList<>();
 
@@ -136,6 +142,54 @@ public class ReceiptResponseDto {
 
     public void setLateSubmissionReason(String lateSubmissionReason) {
         this.lateSubmissionReason = lateSubmissionReason;
+    }
+
+    public Long getCorrectedFromReceiptId() {
+        return correctedFromReceiptId;
+    }
+
+    public void setCorrectedFromReceiptId(Long correctedFromReceiptId) {
+        this.correctedFromReceiptId = correctedFromReceiptId;
+    }
+
+    public String getCorrectedFromReceiptNo() {
+        return correctedFromReceiptNo;
+    }
+
+    public void setCorrectedFromReceiptNo(String correctedFromReceiptNo) {
+        this.correctedFromReceiptNo = correctedFromReceiptNo;
+    }
+
+    public String getCorrectionReceiptNo() {
+        return correctionReceiptNo;
+    }
+
+    public void setCorrectionReceiptNo(String correctionReceiptNo) {
+        this.correctionReceiptNo = correctionReceiptNo;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public String getCancelledByFullName() {
+        return cancelledByFullName;
+    }
+
+    public void setCancelledByFullName(String cancelledByFullName) {
+        this.cancelledByFullName = cancelledByFullName;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 
     public BigDecimal getTotalAmount() {

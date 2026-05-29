@@ -5,11 +5,14 @@ import com.churchmanagement.dto.ReceiptItemDto;
 import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.enums.CollectionType;
+import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptService;
+import com.churchmanagement.repository.ReceiptRepository;
+import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.WeekUtil;
 import javafx.collections.FXCollections;
@@ -45,10 +48,13 @@ public class ReceiptEntryController {
 
     private final ChurchService churchService = new ChurchService();
     private final ReceiptService receiptService = new ReceiptService();
+    private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final ObservableList<Church> activeChurches = FXCollections.observableArrayList();
+    private static Long pendingCorrectionReceiptId;
 
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
+    private Long correctedFromReceiptId;
 
     @FXML private ComboBox<Church> churchComboBox;
     @FXML private Label regionLabel;
@@ -57,6 +63,8 @@ public class ReceiptEntryController {
     @FXML private Label lateSubmissionLabel;
     @FXML private Label lateReasonLabel;
     @FXML private TextArea lateSubmissionReasonArea;
+    @FXML private Label correctedFromLabel;
+    @FXML private Label correctedFromValueLabel;
     @FXML private TextField submittedByNameField;
     @FXML private TextField offertoryAmountField;
     @FXML private TextField offertoryNoteField;
@@ -89,6 +97,7 @@ public class ReceiptEntryController {
         loadActiveChurches();
         weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
         updateWeekState();
+        loadPendingCorrectionIfAvailable();
     }
 
     @FXML
@@ -125,11 +134,13 @@ public class ReceiptEntryController {
         churchComboBox.setItems(activeChurches);
         churchComboBox.setCellFactory(listView -> new ChurchListCell());
         churchComboBox.setButtonCell(new ChurchListCell());
+        DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
         churchComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateSelectedRegion());
         weekStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> updateWeekState());
         offertoryAmountField.textProperty().addListener((observable, oldValue, newValue) -> updateTotalAmount());
         tithesAmountField.textProperty().addListener((observable, oldValue, newValue) -> updateTotalAmount());
         otherDonationsAmountField.textProperty().addListener((observable, oldValue, newValue) -> updateTotalAmount());
+        updateCorrectionVisibility();
         updateTotalAmount();
     }
 
@@ -176,8 +187,78 @@ public class ReceiptEntryController {
         request.setWeekEndDate(WeekUtil.getSundayForMonday(weekStart));
         request.setSubmittedByName(submittedByNameField.getText());
         request.setLateSubmissionReason(lateSubmissionReasonArea.getText());
+        request.setCorrectedFromReceiptId(correctedFromReceiptId);
         request.setItems(buildItems());
         return request;
+    }
+
+    private void loadPendingCorrectionIfAvailable() {
+        Long receiptId = consumePendingCorrectionReceiptId();
+        if (receiptId == null) {
+            updateCorrectionVisibility();
+            return;
+        }
+
+        try {
+            ReceiptResponseDto receipt = receiptRepository.findReceiptDetailsById(receiptId)
+                    .orElseThrow(() -> new ReceiptService.ReceiptException("Cancelled receipt could not be loaded."));
+            if (receipt.getStatus() != ReceiptStatus.CANCELLED) {
+                throw new ReceiptService.ReceiptException("Only cancelled receipts can be re-created.");
+            }
+            applyCorrectionReceipt(receipt);
+        } catch (RuntimeException exception) {
+            showFriendlyError(exception.getMessage());
+            updateCorrectionVisibility();
+        }
+    }
+
+    private void applyCorrectionReceipt(ReceiptResponseDto receipt) {
+        correctedFromReceiptId = receipt.getId();
+        correctedFromValueLabel.setText(receipt.getReceiptNo());
+        selectChurch(receipt);
+        weekStartDatePicker.setValue(receipt.getWeekStartDate());
+        submittedByNameField.setText(receipt.getSubmittedByName());
+        lateSubmissionReasonArea.setText(receipt.getLateSubmissionReason());
+        clearItemFields();
+        for (ReceiptItemDto item : receipt.getItems()) {
+            applyItem(item);
+        }
+        updateTotalAmount();
+        updateWeekState();
+        updateCorrectionVisibility();
+        setMessage("Re-creating receipt from cancelled receipt " + receipt.getReceiptNo() + ".");
+    }
+
+    private void selectChurch(ReceiptResponseDto receipt) {
+        activeChurches.stream()
+                .filter(church -> church.getChurchCode().equals(receipt.getChurchCode()))
+                .findFirst()
+                .ifPresent(church -> churchComboBox.getSelectionModel().select(church));
+    }
+
+    private void applyItem(ReceiptItemDto item) {
+        switch (item.getCollectionType()) {
+            case OFFERTORY -> {
+                offertoryAmountField.setText(item.getAmount().toPlainString());
+                offertoryNoteField.setText(item.getNote());
+            }
+            case TITHES -> {
+                tithesAmountField.setText(item.getAmount().toPlainString());
+                tithesNoteField.setText(item.getNote());
+            }
+            case OTHER_DONATIONS -> {
+                otherDonationsAmountField.setText(item.getAmount().toPlainString());
+                otherDonationsNoteField.setText(item.getNote());
+            }
+        }
+    }
+
+    private void updateCorrectionVisibility() {
+        boolean correcting = correctedFromReceiptId != null;
+        correctedFromLabel.setVisible(correcting);
+        correctedFromLabel.setManaged(correcting);
+        correctedFromValueLabel.setVisible(correcting);
+        correctedFromValueLabel.setManaged(correcting);
     }
 
     private List<ReceiptItemDto> buildItems() {
@@ -268,7 +349,12 @@ public class ReceiptEntryController {
         container.setPrefWidth(430);
         container.getChildren().addAll(
                 new Label("Church: " + (church == null ? "" : church.getChurchCode() + " - " + church.getChurchName())),
-                new Label("Week: " + request.getWeekStartDate() + " to " + request.getWeekEndDate()),
+                new Label("Week: " + request.getWeekStartDate() + " to " + request.getWeekEndDate())
+        );
+        if (correctedFromReceiptId != null) {
+            container.getChildren().add(new Label("Corrected from: " + correctedReceiptText()));
+        }
+        container.getChildren().addAll(
                 itemGrid(request, total),
                 new Label("Late submission: " + (WeekUtil.isBackWeek(request.getWeekStartDate(), LocalDate.now()) ? "YES" : "NO"))
         );
@@ -326,14 +412,22 @@ public class ReceiptEntryController {
         weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
         submittedByNameField.clear();
         lateSubmissionReasonArea.clear();
+        correctedFromReceiptId = null;
+        correctedFromValueLabel.setText("-");
+        clearItemFields();
+        updateTotalAmount();
+        updateWeekState();
+        updateCorrectionVisibility();
+        setMessage("");
+    }
+
+    private void clearItemFields() {
         offertoryAmountField.clear();
         offertoryNoteField.clear();
         tithesAmountField.clear();
         tithesNoteField.clear();
         otherDonationsAmountField.clear();
         otherDonationsNoteField.clear();
-        updateTotalAmount();
-        updateWeekState();
     }
 
     private void setFormDisabled(boolean disabled) {
@@ -377,5 +471,19 @@ public class ReceiptEntryController {
             super.updateItem(church, empty);
             setText(empty || church == null ? null : church.getChurchCode() + " - " + church.getChurchName());
         }
+    }
+
+    private String correctedReceiptText() {
+        return correctedFromReceiptId == null ? "-" : correctedFromValueLabel.getText();
+    }
+
+    public static void prepareCorrection(long receiptId) {
+        pendingCorrectionReceiptId = receiptId;
+    }
+
+    private static Long consumePendingCorrectionReceiptId() {
+        Long receiptId = pendingCorrectionReceiptId;
+        pendingCorrectionReceiptId = null;
+        return receiptId;
     }
 }

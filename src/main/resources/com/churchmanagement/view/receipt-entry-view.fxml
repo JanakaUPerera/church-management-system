@@ -46,6 +46,9 @@
         <Label fx:id="lateReasonLabel" text="Late Submission Reason" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
         <TextArea fx:id="lateSubmissionReasonArea" prefRowCount="3" promptText="Reason for back week submission"
                   wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="3"/>
+
+        <Label fx:id="correctedFromLabel" text="Corrected From" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+        <Label fx:id="correctedFromValueLabel" text="-" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="4"/>
     </GridPane>
 
     <Label styleClass="section-title" text="Collection Items"/>

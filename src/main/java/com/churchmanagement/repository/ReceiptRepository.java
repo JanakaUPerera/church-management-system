@@ -80,6 +80,48 @@ public class ReceiptRepository {
         }
     }
 
+    public Optional<Receipt> findReceiptByIdForUpdate(long receiptId, Connection connection) {
+        String sql = """
+                SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
+                       receipt_datetime, submitted_by_name, issued_by_user_id, status,
+                       is_late_submission, late_submission_reason, corrected_from_receipt_id,
+                       created_at, updated_at
+                FROM receipts
+                WHERE id = ?
+                FOR UPDATE
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, receiptId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Optional.of(mapReceipt(resultSet));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to lock receipt.", exception);
+        }
+    }
+
+    public void updateReceiptStatus(long receiptId, ReceiptStatus status, LocalDateTime updatedAt,
+                                    Connection connection) {
+        String sql = """
+                UPDATE receipts
+                SET status = ?, updated_at = ?
+                WHERE id = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status.name());
+            statement.setTimestamp(2, Timestamp.valueOf(updatedAt));
+            statement.setLong(3, receiptId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to update receipt status.", exception);
+        }
+    }
+
     public long insertReceipt(Receipt receipt, Connection connection) {
         String sql = """
                 INSERT INTO receipts (
@@ -165,6 +207,61 @@ public class ReceiptRepository {
         }
     }
 
+    public List<ReceiptResponseDto> searchReceipts(Long churchId, Long regionId, LocalDate weekStartDate,
+                                                   String receiptNo, ReceiptStatus status) {
+        StringBuilder sql = new StringBuilder(baseReceiptDetailsSelect()).append(" WHERE 1 = 1 ");
+        List<Object> parameters = new ArrayList<>();
+
+        if (churchId != null) {
+            sql.append("AND r.church_id = ? ");
+            parameters.add(churchId);
+        }
+        if (regionId != null) {
+            sql.append("AND r.region_id = ? ");
+            parameters.add(regionId);
+        }
+        if (weekStartDate != null) {
+            sql.append("AND r.week_start_date = ? ");
+            parameters.add(Date.valueOf(weekStartDate));
+        }
+        if (receiptNo != null && !receiptNo.isBlank()) {
+            sql.append("AND r.receipt_no LIKE ? ");
+            parameters.add("%" + receiptNo.strip() + "%");
+        }
+        if (status != null) {
+            sql.append("AND r.status = ? ");
+            parameters.add(status.name());
+        }
+
+        sql.append(receiptDetailsGroupBy()).append(" ORDER BY r.receipt_datetime DESC");
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, parameters);
+            return mapReceiptResponses(statement);
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to search receipts.", exception);
+        }
+    }
+
+    public List<ReceiptResponseDto> findCancelledReceiptsForCorrection(long churchId, LocalDate weekStartDate) {
+        String sql = baseReceiptDetailsSelect()
+                + """
+                 WHERE r.church_id = ? AND r.week_start_date = ? AND r.status = 'CANCELLED'
+                """
+                + receiptDetailsGroupBy()
+                + " ORDER BY r.receipt_datetime DESC";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, churchId);
+            statement.setDate(2, Date.valueOf(weekStartDate));
+            return mapReceiptResponses(statement);
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load cancelled receipts.", exception);
+        }
+    }
+
     public Optional<ReceiptResponseDto> findReceiptDetailsById(long receiptId) {
         String sql = baseReceiptDetailsSelect() + " WHERE r.id = ?" + receiptDetailsGroupBy();
 
@@ -239,6 +336,13 @@ public class ReceiptRepository {
                 dto.setStatus(ReceiptStatus.valueOf(resultSet.getString("status")));
                 dto.setLateSubmission(resultSet.getBoolean("is_late_submission"));
                 dto.setLateSubmissionReason(resultSet.getString("late_submission_reason"));
+                dto.setCorrectedFromReceiptId(nullableLong(resultSet, "corrected_from_receipt_id"));
+                dto.setCorrectedFromReceiptNo(resultSet.getString("corrected_from_receipt_no"));
+                dto.setCorrectionReceiptNo(resultSet.getString("correction_receipt_no"));
+                dto.setCancelReason(resultSet.getString("cancel_reason"));
+                dto.setCancelledByFullName(resultSet.getString("cancelled_by_full_name"));
+                Timestamp cancelledAt = resultSet.getTimestamp("cancelled_at");
+                dto.setCancelledAt(cancelledAt == null ? null : cancelledAt.toLocalDateTime());
                 dto.setTotalAmount(resultSet.getBigDecimal("total_amount"));
                 receipts.add(dto);
             }
@@ -272,12 +376,20 @@ public class ReceiptRepository {
                 SELECT r.id, r.receipt_no, c.church_code, c.church_name, rg.region_code, rg.region_name,
                        r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
                        u.full_name AS issued_by_full_name, r.status, r.is_late_submission,
-                       r.late_submission_reason, COALESCE(SUM(ri.amount), 0) AS total_amount
+                       r.late_submission_reason, r.corrected_from_receipt_id,
+                       corrected.receipt_no AS corrected_from_receipt_no,
+                       correction.receipt_no AS correction_receipt_no,
+                       rc.cancel_reason, cancelled_by.full_name AS cancelled_by_full_name,
+                       rc.cancelled_at, COALESCE(SUM(ri.amount), 0) AS total_amount
                 FROM receipts r
                 JOIN churches c ON c.id = r.church_id
                 JOIN regions rg ON rg.id = r.region_id
                 JOIN users u ON u.id = r.issued_by_user_id
                 LEFT JOIN receipt_items ri ON ri.receipt_id = r.id
+                LEFT JOIN receipts corrected ON corrected.id = r.corrected_from_receipt_id
+                LEFT JOIN receipts correction ON correction.corrected_from_receipt_id = r.id
+                LEFT JOIN receipt_cancellations rc ON rc.receipt_id = r.id
+                LEFT JOIN users cancelled_by ON cancelled_by.id = rc.cancelled_by_user_id
                 """;
     }
 
@@ -285,7 +397,9 @@ public class ReceiptRepository {
         return """
                  GROUP BY r.id, r.receipt_no, c.church_code, c.church_name, rg.region_code, rg.region_name,
                           r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
-                          u.full_name, r.status, r.is_late_submission, r.late_submission_reason
+                          u.full_name, r.status, r.is_late_submission, r.late_submission_reason,
+                          r.corrected_from_receipt_id, corrected.receipt_no, correction.receipt_no,
+                          rc.cancel_reason, cancelled_by.full_name, rc.cancelled_at
                 """;
     }
 

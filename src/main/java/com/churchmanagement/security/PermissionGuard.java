@@ -17,6 +17,7 @@ public class PermissionGuard {
         LEGACY_PERMISSION_ALIASES.put("church.delete", new String[]{"CHURCH_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("receipt.create", new String[]{"RECEIPT_CREATE"});
         LEGACY_PERMISSION_ALIASES.put("receipt.view", new String[]{"RECEIPT_CREATE", "RECEIPT_CANCEL"});
+        LEGACY_PERMISSION_ALIASES.put("receipt.cancel", new String[]{"RECEIPT_CANCEL"});
         LEGACY_PERMISSION_ALIASES.put("report.view", new String[]{"REPORT_VIEW"});
         LEGACY_PERMISSION_ALIASES.put("user.manage", new String[]{"USER_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("role.manage", new String[]{"ROLE_MANAGE"});

@@ -10,6 +10,7 @@ public class CreateReceiptRequest {
     private LocalDate weekEndDate;
     private String submittedByName;
     private String lateSubmissionReason;
+    private Long correctedFromReceiptId;
     private List<ReceiptItemDto> items = new ArrayList<>();
 
     public Long getChurchId() {
@@ -50,6 +51,14 @@ public class CreateReceiptRequest {
 
     public void setLateSubmissionReason(String lateSubmissionReason) {
         this.lateSubmissionReason = lateSubmissionReason;
+    }
+
+    public Long getCorrectedFromReceiptId() {
+        return correctedFromReceiptId;
+    }
+
+    public void setCorrectedFromReceiptId(Long correctedFromReceiptId) {
+        this.correctedFromReceiptId = correctedFromReceiptId;
     }
 
     public List<ReceiptItemDto> getItems() {
