@@ -43,7 +43,7 @@
         <Label text="Status" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
         <ComboBox fx:id="statusComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
         <Label text="Week End" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
-        <Label fx:id="weekEndDateLabel" text="-" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
+        <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
 
         <HBox spacing="8" GridPane.columnIndex="4" GridPane.columnSpan="2" GridPane.rowIndex="2">
             <Button onAction="#handleSearch" styleClass="primary-button" text="Search"/>
@@ -57,7 +57,7 @@
             <TableColumn fx:id="churchColumn" prefWidth="230" text="Church"/>
             <TableColumn fx:id="regionColumn" prefWidth="95" text="Region"/>
             <TableColumn fx:id="weekColumn" prefWidth="205" text="Week"/>
-            <TableColumn fx:id="statusColumn" prefWidth="105" text="Status"/>
+            <TableColumn fx:id="statusColumn" prefWidth="145" text="Status"/>
             <TableColumn fx:id="totalColumn" prefWidth="120" text="Total"/>
             <TableColumn fx:id="actionColumn" maxWidth="180" minWidth="170" prefWidth="180" resizable="false" text="Action"/>
         </columns>

@@ -31,12 +31,12 @@
         <Label text="Church" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
         <ComboBox fx:id="churchComboBox" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
         <Label text="Region" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-        <Label fx:id="regionLabel" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+        <Label fx:id="regionLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
 
         <Label text="Week Start Date" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
         <DatePicker fx:id="weekStartDatePicker" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
         <Label text="Week End Date" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-        <Label fx:id="weekEndDateLabel" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+        <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
 
         <Label text="Submitted By Name" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
         <TextField fx:id="submittedByNameField" promptText="Name of person submitting" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
@@ -48,7 +48,7 @@
                   wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="3"/>
 
         <Label fx:id="correctedFromLabel" text="Corrected From" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-        <Label fx:id="correctedFromValueLabel" text="-" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="4"/>
+        <Label fx:id="correctedFromValueLabel" styleClass="value-label" text="-" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="4"/>
     </GridPane>
 
     <Label styleClass="section-title" text="Collection Items"/>

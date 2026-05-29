@@ -232,7 +232,7 @@ public class ReceiptHistoryController {
 
     private VBox detailsContent(ReceiptResponseDto receipt) {
         VBox container = new VBox(12);
-        container.setPrefWidth(620);
+        container.setPrefWidth(800);
         container.getChildren().addAll(detailsGrid(receipt), itemsGrid(receipt));
         return container;
     }
@@ -273,10 +273,12 @@ public class ReceiptHistoryController {
         grid.add(new Label(labelOne), 0, row);
         Label valueOneLabel = new Label(valueOne);
         valueOneLabel.setWrapText(true);
+        valueOneLabel.getStyleClass().add("value-label");
         grid.add(valueOneLabel, 1, row);
         grid.add(new Label(labelTwo), 2, row);
         Label valueTwoLabel = new Label(valueTwo);
         valueTwoLabel.setWrapText(true);
+        valueTwoLabel.getStyleClass().add("value-label");
         grid.add(valueTwoLabel, 3, row);
     }
 
@@ -303,12 +305,18 @@ public class ReceiptHistoryController {
 
         int row = 1;
         for (ReceiptItemDto item : receipt.getItems()) {
-            grid.add(new Label(item.getCollectionType().getDisplayLabel()), 0, row);
+            Label itemNameLabel = new Label(item.getCollectionType().getDisplayLabel());
+            itemNameLabel.getStyleClass().add("value-label");
+            grid.add(itemNameLabel, 0, row);
             Label amountLabel = new Label(formatAmount(item.getAmount()));
             amountLabel.setMaxWidth(Double.MAX_VALUE);
             amountLabel.setAlignment(Pos.CENTER_RIGHT);
+            amountLabel.getStyleClass().add("value-label");
             grid.add(amountLabel, 1, row);
-            grid.add(new Label(nullToDash(item.getNote())), 2, row);
+            Label noteLabel = new Label(nullToDash(item.getNote()));
+            noteLabel.setWrapText(true);
+            noteLabel.getStyleClass().add("value-label");
+            grid.add(noteLabel, 2, row);
             row++;
         }
 
@@ -488,7 +496,7 @@ public class ReceiptHistoryController {
 
     private static class StatusBadgeCell extends TableCell<ReceiptResponseDto, String> {
         private final Label badge = new Label();
-        private final Label correctionLabel = new Label("C");
+        private final Label correctionLabel = new Label("RC");
         private final HBox container = new HBox(6, badge, correctionLabel);
 
         private StatusBadgeCell() {

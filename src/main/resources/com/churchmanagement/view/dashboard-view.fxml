@@ -64,9 +64,9 @@
             <padding>
                 <Insets bottom="8" left="18" right="18" top="8"/>
             </padding>
-            <Label fx:id="statusLabel" text="Ready"/>
+            <Label fx:id="statusLabel" styleClass="value-label" text="Ready"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="dateLabel"/>
+            <Label fx:id="dateLabel" styleClass="value-label"/>
         </HBox>
     </bottom>
 </BorderPane>
