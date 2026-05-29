@@ -5,6 +5,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
+import com.churchmanagement.service.ReceiptNumberGeneratorService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -26,6 +27,7 @@ import java.util.Optional;
 
 public class DashboardController {
     private final ActivityLogService activityLogService = new ActivityLogService();
+    private final ReceiptNumberGeneratorService receiptNumberGeneratorService = new ReceiptNumberGeneratorService();
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
     private List<MenuDefinition> menuDefinitions;
@@ -188,6 +190,20 @@ public class DashboardController {
     @FXML
     private void showSettings() {
         loadMenu(findMenu(settingsButton));
+    }
+
+    @FXML
+    private void handleGenerateTestReceiptNumber() {
+        try {
+            String receiptNumber = receiptNumberGeneratorService.generateReceiptNumber();
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Generated Receipt Number");
+            alert.setHeaderText("Generated Receipt Number:");
+            alert.setContentText(receiptNumber);
+            alert.showAndWait();
+        } catch (RuntimeException exception) {
+            showError("Unable to generate receipt number", exception.getMessage());
+        }
     }
 
     @FXML

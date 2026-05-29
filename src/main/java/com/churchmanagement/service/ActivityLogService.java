@@ -22,6 +22,7 @@ public class ActivityLogService {
     public static final String CHURCH_UPDATED = "CHURCH_UPDATED";
     public static final String CHURCH_ACTIVATED = "CHURCH_ACTIVATED";
     public static final String CHURCH_DEACTIVATED = "CHURCH_DEACTIVATED";
+    public static final String RECEIPT_NUMBER_GENERATED = "RECEIPT_NUMBER_GENERATED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -55,6 +56,11 @@ public class ActivityLogService {
 
     public void logChurchAction(long userId, String action, String churchCode) {
         log(userId, action, "Church code: " + churchCode);
+    }
+
+    public void logReceiptNumberGenerated(Long userId, int year, long sequence, String receiptNumber) {
+        log(userId, RECEIPT_NUMBER_GENERATED,
+                "Year: " + year + ", Sequence: " + sequence + ", Generated Receipt Number: " + receiptNumber);
     }
 
     private void log(Long userId, String action, String details) {
