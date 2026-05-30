@@ -14,6 +14,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptCancellationService;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.WeekUtil;
@@ -131,9 +132,7 @@ public class ReceiptHistoryController {
     }
 
     private void configureFilters() {
-        churchComboBox.setItems(churches);
-        churchComboBox.setCellFactory(listView -> new ChurchListCell());
-        churchComboBox.setButtonCell(new ChurchListCell());
+        ComboBoxUtil.makeChurchSearchable(churchComboBox, churches);
         regionComboBox.setItems(regions);
         regionComboBox.setCellFactory(listView -> new RegionListCell());
         regionComboBox.setButtonCell(new RegionListCell());
@@ -523,14 +522,6 @@ public class ReceiptHistoryController {
             correctionLabel.setVisible(correctedReceipt);
             correctionLabel.setManaged(correctedReceipt);
             setGraphic(container);
-        }
-    }
-
-    private static class ChurchListCell extends ListCell<Church> {
-        @Override
-        protected void updateItem(Church church, boolean empty) {
-            super.updateItem(church, empty);
-            setText(empty || church == null ? null : church.getChurchCode() + " - " + church.getChurchName());
         }
     }
 

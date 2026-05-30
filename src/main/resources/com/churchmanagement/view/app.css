@@ -650,6 +650,41 @@
     -fx-font-weight: normal;
 }
 
+/* ═══════════════════════════════════════════════
+   SEARCHABLE COMBO BOX POPUP
+   ═══════════════════════════════════════════════ */
+
+.combo-search-popup {
+    -fx-background-color: white;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(120, 53, 15, 0.18), 10, 0, 0, 3);
+}
+
+.combo-search-popup .combo-search-field {
+    -fx-background-color: #fef3c7;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-prompt-text-fill: #b45309;
+}
+
+.combo-search-popup .combo-search-field:focused {
+    -fx-background-color: white;
+    -fx-border-color: #f59e0b;
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.22), 6, 0, 0, 0);
+}
+
+.combo-search-popup > .list-view {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-effect: none;
+    -fx-background-color: transparent;
+}
+
 .receipt-history-table .table-cell.receipt-center-cell,
 .receipt-history-table .table-row-cell:selected .table-cell.receipt-center-cell {
     -fx-alignment: CENTER;

@@ -12,6 +12,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptService;
 import com.churchmanagement.repository.ReceiptRepository;
+import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.WeekUtil;
@@ -25,7 +26,6 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
@@ -131,9 +131,7 @@ public class ReceiptEntryController {
     }
 
     private void configureControls() {
-        churchComboBox.setItems(activeChurches);
-        churchComboBox.setCellFactory(listView -> new ChurchListCell());
-        churchComboBox.setButtonCell(new ChurchListCell());
+        ComboBoxUtil.makeChurchSearchable(churchComboBox, activeChurches);
         DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
         churchComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateSelectedRegion());
         weekStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> updateWeekState());
@@ -463,14 +461,6 @@ public class ReceiptEntryController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private static class ChurchListCell extends ListCell<Church> {
-        @Override
-        protected void updateItem(Church church, boolean empty) {
-            super.updateItem(church, empty);
-            setText(empty || church == null ? null : church.getChurchCode() + " - " + church.getChurchName());
-        }
     }
 
     private String correctedReceiptText() {
