@@ -633,6 +633,37 @@
     -fx-padding: 3 8;
 }
 
+.receipt-detail-card {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.receipt-detail-card-header {
+    -fx-background-color: #fef3c7;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent transparent #fde68a transparent;
+    -fx-border-width: 0 0 1.5 0;
+    -fx-padding: 9 12;
+}
+
+.receipt-detail-card-title {
+    -fx-text-fill: #78350f;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.receipt-detail-card-body {
+    -fx-padding: 12;
+}
+
+.receipt-detail-label {
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold;
+}
+
 /* ═══════════════════════════════════════════════
    VALUE LABEL  (data-displaying labels — not bold)
    ═══════════════════════════════════════════════ */

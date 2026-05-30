@@ -24,6 +24,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -235,61 +236,117 @@ public class ReceiptHistoryController {
     }
 
     private VBox detailsContent(ReceiptResponseDto receipt) {
-        VBox container = new VBox(12);
+        VBox container = new VBox(14);
         container.setPrefWidth(800);
-        container.getChildren().addAll(detailsGrid(receipt), itemsGrid(receipt));
+        HBox detailsRow = new HBox(14,
+                detailCard("Receipt Information", receiptInformationGrid(receipt)),
+                detailCard("Submission Details", submissionDetailsGrid(receipt)));
+        detailsRow.setFillHeight(true);
+        container.getChildren().addAll(detailsRow, detailCard("Items", itemsGrid(receipt)));
         return container;
     }
 
-    private GridPane detailsGrid(ReceiptResponseDto receipt) {
-        GridPane grid = new GridPane();
-        grid.setHgap(14);
-        grid.setVgap(8);
-        grid.setPadding(new Insets(4, 0, 0, 0));
+    private VBox detailCard(String title, Node content) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("receipt-detail-card-title");
+        HBox header = new HBox(titleLabel);
+        header.getStyleClass().add("receipt-detail-card-header");
+        VBox body = new VBox(content);
+        body.getStyleClass().add("receipt-detail-card-body");
+        VBox card = new VBox(header, body);
+        card.getStyleClass().add("receipt-detail-card");
+        card.setFillWidth(true);
+        HBox.setHgrow(card, Priority.ALWAYS);
+        return card;
+    }
 
-        ColumnConstraints labelColumnOne = new ColumnConstraints();
-        labelColumnOne.setMinWidth(125);
-        ColumnConstraints valueColumnOne = new ColumnConstraints();
-        valueColumnOne.setHgrow(Priority.ALWAYS);
-        valueColumnOne.setMinWidth(175);
-        ColumnConstraints labelColumnTwo = new ColumnConstraints();
-        labelColumnTwo.setMinWidth(125);
-        ColumnConstraints valueColumnTwo = new ColumnConstraints();
-        valueColumnTwo.setHgrow(Priority.ALWAYS);
-        valueColumnTwo.setMinWidth(175);
-        grid.getColumnConstraints().addAll(labelColumnOne, valueColumnOne, labelColumnTwo, valueColumnTwo);
-
-        addDetailRow(grid, 0, "Receipt No", receipt.getReceiptNo(), "Status", receipt.getStatus().name());
-        addDetailRow(grid, 1, "Church", receipt.getChurchCode() + " - " + receipt.getChurchName(),
-                "Region", receipt.getRegionCode() + " - " + receipt.getRegionName());
-        addDetailRow(grid, 2, "Week", receipt.getWeekStartDate() + " to " + receipt.getWeekEndDate(),
-                "Receipt Date", formatDateTime(receipt.getReceiptDateTime()));
-        addDetailRow(grid, 3, "Submitted By", nullToDash(receipt.getSubmittedByName()),
-                "Issued By", nullToDash(receipt.getIssuedByFullName()));
-        addDetailRow(grid, 4, "Total", formatAmount(receipt.getTotalAmount()),
-                "Correction", formatCorrection(receipt));
-        addDetailRow(grid, 5, "Cancellation", formatCancellation(receipt),
-                "Cancel Window", cancellationWindowText(receipt));
+    private GridPane receiptInformationGrid(ReceiptResponseDto receipt) {
+        GridPane grid = detailGrid();
+        addDetailRow(grid, 0, "Receipt No", receipt.getReceiptNo());
+        addDetailRow(grid, 1, "Status", statusBadge(receipt.getStatus()));
+        addDetailRow(grid, 2, "Church", receipt.getChurchCode() + " - " + receipt.getChurchName());
+        addDetailRow(grid, 3, "Region", receipt.getRegionCode() + " - " + receipt.getRegionName());
+        addDetailRow(grid, 4, "Total", formatAmount(receipt.getTotalAmount()));
         return grid;
     }
 
-    private void addDetailRow(GridPane grid, int row, String labelOne, String valueOne, String labelTwo, String valueTwo) {
-        grid.add(new Label(labelOne), 0, row);
-        Label valueOneLabel = new Label(valueOne);
-        valueOneLabel.setWrapText(true);
-        valueOneLabel.getStyleClass().add("value-label");
-        grid.add(valueOneLabel, 1, row);
-        grid.add(new Label(labelTwo), 2, row);
-        Label valueTwoLabel = new Label(valueTwo);
-        valueTwoLabel.setWrapText(true);
-        valueTwoLabel.getStyleClass().add("value-label");
-        grid.add(valueTwoLabel, 3, row);
+    private GridPane submissionDetailsGrid(ReceiptResponseDto receipt) {
+        GridPane grid = detailGrid();
+        addDetailRow(grid, 0, "Week", receipt.getWeekStartDate() + " to " + receipt.getWeekEndDate());
+        addDetailRow(grid, 1, "Receipt Date", formatDateTime(receipt.getReceiptDateTime()));
+        addDetailRow(grid, 2, "Late Submission", lateSubmissionBadge(receipt.isLateSubmission()));
+        addDetailRow(grid, 3, "Submitted By", nullToDash(receipt.getSubmittedByName()));
+        addDetailRow(grid, 4, "Issued By", nullToDash(receipt.getIssuedByFullName()));
+        addDetailRow(grid, 5, "Correction", correctionNode(receipt));
+        addDetailRow(grid, 6, "Cancellation", formatCancellation(receipt));
+        addDetailRow(grid, 7, "Cancel Window", cancellationWindowText(receipt));
+        return grid;
+    }
+
+    private GridPane detailGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(14);
+        grid.setVgap(8);
+
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        labelColumn.setMinWidth(120);
+        ColumnConstraints valueColumn = new ColumnConstraints();
+        valueColumn.setHgrow(Priority.ALWAYS);
+        valueColumn.setMinWidth(190);
+        grid.getColumnConstraints().addAll(labelColumn, valueColumn);
+        return grid;
+    }
+
+    private void addDetailRow(GridPane grid, int row, String labelText, String valueText) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("receipt-detail-label");
+        grid.add(label, 0, row);
+
+        Label valueLabel = new Label(valueText);
+        valueLabel.setWrapText(true);
+        valueLabel.getStyleClass().add("value-label");
+        grid.add(valueLabel, 1, row);
+    }
+
+    private void addDetailRow(GridPane grid, int row, String labelText, Node valueNode) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("receipt-detail-label");
+        grid.add(label, 0, row);
+        grid.add(valueNode, 1, row);
+    }
+
+    private Label statusBadge(ReceiptStatus status) {
+        Label badge = detailBadge(status.name(), "status-badge");
+        badge.getStyleClass().add(status == ReceiptStatus.ACTIVE ? "status-active" : "status-inactive");
+        return badge;
+    }
+
+    private Label lateSubmissionBadge(boolean lateSubmission) {
+        Label badge = detailBadge(lateSubmission ? "YES" : "NO", "status-badge");
+        badge.getStyleClass().add(lateSubmission ? "status-inactive" : "status-active");
+        return badge;
+    }
+
+    private Node correctionNode(ReceiptResponseDto receipt) {
+        String correction = formatCorrection(receipt);
+        if ("-".equals(correction)) {
+            Label label = new Label(correction);
+            label.getStyleClass().add("value-label");
+            return label;
+        }
+        return detailBadge(correction, "status-correction-note");
+    }
+
+    private Label detailBadge(String text, String styleClass) {
+        Label badge = new Label(text);
+        badge.getStyleClass().add(styleClass);
+        return badge;
     }
 
     private GridPane itemsGrid(ReceiptResponseDto receipt) {
         GridPane grid = new GridPane();
         grid.setHgap(14);
-        grid.setVgap(6);
+        grid.setVgap(8);
 
         ColumnConstraints itemColumn = new ColumnConstraints();
         itemColumn.setHgrow(Priority.ALWAYS);
