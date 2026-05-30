@@ -56,7 +56,7 @@
             <TableColumn fx:id="receiptNoColumn" prefWidth="125" text="Receipt No"/>
             <TableColumn fx:id="churchColumn" prefWidth="230" text="Church"/>
             <TableColumn fx:id="regionColumn" prefWidth="95" text="Region"/>
-            <TableColumn fx:id="weekColumn" prefWidth="205" text="Week"/>
+            <TableColumn fx:id="weekColumn" prefWidth="245" text="Week"/>
             <TableColumn fx:id="statusColumn" prefWidth="145" text="Status"/>
             <TableColumn fx:id="totalColumn" prefWidth="120" text="Total"/>
             <TableColumn fx:id="actionColumn" maxWidth="180" minWidth="170" prefWidth="180" resizable="false" text="Action"/>

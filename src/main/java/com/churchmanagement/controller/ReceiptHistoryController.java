@@ -149,8 +149,7 @@ public class ReceiptHistoryController {
         churchColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getChurchCode() + " - " + cellData.getValue().getChurchName()));
         regionColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getRegionCode()));
-        weekColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
-                cellData.getValue().getWeekStartDate() + " to " + cellData.getValue().getWeekEndDate()));
+        weekColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatWeek(cellData.getValue())));
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus().name()));
         totalColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatAmount(cellData.getValue().getTotalAmount())));
         actionColumn.setMinWidth(170);
@@ -159,7 +158,9 @@ public class ReceiptHistoryController {
         actionColumn.setResizable(false);
         actionColumn.setCellFactory(column -> new ViewButtonCell());
         regionColumn.setCellFactory(column -> alignedTextCell("receipt-center-cell"));
-        weekColumn.setCellFactory(column -> alignedTextCell("receipt-center-cell"));
+        weekColumn.setMinWidth(230);
+        weekColumn.setPrefWidth(245);
+        weekColumn.setCellFactory(column -> new WeekCell());
         statusColumn.setCellFactory(column -> new StatusBadgeCell());
         totalColumn.setCellFactory(column -> alignedTextCell("receipt-right-cell"));
         receiptTable.setRowFactory(tableView -> {
@@ -185,6 +186,10 @@ public class ReceiptHistoryController {
                 setText(empty ? null : item);
             }
         };
+    }
+
+    private String formatWeek(ReceiptResponseDto receipt) {
+        return receipt.getWeekStartDate() + " to " + receipt.getWeekEndDate();
     }
 
     private void loadFilters() {
@@ -521,6 +526,36 @@ public class ReceiptHistoryController {
             boolean correctedReceipt = receipt != null && receipt.getCorrectedFromReceiptId() != null;
             correctionLabel.setVisible(correctedReceipt);
             correctionLabel.setManaged(correctedReceipt);
+            setGraphic(container);
+        }
+    }
+
+    private class WeekCell extends TableCell<ReceiptResponseDto, String> {
+        private final Label weekLabel = new Label();
+        private final Label lateLabel = new Label("L");
+        private final HBox container = new HBox(6, weekLabel, lateLabel);
+
+        private WeekCell() {
+            getStyleClass().add("receipt-center-cell");
+            setAlignment(Pos.CENTER);
+            container.setAlignment(Pos.CENTER);
+            weekLabel.getStyleClass().add("value-label");
+            lateLabel.getStyleClass().add("status-correction-note");
+        }
+
+        @Override
+        protected void updateItem(String week, boolean empty) {
+            super.updateItem(week, empty);
+            if (empty || week == null || getIndex() >= getTableView().getItems().size()) {
+                setGraphic(null);
+                return;
+            }
+
+            ReceiptResponseDto receipt = getTableView().getItems().get(getIndex());
+            boolean lateSubmission = receipt != null && receipt.isLateSubmission();
+            weekLabel.setText(week);
+            lateLabel.setVisible(lateSubmission);
+            lateLabel.setManaged(lateSubmission);
             setGraphic(container);
         }
     }

@@ -30,6 +30,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -346,17 +347,23 @@ public class ReceiptEntryController {
         VBox container = new VBox(10);
         container.setPrefWidth(430);
         container.getChildren().addAll(
-                new Label("Church: " + (church == null ? "" : church.getChurchCode() + " - " + church.getChurchName())),
-                new Label("Week: " + request.getWeekStartDate() + " to " + request.getWeekEndDate())
+                summaryRow("Church:", church == null ? "" : church.getChurchCode() + " - " + church.getChurchName()),
+                summaryRow("Week:", request.getWeekStartDate() + " to " + request.getWeekEndDate())
         );
         if (correctedFromReceiptId != null) {
-            container.getChildren().add(new Label("Corrected from: " + correctedReceiptText()));
+            container.getChildren().add(summaryRow("Corrected from:", correctedReceiptText()));
         }
         container.getChildren().addAll(
                 itemGrid(request, total),
-                new Label("Late submission: " + (WeekUtil.isBackWeek(request.getWeekStartDate(), LocalDate.now()) ? "YES" : "NO"))
+                summaryRow("Late submission:", WeekUtil.isBackWeek(request.getWeekStartDate(), LocalDate.now()) ? "YES" : "NO")
         );
         return container;
+    }
+
+    private HBox summaryRow(String labelText, String valueText) {
+        Label label = new Label(labelText);
+        Label value = normalLabel(valueText);
+        return new HBox(4, label, value);
     }
 
     private GridPane itemGrid(CreateReceiptRequest request, BigDecimal total) {
@@ -379,7 +386,7 @@ public class ReceiptEntryController {
 
         int row = 1;
         for (ReceiptItemDto item : request.getItems()) {
-            grid.add(new Label(item.getCollectionType().getDisplayLabel()), 0, row);
+            grid.add(normalLabel(item.getCollectionType().getDisplayLabel()), 0, row);
             grid.add(amountLabel(formatAmount(item.getAmount())), 1, row);
             row++;
         }
@@ -394,9 +401,15 @@ public class ReceiptEntryController {
     }
 
     private Label amountLabel(String text) {
-        Label label = new Label(text);
+        Label label = normalLabel(text);
         label.setMaxWidth(Double.MAX_VALUE);
         label.setAlignment(Pos.CENTER_RIGHT);
+        return label;
+    }
+
+    private Label normalLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("value-label");
         return label;
     }
 
