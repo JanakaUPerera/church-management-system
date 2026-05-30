@@ -17,6 +17,7 @@ import com.churchmanagement.service.RegionService;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.TablePaginationUtil;
 import com.churchmanagement.util.WeekUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -34,12 +35,14 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.Pagination;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -76,6 +79,9 @@ public class ReceiptHistoryController {
     @FXML private TextField receiptNoField;
     @FXML private ComboBox<ReceiptStatus> statusComboBox;
     @FXML private TableView<ReceiptResponseDto> receiptTable;
+    @FXML private Pagination receiptPagination;
+    @FXML private ComboBox<Integer> receiptItemsPerPageComboBox;
+    @FXML private Label receiptPaginationSummaryLabel;
     @FXML private TableColumn<ReceiptResponseDto, String> receiptNoColumn;
     @FXML private TableColumn<ReceiptResponseDto, String> churchColumn;
     @FXML private TableColumn<ReceiptResponseDto, String> regionColumn;
@@ -145,7 +151,8 @@ public class ReceiptHistoryController {
 
     private void configureTable() {
         receiptTable.getStyleClass().add("receipt-history-table");
-        receiptTable.setItems(receipts);
+        TablePaginationUtil.configure(receiptTable, receipts, receiptPagination, receiptItemsPerPageComboBox,
+                receiptPaginationSummaryLabel, "receipts");
         receiptNoColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getReceiptNo()));
         churchColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 cellData.getValue().getChurchCode() + " - " + cellData.getValue().getChurchName()));
@@ -223,6 +230,7 @@ public class ReceiptHistoryController {
             }
             dialog.getDialogPane().getButtonTypes().add(closeButton);
             dialog.getDialogPane().setContent(detailsContent(details));
+            dialog.getDialogPane().setPrefWidth(980);
 
             Optional<ButtonType> result = dialog.showAndWait();
             if (result.filter(cancelReceiptButton::equals).isPresent()) {
@@ -237,12 +245,15 @@ public class ReceiptHistoryController {
 
     private VBox detailsContent(ReceiptResponseDto receipt) {
         VBox container = new VBox(14);
-        container.setPrefWidth(800);
+        container.setPrefWidth(920);
         HBox detailsRow = new HBox(14,
                 detailCard("Receipt Information", receiptInformationGrid(receipt)),
                 detailCard("Submission Details", submissionDetailsGrid(receipt)));
         detailsRow.setFillHeight(true);
-        container.getChildren().addAll(detailsRow, detailCard("Items", itemsGrid(receipt)));
+        container.getChildren().addAll(
+                detailsRow,
+                detailCard("Cancellation Details", cancellationDetailsGrid(receipt)),
+                detailCard("Items", itemsGrid(receipt)));
         return container;
     }
 
@@ -278,8 +289,13 @@ public class ReceiptHistoryController {
         addDetailRow(grid, 3, "Submitted By", nullToDash(receipt.getSubmittedByName()));
         addDetailRow(grid, 4, "Issued By", nullToDash(receipt.getIssuedByFullName()));
         addDetailRow(grid, 5, "Correction", correctionNode(receipt));
-        addDetailRow(grid, 6, "Cancellation", formatCancellation(receipt));
-        addDetailRow(grid, 7, "Cancel Window", cancellationWindowText(receipt));
+        return grid;
+    }
+
+    private GridPane cancellationDetailsGrid(ReceiptResponseDto receipt) {
+        GridPane grid = detailGrid();
+        addDetailRow(grid, 0, "Cancellation", formatCancellation(receipt));
+        addDetailRow(grid, 1, "Cancel Window", cancellationWindowText(receipt));
         return grid;
     }
 
@@ -302,9 +318,7 @@ public class ReceiptHistoryController {
         label.getStyleClass().add("receipt-detail-label");
         grid.add(label, 0, row);
 
-        Label valueLabel = new Label(valueText);
-        valueLabel.setWrapText(true);
-        valueLabel.getStyleClass().add("value-label");
+        Label valueLabel = detailValueLabel(valueText);
         grid.add(valueLabel, 1, row);
     }
 
@@ -312,6 +326,7 @@ public class ReceiptHistoryController {
         Label label = new Label(labelText);
         label.getStyleClass().add("receipt-detail-label");
         grid.add(label, 0, row);
+        GridPane.setHgrow(valueNode, Priority.ALWAYS);
         grid.add(valueNode, 1, row);
     }
 
@@ -330,9 +345,7 @@ public class ReceiptHistoryController {
     private Node correctionNode(ReceiptResponseDto receipt) {
         String correction = formatCorrection(receipt);
         if ("-".equals(correction)) {
-            Label label = new Label(correction);
-            label.getStyleClass().add("value-label");
-            return label;
+            return detailValueLabel(correction);
         }
         return detailBadge(correction, "status-correction-note");
     }
@@ -340,7 +353,20 @@ public class ReceiptHistoryController {
     private Label detailBadge(String text, String styleClass) {
         Label badge = new Label(text);
         badge.getStyleClass().add(styleClass);
+        badge.setTooltip(new Tooltip(text));
         return badge;
+    }
+
+    private Label detailValueLabel(String text) {
+        Label label = new Label(text);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.setWrapText(true);
+        label.getStyleClass().add("value-label");
+        if (text != null && !text.isBlank() && !"-".equals(text)) {
+            label.setTooltip(new Tooltip(text));
+        }
+        GridPane.setHgrow(label, Priority.ALWAYS);
+        return label;
     }
 
     private GridPane itemsGrid(ReceiptResponseDto receipt) {
@@ -375,8 +401,12 @@ public class ReceiptHistoryController {
             amountLabel.getStyleClass().add("value-label");
             grid.add(amountLabel, 1, row);
             Label noteLabel = new Label(nullToDash(item.getNote()));
+            noteLabel.setMaxWidth(Double.MAX_VALUE);
             noteLabel.setWrapText(true);
             noteLabel.getStyleClass().add("value-label");
+            if (item.getNote() != null && !item.getNote().isBlank()) {
+                noteLabel.setTooltip(new Tooltip(item.getNote()));
+            }
             grid.add(noteLabel, 2, row);
             row++;
         }

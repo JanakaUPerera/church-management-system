@@ -9,6 +9,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,6 +21,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.Pagination;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -77,6 +79,15 @@ public class ChurchController {
 
     @FXML
     private TableView<ChurchDto> churchTable;
+
+    @FXML
+    private Pagination churchPagination;
+
+    @FXML
+    private ComboBox<Integer> churchItemsPerPageComboBox;
+
+    @FXML
+    private Label churchPaginationSummaryLabel;
 
     @FXML
     private TableColumn<ChurchDto, String> codeColumn;
@@ -212,7 +223,8 @@ public class ChurchController {
         statusColumn.setCellFactory(column -> new StatusBadgeCell());
         actionColumn.setCellFactory(column -> new ActionButtonCell());
 
-        churchTable.setItems(churches);
+        TablePaginationUtil.configure(churchTable, churches, churchPagination, churchItemsPerPageComboBox,
+                churchPaginationSummaryLabel, "churches");
         churchTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 loadSelectedChurch(newValue);
@@ -347,6 +359,8 @@ public class ChurchController {
         clearButton.setDisable(disabled);
         searchField.setDisable(disabled);
         churchTable.setDisable(disabled);
+        churchPagination.setDisable(disabled);
+        churchItemsPerPageComboBox.setDisable(disabled);
     }
 
     private void setMessage(String message) {

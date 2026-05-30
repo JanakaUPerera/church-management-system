@@ -251,6 +251,66 @@
     -fx-text-fill: #451a03;
 }
 
+/* Pagination */
+.table-pagination-bar {
+    -fx-padding: 2 0 0 0;
+}
+
+.pagination-label,
+.pagination-summary {
+    -fx-text-fill: #78716c;
+    -fx-font-weight: normal;
+}
+
+.items-per-page-combo {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+}
+
+.items-per-page-combo .list-cell {
+    -fx-font-weight: normal;
+    -fx-text-fill: #451a03;
+}
+
+.pagination {
+    -fx-page-information-visible: false;
+    -fx-padding: 0;
+}
+
+.pagination .pagination-control {
+    -fx-padding: 0;
+}
+
+.pagination .pagination-control .button,
+.pagination .pagination-control .number-button,
+.pagination .pagination-control .left-arrow-button,
+.pagination .pagination-control .right-arrow-button {
+    -fx-background-color: white;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-pref-height: 32;
+}
+
+.pagination .pagination-control .button:hover,
+.pagination .pagination-control .number-button:hover,
+.pagination .pagination-control .left-arrow-button:hover,
+.pagination .pagination-control .right-arrow-button:hover {
+    -fx-background-color: #fef3c7;
+}
+
+.pagination .pagination-control .number-button:selected {
+    -fx-background-color: #f59e0b;
+    -fx-border-color: #f59e0b;
+    -fx-text-fill: #451a03;
+}
+
 /* ═══════════════════════════════════════════════
    TABLE VIEW
    ═══════════════════════════════════════════════ */
