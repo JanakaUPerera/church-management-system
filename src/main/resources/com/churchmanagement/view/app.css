@@ -21,6 +21,11 @@
     -fx-font-size: 14px;
 }
 
+.app-dialog-pane .content.label,
+.app-dialog-pane .content .label {
+    -fx-font-weight: normal;
+}
+
 /* ═══════════════════════════════════════════════
    CONTROL SIZING  (applied before appearance rules)
    ═══════════════════════════════════════════════ */

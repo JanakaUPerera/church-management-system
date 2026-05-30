@@ -13,12 +13,15 @@ import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Pagination;
@@ -26,56 +29,33 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 
 import java.util.Optional;
+import java.util.Locale;
 
 public class ChurchController {
     private final ChurchService churchService = new ChurchService();
+    private final ObservableList<ChurchDto> allChurches = FXCollections.observableArrayList();
     private final ObservableList<ChurchDto> churches = FXCollections.observableArrayList();
     private final ObservableList<Region> activeRegions = FXCollections.observableArrayList();
+    private final ObservableList<Region> regionFilterOptions = FXCollections.observableArrayList();
 
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
     private ChurchDto selectedChurch;
 
     @FXML
-    private TextField churchCodeField;
-
-    @FXML
-    private TextField churchNameField;
-
-    @FXML
-    private ComboBox<Region> regionComboBox;
-
-    @FXML
-    private ComboBox<Church.Status> statusComboBox;
-
-    @FXML
-    private TextField authorizedPersonNameField;
-
-    @FXML
-    private ComboBox<AuthorizedPersonPosition> authorizedPersonPositionComboBox;
-
-    @FXML
-    private Label otherPositionLabel;
-
-    @FXML
-    private TextField authorizedPersonPositionOtherField;
-
-    @FXML
-    private TextField smsMobileNumberField;
-
-    @FXML
     private Button saveButton;
 
     @FXML
-    private Button updateButton;
-
-    @FXML
-    private Button clearButton;
-
-    @FXML
     private TextField searchField;
+
+    @FXML
+    private ComboBox<Region> regionFilterComboBox;
 
     @FXML
     private TableView<ChurchDto> churchTable;
@@ -130,7 +110,6 @@ public class ChurchController {
             return;
         }
 
-        configureForm();
         configureTable();
         applyPermissions();
         refreshRegions();
@@ -139,72 +118,20 @@ public class ChurchController {
 
     @FXML
     private void handleSave() {
-        try {
-            churchService.create(churchCodeField.getText(), churchNameField.getText(), selectedRegionId(),
-                    statusComboBox.getValue(), authorizedPersonNameField.getText(),
-                    authorizedPersonPositionComboBox.getValue(), authorizedPersonPositionOtherField.getText(),
-                    smsMobileNumberField.getText(), currentUser.getUserId());
-            setMessage("Church created successfully.");
-            clearForm();
-            refreshChurches();
-        } catch (ChurchService.ChurchException exception) {
-            showFriendlyError(exception.getMessage());
-        }
-    }
-
-    @FXML
-    private void handleUpdate() {
-        if (selectedChurch == null) {
-            showFriendlyError("Select a church before updating.");
-            return;
-        }
-
-        try {
-            churchService.update(selectedChurch.getId(), churchCodeField.getText(), churchNameField.getText(),
-                    selectedRegionId(), statusComboBox.getValue(), authorizedPersonNameField.getText(),
-                    authorizedPersonPositionComboBox.getValue(), authorizedPersonPositionOtherField.getText(),
-                    smsMobileNumberField.getText(), currentUser.getUserId());
-            setMessage("Church updated successfully.");
-            clearForm();
-            refreshChurches();
-        } catch (ChurchService.ChurchException exception) {
-            showFriendlyError(exception.getMessage());
-        }
-    }
-
-    @FXML
-    private void handleClear() {
-        clearForm();
+        showChurchDialog(null);
     }
 
     @FXML
     private void handleRefresh() {
         searchField.clear();
+        regionFilterComboBox.getSelectionModel().selectFirst();
         refreshRegions();
         refreshChurches();
     }
 
     @FXML
     private void handleSearch() {
-        try {
-            churches.setAll(churchService.search(searchField.getText()).stream()
-                    .map(ChurchDto::fromChurch)
-                    .toList());
-            setMessage("Showing " + churches.size() + " church(es).");
-        } catch (ChurchService.ChurchException exception) {
-            showFriendlyError(exception.getMessage());
-        }
-    }
-
-    private void configureForm() {
-        statusComboBox.setItems(FXCollections.observableArrayList(Church.Status.ACTIVE, Church.Status.INACTIVE));
-        statusComboBox.setValue(Church.Status.ACTIVE);
-        authorizedPersonPositionComboBox.setItems(FXCollections.observableArrayList(AuthorizedPersonPosition.values()));
-        authorizedPersonPositionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateOtherPositionVisibility());
-        regionComboBox.setItems(activeRegions);
-        regionComboBox.setCellFactory(listView -> new RegionListCell());
-        regionComboBox.setButtonCell(new RegionListCell());
-        updateOtherPositionVisibility();
+        applyChurchFilters();
     }
 
     private void configureTable() {
@@ -222,6 +149,10 @@ public class ChurchController {
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus()));
         statusColumn.setCellFactory(column -> new StatusBadgeCell());
         actionColumn.setCellFactory(column -> new ActionButtonCell());
+        regionFilterComboBox.setItems(regionFilterOptions);
+        regionFilterComboBox.setCellFactory(listView -> new RegionListCell());
+        regionFilterComboBox.setButtonCell(new RegionListCell());
+        regionFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> applyChurchFilters());
 
         TablePaginationUtil.configure(churchTable, churches, churchPagination, churchItemsPerPageComboBox,
                 churchPaginationSummaryLabel, "churches");
@@ -235,15 +166,18 @@ public class ChurchController {
     private void applyPermissions() {
         saveButton.setVisible(permissionGuard.can("church.create"));
         saveButton.setManaged(saveButton.isVisible());
-        updateButton.setVisible(permissionGuard.can("church.update"));
-        updateButton.setManaged(updateButton.isVisible());
-        actionColumn.setVisible(permissionGuard.can("church.delete"));
-        updateActionButtons();
+        actionColumn.setVisible(permissionGuard.can("church.update") || permissionGuard.can("church.delete"));
     }
 
     private void refreshRegions() {
         try {
             activeRegions.setAll(churchService.findActiveRegions());
+            Region allRegionsOption = new Region(null, "", "All regions", Region.Status.ACTIVE, null, null);
+            regionFilterOptions.setAll(allRegionsOption);
+            regionFilterOptions.addAll(activeRegions);
+            if (regionFilterComboBox.getSelectionModel().isEmpty()) {
+                regionFilterComboBox.getSelectionModel().selectFirst();
+            }
         } catch (ChurchService.ChurchException exception) {
             showFriendlyError(exception.getMessage());
         }
@@ -251,27 +185,43 @@ public class ChurchController {
 
     private void refreshChurches() {
         try {
-            churches.setAll(churchService.findAll().stream()
+            allChurches.setAll(churchService.findAll().stream()
                     .map(ChurchDto::fromChurch)
                     .toList());
-            setMessage("Showing " + churches.size() + " church(es).");
+            applyChurchFilters();
         } catch (ChurchService.ChurchException exception) {
             showFriendlyError(exception.getMessage());
         }
     }
 
+    private void applyChurchFilters() {
+        String query = searchField == null || searchField.getText() == null
+                ? ""
+                : searchField.getText().strip().toLowerCase(Locale.ROOT);
+        Region selectedRegion = regionFilterComboBox == null ? null : regionFilterComboBox.getValue();
+        Long selectedRegionId = selectedRegion == null ? null : selectedRegion.getId();
+
+        churches.setAll(allChurches.stream()
+                .filter(church -> selectedRegionId == null || selectedRegionId.equals(church.getRegionId()))
+                .filter(church -> query.isBlank() || matchesSearch(church, query))
+                .toList());
+        setMessage("Showing " + churches.size() + " church(es).");
+    }
+
+    private boolean matchesSearch(ChurchDto church, String query) {
+        return contains(church.getChurchCode(), query)
+                || contains(church.getChurchName(), query)
+                || contains(church.getRegionCode(), query)
+                || contains(church.getRegionName(), query);
+    }
+
+    private boolean contains(String value, String query) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(query);
+    }
+
     private void loadSelectedChurch(ChurchDto church) {
         selectedChurch = church;
-        churchCodeField.setText(church.getChurchCode());
-        churchNameField.setText(church.getChurchName());
-        statusComboBox.setValue(Church.Status.valueOf(church.getStatus()));
-        authorizedPersonNameField.setText(church.getAuthorizedPersonName());
-        authorizedPersonPositionComboBox.setValue(church.getAuthorizedPersonPosition());
-        authorizedPersonPositionOtherField.setText(church.getAuthorizedPersonPositionOther());
-        smsMobileNumberField.setText(church.getSmsMobileNumber());
-        regionComboBox.getSelectionModel().select(findRegion(church.getRegionId()));
         setMessage("Selected church " + church.getChurchCode() + ".");
-        updateActionButtons();
     }
 
     private Region findRegion(Long regionId) {
@@ -279,11 +229,6 @@ public class ChurchController {
                 .filter(region -> region.getId().equals(regionId))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private Long selectedRegionId() {
-        Region selectedRegion = regionComboBox.getSelectionModel().getSelectedItem();
-        return selectedRegion == null ? null : selectedRegion.getId();
     }
 
     private void toggleChurchStatus(ChurchDto church) {
@@ -322,49 +267,22 @@ public class ChurchController {
     private void clearForm() {
         selectedChurch = null;
         churchTable.getSelectionModel().clearSelection();
-        churchCodeField.clear();
-        churchNameField.clear();
-        regionComboBox.getSelectionModel().clearSelection();
-        statusComboBox.setValue(Church.Status.ACTIVE);
-        authorizedPersonNameField.clear();
-        authorizedPersonPositionComboBox.getSelectionModel().clearSelection();
-        authorizedPersonPositionOtherField.clear();
-        smsMobileNumberField.clear();
-        updateOtherPositionVisibility();
         setMessage("");
-        updateActionButtons();
-    }
-
-    private void updateActionButtons() {
-        if (permissionGuard == null) {
-            return;
-        }
-
-        boolean editing = selectedChurch != null;
-        saveButton.setDisable(editing || !permissionGuard.can("church.create"));
-        updateButton.setDisable(!editing || !permissionGuard.can("church.update"));
     }
 
     private void setFormDisabled(boolean disabled) {
-        churchCodeField.setDisable(disabled);
-        churchNameField.setDisable(disabled);
-        regionComboBox.setDisable(disabled);
-        statusComboBox.setDisable(disabled);
-        authorizedPersonNameField.setDisable(disabled);
-        authorizedPersonPositionComboBox.setDisable(disabled);
-        authorizedPersonPositionOtherField.setDisable(disabled);
-        smsMobileNumberField.setDisable(disabled);
         saveButton.setDisable(disabled);
-        updateButton.setDisable(disabled);
-        clearButton.setDisable(disabled);
         searchField.setDisable(disabled);
+        regionFilterComboBox.setDisable(disabled);
         churchTable.setDisable(disabled);
         churchPagination.setDisable(disabled);
         churchItemsPerPageComboBox.setDisable(disabled);
     }
 
     private void setMessage(String message) {
-        messageLabel.setText(message);
+        if (messageLabel != null) {
+            messageLabel.setText(message);
+        }
     }
 
     private void showFriendlyError(String message) {
@@ -376,27 +294,161 @@ public class ChurchController {
         alert.showAndWait();
     }
 
-    private void updateOtherPositionVisibility() {
-        boolean otherSelected = authorizedPersonPositionComboBox.getValue() == AuthorizedPersonPosition.OTHER;
-        otherPositionLabel.setVisible(otherSelected);
-        otherPositionLabel.setManaged(otherSelected);
-        authorizedPersonPositionOtherField.setVisible(otherSelected);
-        authorizedPersonPositionOtherField.setManaged(otherSelected);
-        authorizedPersonPositionOtherField.setDisable(!otherSelected);
-        if (!otherSelected) {
-            authorizedPersonPositionOtherField.clear();
+    private void showChurchDialog(ChurchDto church) {
+        boolean editing = church != null;
+        Dialog<ButtonType> dialog = DialogStyler.apply(new Dialog<>());
+        dialog.setTitle(editing ? "Update Church" : "Create Church");
+        dialog.setHeaderText(editing ? "Update " + church.getChurchCode() : "Create a new church");
+
+        ButtonType saveButtonType = new ButtonType(editing ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        dialog.getDialogPane().setContent(churchDialogContent(church));
+        dialog.getDialogPane().setPrefWidth(620);
+
+        Button submitButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        submitButton.addEventFilter(ActionEvent.ACTION, event -> {
+            ChurchDialogFields fields = (ChurchDialogFields) dialog.getDialogPane().getContent().getUserData();
+            Region selectedRegion = fields.regionComboBox().getSelectionModel().getSelectedItem();
+            Long regionId = selectedRegion == null ? null : selectedRegion.getId();
+            try {
+                if (editing) {
+                    churchService.update(church.getId(), fields.churchCodeField().getText(),
+                            fields.churchNameField().getText(), regionId, fields.statusComboBox().getValue(),
+                            fields.authorizedPersonNameField().getText(),
+                            fields.authorizedPersonPositionComboBox().getValue(),
+                            fields.authorizedPersonPositionOtherField().getText(),
+                            fields.smsMobileNumberField().getText(), currentUser.getUserId());
+                    clearForm();
+                    refreshChurches();
+                    setMessage("Church updated successfully.");
+                } else {
+                    churchService.create(fields.churchCodeField().getText(), fields.churchNameField().getText(),
+                            regionId, fields.statusComboBox().getValue(),
+                            fields.authorizedPersonNameField().getText(),
+                            fields.authorizedPersonPositionComboBox().getValue(),
+                            fields.authorizedPersonPositionOtherField().getText(),
+                            fields.smsMobileNumberField().getText(), currentUser.getUserId());
+                    clearForm();
+                    refreshChurches();
+                    setMessage("Church created successfully.");
+                }
+            } catch (ChurchService.ChurchException exception) {
+                event.consume();
+                showFriendlyError(exception.getMessage());
+            }
+        });
+
+        dialog.showAndWait();
+    }
+
+    private GridPane churchDialogContent(ChurchDto church) {
+        TextField churchCodeField = new TextField();
+        churchCodeField.setPromptText("CH001");
+        TextField churchNameField = new TextField();
+        churchNameField.setPromptText("Main Church");
+        ComboBox<Region> regionComboBox = new ComboBox<>(activeRegions);
+        regionComboBox.setCellFactory(listView -> new RegionListCell());
+        regionComboBox.setButtonCell(new RegionListCell());
+        regionComboBox.setMaxWidth(Double.MAX_VALUE);
+        ComboBox<Church.Status> statusComboBox = new ComboBox<>(
+                FXCollections.observableArrayList(Church.Status.ACTIVE, Church.Status.INACTIVE));
+        statusComboBox.setMaxWidth(Double.MAX_VALUE);
+        TextField authorizedPersonNameField = new TextField();
+        authorizedPersonNameField.setPromptText("Name");
+        ComboBox<AuthorizedPersonPosition> authorizedPersonPositionComboBox = new ComboBox<>(
+                FXCollections.observableArrayList(AuthorizedPersonPosition.values()));
+        authorizedPersonPositionComboBox.setMaxWidth(Double.MAX_VALUE);
+        Label otherPositionLabel = new Label("Other Position");
+        TextField authorizedPersonPositionOtherField = new TextField();
+        authorizedPersonPositionOtherField.setPromptText("Position");
+        TextField smsMobileNumberField = new TextField();
+        smsMobileNumberField.setPromptText("0771234567 or +94771234567");
+
+        Runnable updateOtherPositionVisibility = () -> {
+            boolean otherSelected = authorizedPersonPositionComboBox.getValue() == AuthorizedPersonPosition.OTHER;
+            otherPositionLabel.setVisible(otherSelected);
+            otherPositionLabel.setManaged(otherSelected);
+            authorizedPersonPositionOtherField.setVisible(otherSelected);
+            authorizedPersonPositionOtherField.setManaged(otherSelected);
+            authorizedPersonPositionOtherField.setDisable(!otherSelected);
+            if (!otherSelected) {
+                authorizedPersonPositionOtherField.clear();
+            }
+        };
+        authorizedPersonPositionComboBox.valueProperty()
+                .addListener((observable, oldValue, newValue) -> updateOtherPositionVisibility.run());
+
+        if (church == null) {
+            statusComboBox.setValue(Church.Status.ACTIVE);
+        } else {
+            churchCodeField.setText(church.getChurchCode());
+            churchNameField.setText(church.getChurchName());
+            regionComboBox.getSelectionModel().select(findRegion(church.getRegionId()));
+            statusComboBox.setValue(Church.Status.valueOf(church.getStatus()));
+            authorizedPersonNameField.setText(church.getAuthorizedPersonName());
+            authorizedPersonPositionComboBox.setValue(church.getAuthorizedPersonPosition());
+            authorizedPersonPositionOtherField.setText(church.getAuthorizedPersonPositionOther());
+            smsMobileNumberField.setText(church.getSmsMobileNumber());
         }
+        updateOtherPositionVisibility.run();
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(10);
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        labelColumn.setMinWidth(170);
+        ColumnConstraints valueColumn = new ColumnConstraints();
+        valueColumn.setHgrow(Priority.ALWAYS);
+        valueColumn.setMinWidth(360);
+        grid.getColumnConstraints().addAll(labelColumn, valueColumn);
+
+        grid.add(new Label("Church Code"), 0, 0);
+        grid.add(churchCodeField, 1, 0);
+        grid.add(new Label("Church Name"), 0, 1);
+        grid.add(churchNameField, 1, 1);
+        grid.add(new Label("Region"), 0, 2);
+        grid.add(regionComboBox, 1, 2);
+        grid.add(new Label("Status"), 0, 3);
+        grid.add(statusComboBox, 1, 3);
+        grid.add(new Label("Authorized Person Name"), 0, 4);
+        grid.add(authorizedPersonNameField, 1, 4);
+        grid.add(new Label("Position"), 0, 5);
+        grid.add(authorizedPersonPositionComboBox, 1, 5);
+        grid.add(otherPositionLabel, 0, 6);
+        grid.add(authorizedPersonPositionOtherField, 1, 6);
+        grid.add(new Label("SMS Mobile Number"), 0, 7);
+        grid.add(smsMobileNumberField, 1, 7);
+
+        grid.setUserData(new ChurchDialogFields(churchCodeField, churchNameField, regionComboBox, statusComboBox,
+                authorizedPersonNameField, authorizedPersonPositionComboBox, authorizedPersonPositionOtherField,
+                smsMobileNumberField));
+        return grid;
     }
 
     private String nullToBlank(String value) {
         return value == null ? "" : value;
     }
 
+    private record ChurchDialogFields(TextField churchCodeField, TextField churchNameField,
+                                      ComboBox<Region> regionComboBox,
+                                      ComboBox<Church.Status> statusComboBox,
+                                      TextField authorizedPersonNameField,
+                                      ComboBox<AuthorizedPersonPosition> authorizedPersonPositionComboBox,
+                                      TextField authorizedPersonPositionOtherField,
+                                      TextField smsMobileNumberField) {
+    }
+
     private static class RegionListCell extends ListCell<Region> {
         @Override
         protected void updateItem(Region region, boolean empty) {
             super.updateItem(region, empty);
-            setText(empty || region == null ? null : region.getRegionCode() + " - " + region.getRegionName());
+            if (empty || region == null) {
+                setText(null);
+            } else if (region.getId() == null) {
+                setText(region.getRegionName());
+            } else {
+                setText(region.getRegionCode() + " - " + region.getRegionName());
+            }
         }
     }
 
@@ -425,13 +477,18 @@ public class ChurchController {
     }
 
     private class ActionButtonCell extends TableCell<ChurchDto, Void> {
-        private final Button actionButton = new Button();
+        private final Button editButton = new Button("Edit");
+        private final Button statusButton = new Button();
+        private final HBox actionBox = new HBox(6, editButton, statusButton);
 
         private ActionButtonCell() {
             getStyleClass().add("centered-table-cell");
             setAlignment(Pos.CENTER);
-            actionButton.getStyleClass().add("table-action-button");
-            actionButton.setOnAction(event -> toggleChurchStatus(getTableView().getItems().get(getIndex())));
+            actionBox.setAlignment(Pos.CENTER);
+            editButton.getStyleClass().add("table-action-button");
+            statusButton.getStyleClass().add("table-action-button");
+            editButton.setOnAction(event -> showChurchDialog(getTableView().getItems().get(getIndex())));
+            statusButton.setOnAction(event -> toggleChurchStatus(getTableView().getItems().get(getIndex())));
         }
 
         @Override
@@ -443,9 +500,13 @@ public class ChurchController {
             }
 
             ChurchDto church = getTableView().getItems().get(getIndex());
-            actionButton.setText(church.isActive() ? "Deactivate" : "Activate");
-            actionButton.setDisable(!permissionGuard.can("church.delete"));
-            setGraphic(actionButton);
+            editButton.setVisible(permissionGuard.can("church.update"));
+            editButton.setManaged(editButton.isVisible());
+            statusButton.setVisible(permissionGuard.can("church.delete"));
+            statusButton.setManaged(statusButton.isVisible());
+            statusButton.setText(church.isActive() ? "Deactivate" : "Activate");
+            statusButton.setDisable(!permissionGuard.can("church.delete"));
+            setGraphic(actionBox);
         }
     }
 }

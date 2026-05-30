@@ -8,8 +8,6 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -22,49 +20,14 @@
         <Insets bottom="22" left="22" right="22" top="22"/>
     </padding>
 
-    <GridPane hgap="14" vgap="10">
-        <columnConstraints>
-            <ColumnConstraints minWidth="100" prefWidth="110"/>
-            <ColumnConstraints minWidth="150" prefWidth="180"/>
-            <ColumnConstraints minWidth="110" prefWidth="120"/>
-            <ColumnConstraints hgrow="ALWAYS" minWidth="280" prefWidth="420"/>
-        </columnConstraints>
-        <Label text="Church Code" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <TextField fx:id="churchCodeField" promptText="CH001" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-        <Label text="Church Name" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-        <TextField fx:id="churchNameField" prefWidth="420" promptText="Main Church" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-        <Label text="Region" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <ComboBox fx:id="regionComboBox" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <Label text="Status" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-        <ComboBox fx:id="statusComboBox" prefWidth="180" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-    </GridPane>
-
-    <Label styleClass="section-title" text="Authorized Person &amp; SMS Details"/>
-    <GridPane hgap="14" vgap="10">
-        <columnConstraints>
-            <ColumnConstraints minWidth="170" prefWidth="190"/>
-            <ColumnConstraints minWidth="190" prefWidth="220"/>
-            <ColumnConstraints minWidth="130" prefWidth="150"/>
-            <ColumnConstraints hgrow="ALWAYS" minWidth="220" prefWidth="320"/>
-        </columnConstraints>
-        <Label text="Authorized Person Name" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <TextField fx:id="authorizedPersonNameField" promptText="Name" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-        <Label text="Position" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-        <ComboBox fx:id="authorizedPersonPositionComboBox" prefWidth="220" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-        <Label fx:id="otherPositionLabel" text="Other Position" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <TextField fx:id="authorizedPersonPositionOtherField" promptText="Position" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <Label text="SMS Mobile Number" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-        <TextField fx:id="smsMobileNumberField" promptText="0771234567 or +94771234567" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-    </GridPane>
-
-    <HBox spacing="10">
-        <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="Save"/>
-        <Button fx:id="updateButton" onAction="#handleUpdate" text="Update"/>
-        <Button fx:id="clearButton" onAction="#handleClear" text="Clear"/>
+    <HBox alignment="CENTER_RIGHT">
+        <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="New Church"/>
     </HBox>
 
     <HBox alignment="CENTER_LEFT" spacing="10">
         <TextField fx:id="searchField" HBox.hgrow="ALWAYS" onAction="#handleSearch" promptText="Search by church code, church name, or region name"/>
+        <Label text="Region"/>
+        <ComboBox fx:id="regionFilterComboBox" prefWidth="220" promptText="All regions"/>
         <Button onAction="#handleSearch" text="Search"/>
         <Button onAction="#handleRefresh" text="Refresh"/>
     </HBox>
@@ -91,6 +54,4 @@
         <Region HBox.hgrow="ALWAYS"/>
         <Pagination fx:id="churchPagination" maxHeight="48"/>
     </HBox>
-
-    <Label fx:id="messageLabel" styleClass="form-message"/>
 </VBox>

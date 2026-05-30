@@ -348,7 +348,9 @@ public class RegionController {
     }
 
     private void setMessage(String message) {
-        messageLabel.setText(message);
+        if (messageLabel != null) {
+            messageLabel.setText(message);
+        }
     }
 
     private void showFriendlyError(String message) {

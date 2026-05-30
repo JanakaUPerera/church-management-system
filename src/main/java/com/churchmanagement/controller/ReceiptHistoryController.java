@@ -538,7 +538,9 @@ public class ReceiptHistoryController {
     }
 
     private void setMessage(String message) {
-        messageLabel.setText(message);
+        if (messageLabel != null) {
+            messageLabel.setText(message);
+        }
     }
 
     private void updateWeekEndDate() {

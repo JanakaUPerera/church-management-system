@@ -75,6 +75,4 @@
         <Region HBox.hgrow="ALWAYS"/>
         <Pagination fx:id="receiptPagination" maxHeight="48"/>
     </HBox>
-
-    <Label fx:id="messageLabel" styleClass="form-message"/>
 </VBox>
