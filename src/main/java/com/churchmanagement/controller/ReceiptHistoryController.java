@@ -14,6 +14,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptCancellationService;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
@@ -89,6 +90,8 @@ public class ReceiptHistoryController {
     @FXML private TableColumn<ReceiptResponseDto, String> statusColumn;
     @FXML private TableColumn<ReceiptResponseDto, String> totalColumn;
     @FXML private TableColumn<ReceiptResponseDto, Void> actionColumn;
+    @FXML private Button searchButton;
+    @FXML private Button clearButton;
     @FXML private Label messageLabel;
 
     @FXML
@@ -105,6 +108,7 @@ public class ReceiptHistoryController {
             return;
         }
 
+        configureButtonIcons();
         configureFilters();
         configureTable();
         loadFilters();
@@ -160,9 +164,9 @@ public class ReceiptHistoryController {
         weekColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatWeek(cellData.getValue())));
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus().name()));
         totalColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatAmount(cellData.getValue().getTotalAmount())));
-        actionColumn.setMinWidth(170);
-        actionColumn.setPrefWidth(180);
-        actionColumn.setMaxWidth(180);
+        actionColumn.setMinWidth(90);
+        actionColumn.setPrefWidth(100);
+        actionColumn.setMaxWidth(110);
         actionColumn.setResizable(false);
         actionColumn.setCellFactory(column -> new ViewButtonCell());
         regionColumn.setCellFactory(column -> alignedTextCell("receipt-center-cell"));
@@ -194,6 +198,11 @@ public class ReceiptHistoryController {
                 setText(empty ? null : item);
             }
         };
+    }
+
+    private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(searchButton, "fas-search");
+        ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
     }
 
     private String formatWeek(ReceiptResponseDto receipt) {
@@ -558,8 +567,8 @@ public class ReceiptHistoryController {
     }
 
     private class ViewButtonCell extends TableCell<ReceiptResponseDto, Void> {
-        private final Button viewButton = new Button("View");
-        private final Button recreateButton = new Button("Re-create");
+        private final Button viewButton = new Button();
+        private final Button recreateButton = new Button();
         private final HBox actionBox = new HBox(6, viewButton, recreateButton);
 
         private ViewButtonCell() {
@@ -567,6 +576,8 @@ public class ReceiptHistoryController {
             actionBox.setAlignment(Pos.CENTER);
             viewButton.getStyleClass().add("table-action-button");
             recreateButton.getStyleClass().add("table-action-button");
+            ButtonIconUtil.applyTableActionIcon(viewButton, "fas-eye", "View receipt");
+            ButtonIconUtil.applyTableActionIcon(recreateButton, "fas-redo", "Re-create receipt");
             viewButton.setOnAction(event -> showReceiptDetailsDialog(getTableView().getItems().get(getIndex())));
             recreateButton.setOnAction(event -> recreateReceipt(getTableView().getItems().get(getIndex())));
         }

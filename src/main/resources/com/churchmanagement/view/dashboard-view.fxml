@@ -25,7 +25,7 @@
                 <Label fx:id="fullNameLabel" styleClass="header-user-name"/>
                 <Label fx:id="roleNameLabel" styleClass="header-user-role"/>
             </VBox>
-            <Button onAction="#handleLogout" styleClass="logout-button" text="Logout"/>
+            <Button fx:id="logoutButton" onAction="#handleLogout" styleClass="logout-button" text="Logout"/>
         </HBox>
     </top>
 

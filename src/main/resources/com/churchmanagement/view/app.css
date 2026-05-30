@@ -78,6 +78,25 @@
     -fx-cursor: default;
 }
 
+.button-icon {
+    -fx-icon-color: #78350f;
+    -fx-icon-size: 14px;
+}
+
+.button:hover .button-icon {
+    -fx-icon-color: #451a03;
+}
+
+.primary-button .button-icon,
+.button:default .button-icon {
+    -fx-icon-color: white;
+}
+
+.primary-button:hover .button-icon,
+.button:default:hover .button-icon {
+    -fx-icon-color: white;
+}
+
 /* Login screen "Login" button (defaultButton="true") */
 .button:default {
     -fx-background-color: #d97706;
@@ -119,7 +138,19 @@
 /* ─── Table row action button ─── */
 
 .table-action-button {
-    -fx-padding: 5 10;
+    -fx-padding: 0;
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-max-width: 34px;
+}
+
+.table-action-icon {
+    -fx-icon-color: #78350f;
+    -fx-icon-size: 14px;
+}
+
+.table-action-button:hover .table-action-icon {
+    -fx-icon-color: #451a03;
 }
 
 /* ═══════════════════════════════════════════════
@@ -504,6 +535,10 @@
 
 .logout-button:pressed {
     -fx-background-color: #fcd34d;
+}
+
+.logout-button .button-icon {
+    -fx-icon-color: #451a03;
 }
 
 /* ═══════════════════════════════════════════════

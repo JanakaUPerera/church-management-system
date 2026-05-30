@@ -4,6 +4,7 @@ import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.service.AuthService;
+import com.churchmanagement.util.ButtonIconUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -34,11 +35,15 @@ public class LoginController {
     private Button togglePasswordButton;
 
     @FXML
+    private Button loginButton;
+
+    @FXML
     private Label errorLabel;
 
     @FXML
     private void initialize() {
         visiblePasswordField.textProperty().bindBidirectional(passwordField.textProperty());
+        ButtonIconUtil.applyIcon(loginButton, "fas-sign-in-alt");
         setPasswordVisible(false);
     }
 

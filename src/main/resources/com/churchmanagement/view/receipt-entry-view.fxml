@@ -97,7 +97,7 @@
        <HBox spacing="10">
       <children>
               <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="Save Receipt" />
-              <Button onAction="#handleClear" text="Clear" />
+              <Button fx:id="clearButton" onAction="#handleClear" text="Clear" />
       </children>
        </HBox>
    

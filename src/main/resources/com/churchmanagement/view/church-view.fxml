@@ -28,8 +28,8 @@
         <TextField fx:id="searchField" HBox.hgrow="ALWAYS" onAction="#handleSearch" promptText="Search by church code, church name, or region name"/>
         <Label text="Region"/>
         <ComboBox fx:id="regionFilterComboBox" prefWidth="220" promptText="All regions"/>
-        <Button onAction="#handleSearch" text="Search"/>
-        <Button onAction="#handleRefresh" text="Refresh"/>
+        <Button fx:id="searchButton" onAction="#handleSearch" text="Search"/>
+        <Button fx:id="refreshButton" onAction="#handleRefresh" text="Refresh"/>
     </HBox>
 
     <TableView fx:id="churchTable" VBox.vgrow="ALWAYS">
@@ -40,7 +40,7 @@
             <TableColumn fx:id="authorizedPersonColumn" prefWidth="180" text="Authorized Person"/>
             <TableColumn fx:id="smsMobileNumberColumn" prefWidth="150" text="SMS Mobile Number"/>
             <TableColumn fx:id="statusColumn" prefWidth="110" text="Status"/>
-            <TableColumn fx:id="actionColumn" prefWidth="120" text="Action"/>
+            <TableColumn fx:id="actionColumn" prefWidth="90" text="Action"/>
         </columns>
         <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>

@@ -8,6 +8,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -50,6 +51,12 @@ public class ChurchController {
 
     @FXML
     private Button saveButton;
+
+    @FXML
+    private Button searchButton;
+
+    @FXML
+    private Button refreshButton;
 
     @FXML
     private TextField searchField;
@@ -110,6 +117,7 @@ public class ChurchController {
             return;
         }
 
+        configureButtonIcons();
         configureTable();
         applyPermissions();
         refreshRegions();
@@ -167,6 +175,12 @@ public class ChurchController {
         saveButton.setVisible(permissionGuard.can("church.create"));
         saveButton.setManaged(saveButton.isVisible());
         actionColumn.setVisible(permissionGuard.can("church.update") || permissionGuard.can("church.delete"));
+    }
+
+    private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(saveButton, "fas-plus");
+        ButtonIconUtil.applyIcon(searchButton, "fas-search");
+        ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
     private void refreshRegions() {
@@ -477,7 +491,7 @@ public class ChurchController {
     }
 
     private class ActionButtonCell extends TableCell<ChurchDto, Void> {
-        private final Button editButton = new Button("Edit");
+        private final Button editButton = new Button();
         private final Button statusButton = new Button();
         private final HBox actionBox = new HBox(6, editButton, statusButton);
 
@@ -487,6 +501,7 @@ public class ChurchController {
             actionBox.setAlignment(Pos.CENTER);
             editButton.getStyleClass().add("table-action-button");
             statusButton.getStyleClass().add("table-action-button");
+            ButtonIconUtil.applyTableActionIcon(editButton, "fas-edit", "Edit church");
             editButton.setOnAction(event -> showChurchDialog(getTableView().getItems().get(getIndex())));
             statusButton.setOnAction(event -> toggleChurchStatus(getTableView().getItems().get(getIndex())));
         }
@@ -504,7 +519,9 @@ public class ChurchController {
             editButton.setManaged(editButton.isVisible());
             statusButton.setVisible(permissionGuard.can("church.delete"));
             statusButton.setManaged(statusButton.isVisible());
-            statusButton.setText(church.isActive() ? "Deactivate" : "Activate");
+            ButtonIconUtil.applyTableActionIcon(statusButton,
+                    church.isActive() ? "fas-toggle-off" : "fas-toggle-on",
+                    church.isActive() ? "Deactivate church" : "Activate church");
             statusButton.setDisable(!permissionGuard.can("church.delete"));
             setGraphic(actionBox);
         }

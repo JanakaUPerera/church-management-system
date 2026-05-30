@@ -49,7 +49,7 @@
                       </StackPane>
       </children>
                </VBox>
-               <Button defaultButton="true" maxWidth="Infinity" onAction="#handleLogin" prefHeight="35" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Login">
+               <Button fx:id="loginButton" defaultButton="true" maxWidth="Infinity" onAction="#handleLogin" prefHeight="35" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Login">
                    <VBox.margin>
                        <Insets bottom="4" />
                    </VBox.margin>

@@ -13,6 +13,7 @@ import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptService;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.util.ComboBoxUtil;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.WeekUtil;
@@ -74,6 +75,7 @@ public class ReceiptEntryController {
     @FXML private TextField otherDonationsAmountField;
     @FXML private TextField otherDonationsNoteField;
     @FXML private Button saveButton;
+    @FXML private Button clearButton;
     @FXML private Label totalAmountLabel;
     @FXML private Label messageLabel;
 
@@ -94,6 +96,7 @@ public class ReceiptEntryController {
             return;
         }
 
+        configureButtonIcons();
         configureControls();
         loadActiveChurches();
         weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
@@ -141,6 +144,11 @@ public class ReceiptEntryController {
         otherDonationsAmountField.textProperty().addListener((observable, oldValue, newValue) -> updateTotalAmount());
         updateCorrectionVisibility();
         updateTotalAmount();
+    }
+
+    private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(saveButton, "fas-save");
+        ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
     }
 
     private void loadActiveChurches() {

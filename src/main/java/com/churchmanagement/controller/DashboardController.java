@@ -5,6 +5,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -62,6 +63,9 @@ public class DashboardController {
     private Button sidebarToggleButton;
 
     @FXML
+    private Button logoutButton;
+
+    @FXML
     private Button dashboardButton;
 
     @FXML
@@ -109,6 +113,7 @@ public class DashboardController {
         permissionGuard = new PermissionGuard(currentUser);
         fullNameLabel.setText(currentUser.getFullName());
         roleNameLabel.setText(currentUser.getRoleName());
+        ButtonIconUtil.applyIcon(logoutButton, "fas-sign-out-alt");
 
         menuDefinitions = createMenuDefinitions();
         applyMenuIcons();

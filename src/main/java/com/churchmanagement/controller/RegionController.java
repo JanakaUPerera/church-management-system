@@ -6,6 +6,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -43,6 +44,12 @@ public class RegionController {
 
     @FXML
     private Button saveButton;
+
+    @FXML
+    private Button searchButton;
+
+    @FXML
+    private Button refreshButton;
 
     @FXML
     private TextField searchField;
@@ -94,6 +101,7 @@ public class RegionController {
             return;
         }
 
+        configureButtonIcons();
         configureTable();
         applyPermissions();
         refreshRegions();
@@ -163,7 +171,7 @@ public class RegionController {
             }
         });
         actionColumn.setCellFactory(column -> new TableCell<>() {
-            private final Button editButton = new Button("Edit");
+            private final Button editButton = new Button();
             private final Button statusButton = new Button();
             private final HBox actionBox = new HBox(6, editButton, statusButton);
 
@@ -173,6 +181,7 @@ public class RegionController {
                 actionBox.setAlignment(Pos.CENTER);
                 editButton.getStyleClass().add("table-action-button");
                 statusButton.getStyleClass().add("table-action-button");
+                ButtonIconUtil.applyTableActionIcon(editButton, "fas-edit", "Edit region");
                 editButton.setOnAction(event -> showRegionDialog(getTableView().getItems().get(getIndex())));
                 statusButton.setOnAction(event -> toggleRegionStatus(getTableView().getItems().get(getIndex())));
             }
@@ -190,7 +199,9 @@ public class RegionController {
                 editButton.setManaged(editButton.isVisible());
                 statusButton.setVisible(permissionGuard.can("region.delete"));
                 statusButton.setManaged(statusButton.isVisible());
-                statusButton.setText(region.isActive() ? "Deactivate" : "Activate");
+                ButtonIconUtil.applyTableActionIcon(statusButton,
+                        region.isActive() ? "fas-toggle-off" : "fas-toggle-on",
+                        region.isActive() ? "Deactivate region" : "Activate region");
                 statusButton.setDisable(!permissionGuard.can("region.delete"));
                 setGraphic(actionBox);
             }
@@ -209,6 +220,12 @@ public class RegionController {
         saveButton.setVisible(permissionGuard.can("region.create"));
         saveButton.setManaged(saveButton.isVisible());
         actionColumn.setVisible(permissionGuard.can("region.update") || permissionGuard.can("region.delete"));
+    }
+
+    private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(saveButton, "fas-plus");
+        ButtonIconUtil.applyIcon(searchButton, "fas-search");
+        ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
     private void refreshRegions() {
