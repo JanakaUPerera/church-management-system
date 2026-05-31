@@ -64,6 +64,7 @@ public class SmsLogController {
     @FXML private TextField receiptNoField;
     @FXML private Button searchButton;
     @FXML private Button clearButton;
+    @FXML private Button refreshButton;
     @FXML private TableView<SmsLogDto> smsLogTable;
     @FXML private TableColumn<SmsLogDto, String> dateTimeColumn;
     @FXML private TableColumn<SmsLogDto, String> receiptNoColumn;
@@ -110,12 +111,18 @@ public class SmsLogController {
         loadLatestLogs();
     }
 
+    @FXML
+    private void handleRefresh() {
+        handleClear();
+    }
+
     private void configureButtonIcons() {
         canResendSms = AuthContext.getCurrentUser()
                 .map(user -> new PermissionGuard(user).can("sms.resend"))
                 .orElse(false);
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
         ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
+        ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
     private void configureFilters() {

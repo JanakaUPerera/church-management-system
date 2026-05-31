@@ -24,7 +24,7 @@
         <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="New Church"/>
     </HBox>
 
-    <HBox alignment="CENTER_LEFT" spacing="10">
+    <HBox alignment="CENTER_RIGHT" spacing="10">
         <TextField fx:id="searchField" HBox.hgrow="ALWAYS" onAction="#handleSearch" promptText="Search by church code, church name, or region name"/>
         <Label text="Region"/>
         <ComboBox fx:id="regionFilterComboBox" prefWidth="220" promptText="All regions"/>

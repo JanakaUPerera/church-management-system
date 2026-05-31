@@ -101,6 +101,7 @@ public class ReceiptHistoryController {
     @FXML private TableColumn<ReceiptResponseDto, Void> actionColumn;
     @FXML private Button searchButton;
     @FXML private Button clearButton;
+    @FXML private Button refreshButton;
     @FXML private Label messageLabel;
 
     @FXML
@@ -149,6 +150,11 @@ public class ReceiptHistoryController {
         receiptNoField.clear();
         statusComboBox.getSelectionModel().clearSelection();
         handleSearch();
+    }
+
+    @FXML
+    private void handleRefresh() {
+        handleClear();
     }
 
     private void configureFilters() {
@@ -212,6 +218,7 @@ public class ReceiptHistoryController {
     private void configureButtonIcons() {
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
         ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
+        ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
     private String formatWeek(ReceiptResponseDto receipt) {
