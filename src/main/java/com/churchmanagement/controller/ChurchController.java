@@ -10,6 +10,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -255,19 +256,21 @@ public class ChurchController {
             return;
         }
 
-        try {
+        ProcessingDialog.run(church.isActive() ? "Deactivate Church" : "Activate Church",
+                church.isActive() ? "Deactivating church..." : "Activating church...",
+                () -> {
             if (church.isActive()) {
                 churchService.deactivate(church.getId(), currentUser.getUserId());
-                setMessage("Church deactivated successfully.");
             } else {
                 churchService.activate(church.getId(), currentUser.getUserId());
-                setMessage("Church activated successfully.");
             }
+                },
+                () -> {
+            setMessage(church.isActive() ? "Church deactivated successfully." : "Church activated successfully.");
             clearForm();
             refreshChurches();
-        } catch (ChurchService.ChurchException exception) {
-            showFriendlyError(exception.getMessage());
-        }
+                },
+                this::showProcessingError);
     }
 
     private boolean confirmDeactivate(ChurchDto church) {
@@ -308,6 +311,11 @@ public class ChurchController {
         alert.showAndWait();
     }
 
+    private void showProcessingError(Throwable throwable) {
+        String message = throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+        showFriendlyError(message);
+    }
+
     private void showChurchDialog(ChurchDto church) {
         boolean editing = church != null;
         Dialog<ButtonType> dialog = DialogStyler.apply(new Dialog<>());
@@ -321,10 +329,14 @@ public class ChurchController {
 
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         submitButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            submitButton.setDisable(true);
             ChurchDialogFields fields = (ChurchDialogFields) dialog.getDialogPane().getContent().getUserData();
             Region selectedRegion = fields.regionComboBox().getSelectionModel().getSelectedItem();
             Long regionId = selectedRegion == null ? null : selectedRegion.getId();
-            try {
+            ProcessingDialog.run(editing ? "Update Church" : "Create Church",
+                    editing ? "Updating church..." : "Creating church...",
+                    () -> {
                 if (editing) {
                     churchService.update(church.getId(), fields.churchCodeField().getText(),
                             fields.churchNameField().getText(), regionId, fields.statusComboBox().getValue(),
@@ -332,9 +344,6 @@ public class ChurchController {
                             fields.authorizedPersonPositionComboBox().getValue(),
                             fields.authorizedPersonPositionOtherField().getText(),
                             fields.smsMobileNumberField().getText(), currentUser.getUserId());
-                    clearForm();
-                    refreshChurches();
-                    setMessage("Church updated successfully.");
                 } else {
                     churchService.create(fields.churchCodeField().getText(), fields.churchNameField().getText(),
                             regionId, fields.statusComboBox().getValue(),
@@ -342,14 +351,18 @@ public class ChurchController {
                             fields.authorizedPersonPositionComboBox().getValue(),
                             fields.authorizedPersonPositionOtherField().getText(),
                             fields.smsMobileNumberField().getText(), currentUser.getUserId());
-                    clearForm();
-                    refreshChurches();
-                    setMessage("Church created successfully.");
                 }
-            } catch (ChurchService.ChurchException exception) {
-                event.consume();
-                showFriendlyError(exception.getMessage());
-            }
+                    },
+                    () -> {
+                clearForm();
+                refreshChurches();
+                setMessage(editing ? "Church updated successfully." : "Church created successfully.");
+                dialog.close();
+                    },
+                    throwable -> {
+                submitButton.setDisable(false);
+                showProcessingError(throwable);
+                    });
         });
 
         dialog.showAndWait();

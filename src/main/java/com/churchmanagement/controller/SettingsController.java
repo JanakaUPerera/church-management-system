@@ -9,6 +9,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.MockSmsService;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -64,15 +65,20 @@ public class SettingsController {
             return;
         }
 
-        SmsSettings settings = smsSettingsRepository.saveSettings(
-                smsEnabledCheckBox.isSelected(),
-                gatewayTypeComboBox.getValue(),
-                comPortField.getText(),
-                baudRate
-        );
-        activityLogService.logSmsSettingsUpdated(currentUser.getUserId(), settings.isSmsEnabled(),
-                settings.getGatewayType().name());
-        showInfo("SMS settings saved", "SMS gateway settings were saved.");
+        ProcessingDialog.run("Save Settings", "Saving SMS settings...",
+                () -> {
+                    SmsSettings settings = smsSettingsRepository.saveSettings(
+                            smsEnabledCheckBox.isSelected(),
+                            gatewayTypeComboBox.getValue(),
+                            comPortField.getText(),
+                            baudRate
+                    );
+                    activityLogService.logSmsSettingsUpdated(currentUser.getUserId(), settings.isSmsEnabled(),
+                            settings.getGatewayType().name());
+                    return settings;
+                },
+                settings -> showInfo("SMS settings saved", "SMS gateway settings were saved."),
+                throwable -> showError("SMS settings failed", processingMessage(throwable)));
     }
 
     @FXML
@@ -95,14 +101,25 @@ public class SettingsController {
             return;
         }
 
-        SmsResult result = mockSmsService.sendSms(mobileNumber.get(), "Test SMS from Church Management System.");
-        if (result.isSuccess()) {
-            activityLogService.logSmsTestSent(currentUser.getUserId(), mobileNumber.get(), result.getProvider());
-            showInfo("Test SMS sent", result.getMessage());
-        } else {
-            activityLogService.logSmsTestFailed(currentUser.getUserId(), mobileNumber.get(), result.getMessage());
-            showError("Test SMS failed", result.getMessage());
-        }
+        ProcessingDialog.run("Test SMS", "Sending test SMS...",
+                () -> {
+                    SmsResult result = mockSmsService.sendSms(mobileNumber.get(),
+                            "Test SMS from Church Management System.");
+                    if (result.isSuccess()) {
+                        activityLogService.logSmsTestSent(currentUser.getUserId(), mobileNumber.get(), result.getProvider());
+                    } else {
+                        activityLogService.logSmsTestFailed(currentUser.getUserId(), mobileNumber.get(), result.getMessage());
+                    }
+                    return result;
+                },
+                result -> {
+                    if (result.isSuccess()) {
+                        showInfo("Test SMS sent", result.getMessage());
+                    } else {
+                        showError("Test SMS failed", result.getMessage());
+                    }
+                },
+                throwable -> showError("Test SMS failed", processingMessage(throwable)));
     }
 
     private void loadSmsSettings() {
@@ -145,5 +162,9 @@ public class SettingsController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private String processingMessage(Throwable throwable) {
+        return throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
     }
 }

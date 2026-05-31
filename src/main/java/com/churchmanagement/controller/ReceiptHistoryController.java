@@ -20,6 +20,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.TablePaginationUtil;
 import com.churchmanagement.util.WeekUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -538,17 +539,17 @@ public class ReceiptHistoryController {
         request.setReceiptId(receipt.getId());
         request.setCancelReason(reason.get());
 
-        try {
-            ReceiptResponseDto cancelled = receiptCancellationService.cancelReceipt(request);
+        ProcessingDialog.run("Cancel Receipt", "Cancelling receipt...",
+                () -> receiptCancellationService.cancelReceipt(request),
+                cancelled -> {
             handleSearch();
             receiptTable.getSelectionModel().select(receipts.stream()
                     .filter(item -> item.getId().equals(cancelled.getId()))
                     .findFirst()
                     .orElse(null));
             setMessage("Receipt " + cancelled.getReceiptNo() + " cancelled.");
-        } catch (ReceiptCancellationService.ReceiptCancellationException | SecurityException exception) {
-            showError("Cancel Receipt", exception.getMessage());
-        }
+                },
+                throwable -> showProcessingError("Cancel Receipt", throwable));
     }
 
     private void recreateReceipt(ReceiptResponseDto receipt) {
@@ -556,39 +557,40 @@ public class ReceiptHistoryController {
     }
 
     private void openPdf(ReceiptResponseDto receipt) {
-        try {
+        ProcessingDialog.run("Open PDF", "Preparing PDF...",
+                () -> {
             String path = receipt.getPdfFilePath();
             if (path == null || path.isBlank()) {
                 path = receiptPrintService.generatePdf(receipt.getId());
             }
             if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                showError("Open PDF", "PDF was generated, but this computer cannot open it automatically.");
-                return;
+                throw new ReceiptPrintService.ReceiptPrintException(
+                        "PDF was generated, but this computer cannot open it automatically.");
             }
             Desktop.getDesktop().open(new File(path));
-        } catch (IOException | ReceiptPrintService.ReceiptPrintException exception) {
-            showError("Open PDF", "PDF generation failed.");
-        }
+                },
+                () -> setMessage("PDF opened."),
+                throwable -> showProcessingError("Open PDF", throwable));
     }
 
     private void printOriginal(ReceiptResponseDto receipt) {
-        try {
-            receiptPrintService.printOriginalReceipt(receipt.getId());
+        ProcessingDialog.run("Print Original", "Sending receipt to printer...",
+                () -> receiptPrintService.printOriginalReceipt(receipt.getId()),
+                () -> {
             handleSearch();
             setMessage("Original receipt " + receipt.getReceiptNo() + " was sent to the printer.");
-        } catch (ReceiptPrintService.ReceiptPrintException | SecurityException exception) {
-            showError("Print Original", exception.getMessage());
-        }
+                },
+                throwable -> showProcessingError("Print Original", throwable));
     }
 
     private void sendSms(ReceiptResponseDto receipt) {
-        try {
-            receiptSmsNotificationService.sendReceiptSubmissionSms(receipt.getId());
+        ProcessingDialog.run("Send SMS", "Sending SMS notification...",
+                () -> receiptSmsNotificationService.sendReceiptSubmissionSms(receipt.getId()),
+                () -> {
             handleSearch();
             setMessage("SMS notification processed for receipt " + receipt.getReceiptNo() + ".");
-        } catch (ReceiptSmsNotificationService.SmsNotificationException | SecurityException exception) {
-            showError("Send SMS", exception.getMessage());
-        }
+                },
+                throwable -> showProcessingError("Send SMS", throwable));
     }
 
     private boolean canPrintOriginal(ReceiptResponseDto receipt) {
@@ -707,6 +709,11 @@ public class ReceiptHistoryController {
         alert.setContentText(message);
         alert.showAndWait();
         setMessage(message);
+    }
+
+    private void showProcessingError(String title, Throwable throwable) {
+        String message = throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+        showError(title, message);
     }
 
     private class ViewButtonCell extends TableCell<ReceiptResponseDto, Void> {

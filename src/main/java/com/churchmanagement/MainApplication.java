@@ -10,7 +10,9 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.io.IOException;
 
@@ -36,7 +38,9 @@ public class MainApplication extends Application {
 
         FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.LOGIN_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
+        scene.setFill(Color.TRANSPARENT);
 
+        stage.initStyle(StageStyle.TRANSPARENT);
         stage.setTitle(AppConfig.APPLICATION_NAME);
         stage.setScene(scene);
         stage.setMinWidth(AppConfig.LOGIN_WIDTH);

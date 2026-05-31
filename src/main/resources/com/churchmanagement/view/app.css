@@ -31,6 +31,32 @@
     -fx-font-weight: bold !important;
 }
 
+.processing-dialog-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.processing-dialog-pane > .button-bar {
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+.processing-dialog-overlay {
+    -fx-background-color: rgba(69, 26, 3, 0.22);
+}
+
+.processing-dialog-card {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(69, 26, 3, 0.20), 18, 0.18, 0, 6);
+}
+
+.processing-dialog-label {
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold !important;
+}
+
 /* ═══════════════════════════════════════════════
    CONTROL SIZING  (applied before appearance rules)
    ═══════════════════════════════════════════════ */
@@ -546,14 +572,77 @@
     -fx-icon-color: #451a03;
 }
 
+.window-control-button {
+    -fx-min-width: 38;
+    -fx-pref-width: 38;
+    -fx-max-width: 38;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 8;
+}
+
+.window-control-button:hover {
+    -fx-background-color: rgba(254, 243, 199, 0.16);
+}
+
+.window-control-button:pressed {
+    -fx-background-color: rgba(254, 243, 199, 0.26);
+}
+
+.window-control-button .button-icon {
+    -fx-icon-color: #fef3c7;
+}
+
 /* ═══════════════════════════════════════════════
    LOGIN SCREEN
    ═══════════════════════════════════════════════ */
+
+.login-root {
+    -fx-background-color: #78350f;
+    -fx-background-radius: 16;
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 16;
+}
 
 .login-field-label {
     -fx-text-fill: #fde68a;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
+}
+
+.login-close-button {
+    -fx-min-width: 34;
+    -fx-pref-width: 34;
+    -fx-max-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-max-height: 34;
+    -fx-background-color: #fef3c7;
+    -fx-background-radius: 999;
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 999;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(69, 26, 3, 0.24), 12, 0.18, 0, 3);
+}
+
+.login-close-button:hover {
+    -fx-background-color: #f59e0b;
+}
+
+.login-close-button:pressed {
+    -fx-background-color: #d97706;
+}
+
+.login-close-button .button-icon {
+    -fx-icon-color: #78350f;
+    -fx-icon-size: 14px;
+}
+
+.login-close-button:hover .button-icon,
+.login-close-button:pressed .button-icon {
+    -fx-icon-color: #451a03;
 }
 
 /* Extra right padding reserves space for the toggle button */

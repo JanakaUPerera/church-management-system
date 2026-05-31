@@ -14,6 +14,7 @@ import com.churchmanagement.service.SmsResendService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -382,15 +383,13 @@ public class SmsLogController {
         SmsResendRequest request = new SmsResendRequest();
         request.setSmsLogId(log.getId());
         request.setResendReason(reason.reason());
-        try {
-            smsResendService.resendSms(request);
+        ProcessingDialog.run("Resend SMS", "Resending SMS...",
+                () -> smsResendService.resendSms(request),
+                result -> {
             setMessage("SMS resent for log " + log.getId() + ".");
             handleSearch();
-        } catch (SmsResendService.SmsResendException exception) {
-            showError("Resend SMS", exception.getMessage());
-        } catch (DatabaseException exception) {
-            showError("Resend SMS", "Unable to resend SMS.");
-        }
+                },
+                throwable -> showProcessingError("Resend SMS", throwable));
     }
 
     private OptionalResendReason promptResendConfirmation(SmsLogDto log) {
@@ -499,5 +498,10 @@ public class SmsLogController {
     }
 
     private record OptionalResendReason(boolean confirmed, String reason) {
+    }
+
+    private void showProcessingError(String title, Throwable throwable) {
+        String message = throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+        showError(title, message);
     }
 }

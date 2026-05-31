@@ -7,6 +7,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,9 +16,13 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
@@ -34,6 +39,8 @@ public class DashboardController {
     private PermissionGuard permissionGuard;
     private List<MenuDefinition> menuDefinitions;
     private boolean sidebarCollapsed;
+    private double windowDragOffsetX;
+    private double windowDragOffsetY;
 
     private static final double SIDEBAR_EXPANDED_WIDTH = 235;
     private static final double SIDEBAR_COLLAPSED_WIDTH = 72;
@@ -60,10 +67,19 @@ public class DashboardController {
     private VBox sidebar;
 
     @FXML
+    private HBox appHeader;
+
+    @FXML
     private Button sidebarToggleButton;
 
     @FXML
     private Button logoutButton;
+
+    @FXML
+    private Button minimizeWindowButton;
+
+    @FXML
+    private Button maximizeWindowButton;
 
     @FXML
     private Button dashboardButton;
@@ -117,6 +133,7 @@ public class DashboardController {
         fullNameLabel.setText(currentUser.getFullName());
         roleNameLabel.setText(currentUser.getRoleName());
         ButtonIconUtil.applyIcon(logoutButton, "fas-sign-out-alt");
+        configureWindowHeader();
 
         menuDefinitions = createMenuDefinitions();
         applyMenuIcons();
@@ -133,18 +150,72 @@ public class DashboardController {
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.LOGIN_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
-        Stage stage = (Stage) dateLabel.getScene().getWindow();
+        scene.setFill(Color.TRANSPARENT);
+        Stage dashboardStage = (Stage) dateLabel.getScene().getWindow();
+        Stage stage = new Stage(StageStyle.TRANSPARENT);
 
         stage.setTitle(AppConfig.APPLICATION_NAME);
-        stage.setFullScreen(false);
-        stage.setMaximized(false);
-        stage.setIconified(false);
         stage.setScene(scene);
         stage.setMinWidth(AppConfig.LOGIN_WIDTH);
         stage.setMinHeight(AppConfig.LOGIN_HEIGHT);
         stage.setWidth(AppConfig.LOGIN_WIDTH);
         stage.setHeight(AppConfig.LOGIN_HEIGHT);
         stage.centerOnScreen();
+        stage.show();
+        dashboardStage.close();
+    }
+
+    @FXML
+    private void minimizeWindow() {
+        ((Stage) appHeader.getScene().getWindow()).setIconified(true);
+    }
+
+    @FXML
+    private void toggleMaximizeWindow() {
+        Stage stage = (Stage) appHeader.getScene().getWindow();
+        stage.setMaximized(!stage.isMaximized());
+        updateMaximizeIcon(stage);
+    }
+
+    private void configureWindowHeader() {
+        ButtonIconUtil.applyIcon(minimizeWindowButton, "fas-window-minimize");
+        ButtonIconUtil.applyIcon(maximizeWindowButton, "fas-window-maximize");
+        minimizeWindowButton.setText("");
+        maximizeWindowButton.setText("");
+        minimizeWindowButton.setTooltip(new Tooltip("Minimize"));
+        maximizeWindowButton.setTooltip(new Tooltip("Maximize / Restore"));
+
+        appHeader.setOnMousePressed(event -> {
+            Stage stage = (Stage) appHeader.getScene().getWindow();
+            windowDragOffsetX = stage.isMaximized() ? stage.getWidth() / 2 : event.getSceneX();
+            windowDragOffsetY = event.getSceneY();
+        });
+        appHeader.setOnMouseDragged(event -> {
+            Stage stage = (Stage) appHeader.getScene().getWindow();
+            if (stage.isMaximized()) {
+                stage.setMaximized(false);
+                updateMaximizeIcon(stage);
+            }
+            stage.setX(event.getScreenX() - windowDragOffsetX);
+            stage.setY(event.getScreenY() - windowDragOffsetY);
+        });
+        appHeader.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                toggleMaximizeWindow();
+            }
+        });
+        Platform.runLater(() -> {
+            Stage stage = (Stage) appHeader.getScene().getWindow();
+            stage.maximizedProperty().addListener((observable, oldValue, newValue) -> updateMaximizeIcon(stage));
+            updateMaximizeIcon(stage);
+        });
+    }
+
+    private void updateMaximizeIcon(Stage stage) {
+        ButtonIconUtil.applyIcon(maximizeWindowButton, stage.isMaximized()
+                ? "fas-window-restore"
+                : "fas-window-maximize");
+        maximizeWindowButton.setText("");
     }
 
     @FXML

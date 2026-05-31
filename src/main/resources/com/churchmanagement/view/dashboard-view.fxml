@@ -15,7 +15,7 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.churchmanagement.controller.DashboardController">
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="18" styleClass="app-header">
+        <HBox fx:id="appHeader" alignment="CENTER_LEFT" spacing="18" styleClass="app-header">
             <padding>
                 <Insets bottom="14" left="22" right="22" top="14"/>
             </padding>
@@ -26,6 +26,8 @@
                 <Label fx:id="roleNameLabel" styleClass="header-user-role"/>
             </VBox>
             <Button fx:id="logoutButton" onAction="#handleLogout" styleClass="logout-button" text="Logout"/>
+            <Button fx:id="minimizeWindowButton" onAction="#minimizeWindow" styleClass="window-control-button"/>
+            <Button fx:id="maximizeWindowButton" onAction="#toggleMaximizeWindow" styleClass="window-control-button"/>
         </HBox>
     </top>
 

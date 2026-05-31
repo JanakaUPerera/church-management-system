@@ -8,6 +8,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -257,25 +258,31 @@ public class RegionController {
 
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         submitButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            submitButton.setDisable(true);
             RegionDialogFields fields = (RegionDialogFields) dialog.getDialogPane().getContent().getUserData();
-            try {
+            ProcessingDialog.run(editing ? "Update Region" : "Create Region",
+                    editing ? "Updating region..." : "Creating region...",
+                    () -> {
                 if (editing) {
                     regionService.update(region.getId(), fields.regionCodeField().getText(),
                             fields.regionNameField().getText(), fields.statusComboBox().getValue(),
                             currentUser.getUserId());
-                    clearForm();
-                    setMessage("Region updated successfully.");
                 } else {
                     regionService.create(fields.regionCodeField().getText(), fields.regionNameField().getText(),
                             fields.statusComboBox().getValue(), currentUser.getUserId());
-                    clearForm();
-                    setMessage("Region created successfully.");
                 }
+                    },
+                    () -> {
+                clearForm();
+                setMessage(editing ? "Region updated successfully." : "Region created successfully.");
                 refreshRegions();
-            } catch (RegionService.RegionException exception) {
-                event.consume();
-                showFriendlyError(exception.getMessage());
-            }
+                dialog.close();
+                    },
+                    throwable -> {
+                submitButton.setDisable(false);
+                showProcessingError(throwable);
+                    });
         });
 
         dialog.showAndWait();
@@ -327,19 +334,21 @@ public class RegionController {
             return;
         }
 
-        try {
+        ProcessingDialog.run(region.isActive() ? "Deactivate Region" : "Activate Region",
+                region.isActive() ? "Deactivating region..." : "Activating region...",
+                () -> {
             if (region.isActive()) {
                 regionService.deactivate(region.getId(), currentUser.getUserId());
-                setMessage("Region deactivated successfully.");
             } else {
                 regionService.activate(region.getId(), currentUser.getUserId());
-                setMessage("Region activated successfully.");
             }
+                },
+                () -> {
+            setMessage(region.isActive() ? "Region deactivated successfully." : "Region activated successfully.");
             clearForm();
             refreshRegions();
-        } catch (RegionService.RegionException exception) {
-            showFriendlyError(exception.getMessage());
-        }
+                },
+                this::showProcessingError);
     }
 
     private boolean confirmDeactivate(RegionDto region) {
@@ -377,6 +386,11 @@ public class RegionController {
         alert.setHeaderText("Unable to complete action");
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void showProcessingError(Throwable throwable) {
+        String message = throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+        showFriendlyError(message);
     }
 
     private record RegionDialogFields(TextField regionCodeField, TextField regionNameField,

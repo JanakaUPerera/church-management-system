@@ -17,6 +17,7 @@ import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.WeekUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -125,14 +126,14 @@ public class ReceiptEntryController {
             return;
         }
 
-        try {
-            ReceiptResponseDto response = receiptService.createReceipt(request);
-            showReceiptSavedDialog(response);
-            setMessage("Receipt " + response.getReceiptNo() + " created successfully.");
-            clearForm();
-        } catch (ReceiptService.ReceiptException | SecurityException exception) {
-            showFriendlyError(exception.getMessage());
-        }
+        ProcessingDialog.run("Generate Receipt", "Generating receipt...",
+                () -> receiptService.createReceipt(request),
+                response -> {
+                    showReceiptSavedDialog(response);
+                    setMessage("Receipt " + response.getReceiptNo() + " created successfully.");
+                    clearForm();
+                },
+                this::showProcessingError);
     }
 
     @FXML
@@ -362,7 +363,8 @@ public class ReceiptEntryController {
         container.setPrefWidth(430);
         container.getChildren().addAll(
                 summaryRow("Church:", church == null ? "" : church.getChurchCode() + " - " + church.getChurchName()),
-                summaryRow("Week:", request.getWeekStartDate() + " to " + request.getWeekEndDate())
+                summaryRow("Week:", request.getWeekStartDate() + " to " + request.getWeekEndDate()),
+                summaryRow("Submitted by:", nullToDash(request.getSubmittedByName()))
         );
         if (correctedFromReceiptId != null) {
             container.getChildren().add(summaryRow("Corrected from:", correctedReceiptText()));
@@ -423,6 +425,10 @@ public class ReceiptEntryController {
         Label label = new Label(text);
         label.getStyleClass().add("value-label");
         return label;
+    }
+
+    private String nullToDash(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 
     private String formatAmount(BigDecimal amount) {
@@ -531,28 +537,32 @@ public class ReceiptEntryController {
     }
 
     private void openPdf(ReceiptResponseDto receipt) {
-        try {
+        ProcessingDialog.run("Open PDF", "Preparing PDF...",
+                () -> {
             String path = receipt.getPdfFilePath();
             if (path == null || path.isBlank()) {
                 path = receiptPrintService.generatePdf(receipt.getId());
             }
             if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                showFriendlyError("PDF was generated, but this computer cannot open it automatically.");
-                return;
+                throw new ReceiptPrintService.ReceiptPrintException(
+                        "PDF was generated, but this computer cannot open it automatically.");
             }
             Desktop.getDesktop().open(new File(path));
-        } catch (IOException | ReceiptPrintService.ReceiptPrintException exception) {
-            showFriendlyError("PDF generation failed.");
-        }
+                },
+                () -> setMessage("PDF opened."),
+                this::showProcessingError);
     }
 
     private void printOriginal(ReceiptResponseDto receipt) {
-        try {
-            receiptPrintService.printOriginalReceipt(receipt.getId());
-            showInfo("Print Original", "Original receipt was sent to the printer.");
-        } catch (ReceiptPrintService.ReceiptPrintException | SecurityException exception) {
-            showFriendlyError(exception.getMessage());
-        }
+        ProcessingDialog.run("Print Original", "Sending receipt to printer...",
+                () -> receiptPrintService.printOriginalReceipt(receipt.getId()),
+                () -> showInfo("Print Original", "Original receipt was sent to the printer."),
+                this::showProcessingError);
+    }
+
+    private void showProcessingError(Throwable throwable) {
+        String message = throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+        showFriendlyError(message);
     }
 
     private String correctedReceiptText() {
