@@ -372,7 +372,7 @@ public class ChurchController {
         ComboBox<AuthorizedPersonPosition> authorizedPersonPositionComboBox = new ComboBox<>(
                 FXCollections.observableArrayList(AuthorizedPersonPosition.values()));
         authorizedPersonPositionComboBox.setMaxWidth(Double.MAX_VALUE);
-        Label otherPositionLabel = new Label("Other Position");
+        Label otherPositionLabel = DialogStyler.fieldLabel("Other Position");
         TextField authorizedPersonPositionOtherField = new TextField();
         authorizedPersonPositionOtherField.setPromptText("Position");
         TextField smsMobileNumberField = new TextField();
@@ -416,21 +416,21 @@ public class ChurchController {
         valueColumn.setMinWidth(360);
         grid.getColumnConstraints().addAll(labelColumn, valueColumn);
 
-        grid.add(new Label("Church Code"), 0, 0);
+        grid.add(DialogStyler.fieldLabel("Church Code"), 0, 0);
         grid.add(churchCodeField, 1, 0);
-        grid.add(new Label("Church Name"), 0, 1);
+        grid.add(DialogStyler.fieldLabel("Church Name"), 0, 1);
         grid.add(churchNameField, 1, 1);
-        grid.add(new Label("Region"), 0, 2);
+        grid.add(DialogStyler.fieldLabel("Region"), 0, 2);
         grid.add(regionComboBox, 1, 2);
-        grid.add(new Label("Status"), 0, 3);
+        grid.add(DialogStyler.fieldLabel("Status"), 0, 3);
         grid.add(statusComboBox, 1, 3);
-        grid.add(new Label("Authorized Person Name"), 0, 4);
+        grid.add(DialogStyler.fieldLabel("Authorized Person Name"), 0, 4);
         grid.add(authorizedPersonNameField, 1, 4);
-        grid.add(new Label("Position"), 0, 5);
+        grid.add(DialogStyler.fieldLabel("Position"), 0, 5);
         grid.add(authorizedPersonPositionComboBox, 1, 5);
         grid.add(otherPositionLabel, 0, 6);
         grid.add(authorizedPersonPositionOtherField, 1, 6);
-        grid.add(new Label("SMS Mobile Number"), 0, 7);
+        grid.add(DialogStyler.fieldLabel("SMS Mobile Number"), 0, 7);
         grid.add(smsMobileNumberField, 1, 7);
 
         grid.setUserData(new ChurchDialogFields(churchCodeField, churchNameField, regionComboBox, statusComboBox,

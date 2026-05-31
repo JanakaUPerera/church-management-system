@@ -26,6 +26,11 @@
     -fx-font-weight: normal;
 }
 
+.app-dialog-pane .dialog-field-label {
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold !important;
+}
+
 /* ═══════════════════════════════════════════════
    CONTROL SIZING  (applied before appearance rules)
    ═══════════════════════════════════════════════ */
@@ -757,7 +762,7 @@
 .receipt-detail-card-title {
     -fx-text-fill: #78350f;
     -fx-font-size: 15px;
-    -fx-font-weight: bold;
+    -fx-font-weight: bold !important;
 }
 
 .receipt-detail-card-body {
@@ -766,12 +771,13 @@
 
 .receipt-detail-label {
     -fx-text-fill: #78350f;
-    -fx-font-weight: bold;
+    -fx-font-weight: bold !important;
 }
 
 .receipt-detail-tabs {
     -fx-background-color: transparent;
     -fx-tab-min-height: 36;
+    -fx-tab-max-height: 36;
 }
 
 .receipt-detail-tabs .tab-header-area {
@@ -791,7 +797,7 @@
     -fx-background-radius: 6 6 0 0;
     -fx-focus-color: #f59e0b;
     -fx-faint-focus-color: transparent;
-    -fx-padding: 6 18;
+    -fx-padding: 0 0;
 }
 
 .receipt-detail-tabs .tab:focused {
@@ -803,15 +809,18 @@
     -fx-background-color: #fffbeb;
     -fx-border-color: #f59e0b #f59e0b transparent #f59e0b;
     -fx-border-width: 1.5;
+    -fx-border-radius: 5 5 0 0;
 }
 
 .receipt-detail-tabs .tab .tab-label {
     -fx-text-fill: #92400e;
     -fx-font-weight: bold;
+    -fx-padding: 8 18;
 }
 
 .receipt-detail-tabs .tab:selected .tab-label {
     -fx-text-fill: #78350f;
+    -fx-border-radius: 5 5 0 0 !important;
 }
 
 .receipt-detail-tabs .tab-content-area {

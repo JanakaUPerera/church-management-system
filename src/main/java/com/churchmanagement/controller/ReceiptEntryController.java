@@ -375,7 +375,7 @@ public class ReceiptEntryController {
     }
 
     private HBox summaryRow(String labelText, String valueText) {
-        Label label = new Label(labelText);
+        Label label = DialogStyler.fieldLabel(labelText);
         Label value = normalLabel(valueText);
         return new HBox(4, label, value);
     }
@@ -391,10 +391,9 @@ public class ReceiptEntryController {
         amountColumn.setMinWidth(120);
         grid.getColumnConstraints().addAll(itemColumn, amountColumn);
 
-        Label itemHeader = new Label("Item");
-        itemHeader.setStyle("-fx-font-weight: bold;");
+        Label itemHeader = DialogStyler.fieldLabel("Item");
         Label amountHeader = amountLabel("Amount");
-        amountHeader.setStyle("-fx-font-weight: bold;");
+        amountHeader.getStyleClass().add("dialog-field-label");
         grid.add(itemHeader, 0, 0);
         grid.add(amountHeader, 1, 0);
 
@@ -405,10 +404,9 @@ public class ReceiptEntryController {
             row++;
         }
 
-        Label totalLabel = new Label("Total");
-        totalLabel.setStyle("-fx-font-weight: bold;");
+        Label totalLabel = DialogStyler.fieldLabel("Total");
         Label totalAmountLabel = amountLabel(formatAmount(total));
-        totalAmountLabel.setStyle("-fx-font-weight: bold;");
+        totalAmountLabel.getStyleClass().add("dialog-field-label");
         grid.add(totalLabel, 0, row);
         grid.add(totalAmountLabel, 1, row);
         return grid;

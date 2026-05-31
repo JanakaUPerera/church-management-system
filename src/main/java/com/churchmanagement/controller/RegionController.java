@@ -307,11 +307,11 @@ public class RegionController {
         valueColumn.setHgrow(Priority.ALWAYS);
         valueColumn.setMinWidth(230);
         grid.getColumnConstraints().addAll(labelColumn, valueColumn);
-        grid.add(new Label("Region Code"), 0, 0);
+        grid.add(DialogStyler.fieldLabel("Region Code"), 0, 0);
         grid.add(regionCodeField, 1, 0);
-        grid.add(new Label("Region Name"), 0, 1);
+        grid.add(DialogStyler.fieldLabel("Region Name"), 0, 1);
         grid.add(regionNameField, 1, 1);
-        grid.add(new Label("Status"), 0, 2);
+        grid.add(DialogStyler.fieldLabel("Status"), 0, 2);
         grid.add(statusComboBox, 1, 2);
         grid.setUserData(new RegionDialogFields(regionCodeField, regionNameField, statusComboBox));
         return grid;

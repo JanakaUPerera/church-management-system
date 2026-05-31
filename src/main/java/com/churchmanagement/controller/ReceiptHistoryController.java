@@ -524,7 +524,7 @@ public class ReceiptHistoryController {
     private Label headerLabel(String text) {
         Label label = new Label(text);
         label.setMaxWidth(Double.MAX_VALUE);
-        label.setStyle("-fx-font-weight: bold;");
+        label.getStyleClass().add("dialog-field-label");
         return label;
     }
 
@@ -624,7 +624,7 @@ public class ReceiptHistoryController {
         reasonArea.setPrefRowCount(4);
         reasonArea.setPrefWidth(420);
         VBox content = new VBox(8);
-        content.getChildren().addAll(new Label("Cancellation Reason"), reasonArea);
+        content.getChildren().addAll(DialogStyler.fieldLabel("Cancellation Reason"), reasonArea);
         dialog.getDialogPane().setContent(content);
         dialog.setResultConverter(buttonType -> buttonType == cancelButton ? reasonArea.getText() : null);
 

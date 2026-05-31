@@ -412,7 +412,8 @@ public class SmsLogController {
         reasonArea.setPromptText("Resend reason");
         reasonArea.setWrapText(true);
         reasonArea.setPrefRowCount(3);
-        VBox content = new VBox(10, summary, new Label("Message"), messageArea, new Label("Resend Reason"), reasonArea);
+        VBox content = new VBox(10, summary, DialogStyler.fieldLabel("Message"), messageArea,
+                DialogStyler.fieldLabel("Resend Reason"), reasonArea);
         content.setPrefWidth(620);
         dialog.getDialogPane().setContent(content);
         dialog.setResultConverter(buttonType -> buttonType == resendButton ? reasonArea.getText() : null);

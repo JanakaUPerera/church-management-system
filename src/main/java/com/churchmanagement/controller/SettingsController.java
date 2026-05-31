@@ -12,10 +12,13 @@ import com.churchmanagement.util.DialogStyler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.VBox;
 
 import java.util.Optional;
 
@@ -74,11 +77,20 @@ public class SettingsController {
 
     @FXML
     private void testSms() {
-        TextInputDialog dialog = new TextInputDialog();
+        Dialog<String> dialog = DialogStyler.apply(new Dialog<>());
         dialog.setTitle("Test SMS");
         dialog.setHeaderText("Send test SMS");
-        dialog.setContentText("Mobile number:");
-        Optional<String> mobileNumber = DialogStyler.apply(dialog).showAndWait();
+        ButtonType sendButton = new ButtonType("Send", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(sendButton, ButtonType.CANCEL);
+
+        TextField mobileNumberField = new TextField();
+        mobileNumberField.setPromptText("0771234567 or +94771234567");
+        VBox content = new VBox(8, DialogStyler.fieldLabel("Mobile number"), mobileNumberField);
+        content.setPrefWidth(360);
+        dialog.getDialogPane().setContent(content);
+        dialog.setResultConverter(buttonType -> buttonType == sendButton ? mobileNumberField.getText() : null);
+
+        Optional<String> mobileNumber = dialog.showAndWait();
         if (mobileNumber.isEmpty()) {
             return;
         }
