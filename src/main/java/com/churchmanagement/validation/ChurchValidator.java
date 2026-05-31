@@ -2,6 +2,7 @@ package com.churchmanagement.validation;
 
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,8 @@ public final class ChurchValidator {
 
     public static List<String> validateForCreateOrUpdate(String churchCode, String churchName, Long regionId,
                                                          Church.Status status, AuthorizedPersonPosition position,
-                                                         String positionOther, String smsMobileNumber) {
+                                                         String positionOther, String smsMobileNumber,
+                                                         ReceiptLanguage receiptLanguage) {
         List<String> errors = new ArrayList<>();
 
         if (churchCode == null || churchCode.isBlank()) {
@@ -29,6 +31,10 @@ public final class ChurchValidator {
 
         if (status == null) {
             errors.add("Status must be ACTIVE or INACTIVE.");
+        }
+
+        if (receiptLanguage == null) {
+            errors.add("Receipt language is required.");
         }
 
         if (position == AuthorizedPersonPosition.OTHER && (positionOther == null || positionOther.isBlank())) {

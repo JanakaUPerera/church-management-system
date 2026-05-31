@@ -39,6 +39,7 @@
             <TableColumn fx:id="regionColumn" prefWidth="210" text="Region"/>
             <TableColumn fx:id="authorizedPersonColumn" prefWidth="180" text="Authorized Person"/>
             <TableColumn fx:id="smsMobileNumberColumn" prefWidth="150" text="SMS Mobile Number"/>
+            <TableColumn fx:id="receiptLanguageColumn" prefWidth="135" text="Receipt Language"/>
             <TableColumn fx:id="statusColumn" prefWidth="110" text="Status"/>
             <TableColumn fx:id="actionColumn" prefWidth="90" text="Action"/>
         </columns>

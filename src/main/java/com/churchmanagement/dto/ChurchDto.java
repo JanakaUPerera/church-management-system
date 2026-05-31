@@ -2,6 +2,7 @@ package com.churchmanagement.dto;
 
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -20,12 +21,13 @@ public class ChurchDto {
     private final AuthorizedPersonPosition authorizedPersonPosition;
     private final String authorizedPersonPositionOther;
     private final String smsMobileNumber;
+    private final ReceiptLanguage receiptLanguage;
     private final LocalDateTime createdAt;
 
     public ChurchDto(Long id, String churchCode, String churchName, Long regionId, String regionCode,
                      String regionName, String status, String authorizedPersonName,
                      AuthorizedPersonPosition authorizedPersonPosition, String authorizedPersonPositionOther,
-                     String smsMobileNumber, LocalDateTime createdAt) {
+                     String smsMobileNumber, ReceiptLanguage receiptLanguage, LocalDateTime createdAt) {
         this.id = id;
         this.churchCode = churchCode;
         this.churchName = churchName;
@@ -37,6 +39,7 @@ public class ChurchDto {
         this.authorizedPersonPosition = authorizedPersonPosition;
         this.authorizedPersonPositionOther = authorizedPersonPositionOther;
         this.smsMobileNumber = smsMobileNumber;
+        this.receiptLanguage = receiptLanguage;
         this.createdAt = createdAt;
     }
 
@@ -53,6 +56,7 @@ public class ChurchDto {
                 church.getAuthorizedPersonPosition(),
                 church.getAuthorizedPersonPositionOther(),
                 church.getSmsMobileNumber(),
+                church.getReceiptLanguage(),
                 church.getCreatedAt()
         );
     }
@@ -111,6 +115,14 @@ public class ChurchDto {
 
     public String getSmsMobileNumber() {
         return smsMobileNumber;
+    }
+
+    public ReceiptLanguage getReceiptLanguage() {
+        return receiptLanguage;
+    }
+
+    public String getReceiptLanguageLabel() {
+        return receiptLanguage == null ? "" : receiptLanguage.getDisplayLabel();
     }
 
     public String getCreatedAt() {

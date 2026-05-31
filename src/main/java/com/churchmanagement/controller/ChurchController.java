@@ -4,6 +4,7 @@ import com.churchmanagement.dto.ChurchDto;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
@@ -93,6 +94,9 @@ public class ChurchController {
     private TableColumn<ChurchDto, String> smsMobileNumberColumn;
 
     @FXML
+    private TableColumn<ChurchDto, String> receiptLanguageColumn;
+
+    @FXML
     private TableColumn<ChurchDto, String> statusColumn;
 
     @FXML
@@ -154,6 +158,9 @@ public class ChurchController {
         ));
         smsMobileNumberColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 nullToBlank(cellData.getValue().getSmsMobileNumber())
+        ));
+        receiptLanguageColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                cellData.getValue().getReceiptLanguageLabel()
         ));
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus()));
         statusColumn.setCellFactory(column -> new StatusBadgeCell());
@@ -343,14 +350,16 @@ public class ChurchController {
                             fields.authorizedPersonNameField().getText(),
                             fields.authorizedPersonPositionComboBox().getValue(),
                             fields.authorizedPersonPositionOtherField().getText(),
-                            fields.smsMobileNumberField().getText(), currentUser.getUserId());
+                            fields.smsMobileNumberField().getText(), fields.receiptLanguageComboBox().getValue(),
+                            currentUser.getUserId());
                 } else {
                     churchService.create(fields.churchCodeField().getText(), fields.churchNameField().getText(),
                             regionId, fields.statusComboBox().getValue(),
                             fields.authorizedPersonNameField().getText(),
                             fields.authorizedPersonPositionComboBox().getValue(),
                             fields.authorizedPersonPositionOtherField().getText(),
-                            fields.smsMobileNumberField().getText(), currentUser.getUserId());
+                            fields.smsMobileNumberField().getText(), fields.receiptLanguageComboBox().getValue(),
+                            currentUser.getUserId());
                 }
                     },
                     () -> {
@@ -390,6 +399,11 @@ public class ChurchController {
         authorizedPersonPositionOtherField.setPromptText("Position");
         TextField smsMobileNumberField = new TextField();
         smsMobileNumberField.setPromptText("0771234567 or +94771234567");
+        ComboBox<ReceiptLanguage> receiptLanguageComboBox = new ComboBox<>(
+                FXCollections.observableArrayList(ReceiptLanguage.values()));
+        receiptLanguageComboBox.setMaxWidth(Double.MAX_VALUE);
+        receiptLanguageComboBox.setCellFactory(listView -> new ReceiptLanguageListCell());
+        receiptLanguageComboBox.setButtonCell(new ReceiptLanguageListCell());
 
         Runnable updateOtherPositionVisibility = () -> {
             boolean otherSelected = authorizedPersonPositionComboBox.getValue() == AuthorizedPersonPosition.OTHER;
@@ -407,6 +421,7 @@ public class ChurchController {
 
         if (church == null) {
             statusComboBox.setValue(Church.Status.ACTIVE);
+            receiptLanguageComboBox.setValue(ReceiptLanguage.ENGLISH);
         } else {
             churchCodeField.setText(church.getChurchCode());
             churchNameField.setText(church.getChurchName());
@@ -416,6 +431,7 @@ public class ChurchController {
             authorizedPersonPositionComboBox.setValue(church.getAuthorizedPersonPosition());
             authorizedPersonPositionOtherField.setText(church.getAuthorizedPersonPositionOther());
             smsMobileNumberField.setText(church.getSmsMobileNumber());
+            receiptLanguageComboBox.setValue(church.getReceiptLanguage());
         }
         updateOtherPositionVisibility.run();
 
@@ -445,10 +461,12 @@ public class ChurchController {
         grid.add(authorizedPersonPositionOtherField, 1, 6);
         grid.add(DialogStyler.fieldLabel("SMS Mobile Number"), 0, 7);
         grid.add(smsMobileNumberField, 1, 7);
+        grid.add(DialogStyler.fieldLabel("Receipt Language"), 0, 8);
+        grid.add(receiptLanguageComboBox, 1, 8);
 
         grid.setUserData(new ChurchDialogFields(churchCodeField, churchNameField, regionComboBox, statusComboBox,
                 authorizedPersonNameField, authorizedPersonPositionComboBox, authorizedPersonPositionOtherField,
-                smsMobileNumberField));
+                smsMobileNumberField, receiptLanguageComboBox));
         return grid;
     }
 
@@ -462,7 +480,16 @@ public class ChurchController {
                                       TextField authorizedPersonNameField,
                                       ComboBox<AuthorizedPersonPosition> authorizedPersonPositionComboBox,
                                       TextField authorizedPersonPositionOtherField,
-                                      TextField smsMobileNumberField) {
+                                      TextField smsMobileNumberField,
+                                      ComboBox<ReceiptLanguage> receiptLanguageComboBox) {
+    }
+
+    private static class ReceiptLanguageListCell extends ListCell<ReceiptLanguage> {
+        @Override
+        protected void updateItem(ReceiptLanguage language, boolean empty) {
+            super.updateItem(language, empty);
+            setText(empty || language == null ? null : language.getDisplayLabel());
+        }
     }
 
     private static class RegionListCell extends ListCell<Region> {

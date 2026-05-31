@@ -3,6 +3,7 @@ package com.churchmanagement.repository;
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
 
 import javax.sql.DataSource;
@@ -97,9 +98,10 @@ public class ChurchRepository {
         String sql = """
                 INSERT INTO churches (
                     church_code, church_name, region_id, status, authorized_person_name,
-                    authorized_person_position, authorized_person_position_other, sms_mobile_number, created_at
+                    authorized_person_position, authorized_person_position_other, sms_mobile_number,
+                    receipt_language, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = dataSource.getConnection();
@@ -113,7 +115,8 @@ public class ChurchRepository {
                     ? null : church.getAuthorizedPersonPosition().name());
             setNullableString(statement, 7, church.getAuthorizedPersonPositionOther());
             setNullableString(statement, 8, church.getSmsMobileNumber());
-            statement.setTimestamp(9, Timestamp.valueOf(church.getCreatedAt()));
+            statement.setString(9, church.getReceiptLanguage().name());
+            statement.setTimestamp(10, Timestamp.valueOf(church.getCreatedAt()));
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -133,7 +136,8 @@ public class ChurchRepository {
                 UPDATE churches
                 SET church_code = ?, church_name = ?, region_id = ?, status = ?,
                     authorized_person_name = ?, authorized_person_position = ?,
-                    authorized_person_position_other = ?, sms_mobile_number = ?, updated_at = ?
+                    authorized_person_position_other = ?, sms_mobile_number = ?,
+                    receipt_language = ?, updated_at = ?
                 WHERE id = ?
                 """;
 
@@ -148,8 +152,9 @@ public class ChurchRepository {
                     ? null : church.getAuthorizedPersonPosition().name());
             setNullableString(statement, 7, church.getAuthorizedPersonPositionOther());
             setNullableString(statement, 8, church.getSmsMobileNumber());
-            statement.setTimestamp(9, Timestamp.valueOf(church.getUpdatedAt()));
-            statement.setLong(10, church.getId());
+            statement.setString(9, church.getReceiptLanguage().name());
+            statement.setTimestamp(10, Timestamp.valueOf(church.getUpdatedAt()));
+            statement.setLong(11, church.getId());
             statement.executeUpdate();
             return church;
         } catch (SQLException exception) {
@@ -207,6 +212,7 @@ public class ChurchRepository {
         church.setAuthorizedPersonPosition(mapAuthorizedPersonPosition(resultSet.getString("authorized_person_position")));
         church.setAuthorizedPersonPositionOther(resultSet.getString("authorized_person_position_other"));
         church.setSmsMobileNumber(resultSet.getString("sms_mobile_number"));
+        church.setReceiptLanguage(ReceiptLanguage.valueOf(resultSet.getString("receipt_language")));
         return church;
     }
 
@@ -215,7 +221,7 @@ public class ChurchRepository {
                 SELECT c.id, c.church_code, c.church_name, c.region_id, c.status,
                        c.authorized_person_name, c.authorized_person_position,
                        c.authorized_person_position_other, c.sms_mobile_number,
-                       c.created_at, c.updated_at,
+                       c.receipt_language, c.created_at, c.updated_at,
                        r.region_code, r.region_name
                 FROM churches c
                 JOIN regions r ON r.id = c.region_id

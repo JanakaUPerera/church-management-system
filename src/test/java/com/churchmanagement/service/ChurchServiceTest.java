@@ -3,6 +3,7 @@ package com.churchmanagement.service;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.RegionRepository;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,41 @@ class ChurchServiceTest {
         assertEquals(1L, church.getRegionId());
         assertEquals(Church.Status.ACTIVE, church.getStatus());
         assertEquals(ActivityLogService.CHURCH_CREATED, activityLogService.loggedActions.getFirst());
+    }
+
+    @Test
+    void createChurchWithEnglishReceiptLanguage() {
+        Church church = churchService.create("CH101", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, null, ReceiptLanguage.ENGLISH, 1L);
+
+        assertEquals(ReceiptLanguage.ENGLISH, church.getReceiptLanguage());
+    }
+
+    @Test
+    void createChurchWithSinhalaReceiptLanguage() {
+        Church church = churchService.create("CH102", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, null, ReceiptLanguage.SINHALA, 1L);
+
+        assertEquals(ReceiptLanguage.SINHALA, church.getReceiptLanguage());
+    }
+
+    @Test
+    void createChurchWithTamilReceiptLanguage() {
+        Church church = churchService.create("CH103", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, null, ReceiptLanguage.TAMIL, 1L);
+
+        assertEquals(ReceiptLanguage.TAMIL, church.getReceiptLanguage());
+    }
+
+    @Test
+    void rejectMissingReceiptLanguage() {
+        ChurchService.ChurchException exception = assertThrows(
+                ChurchService.ChurchException.class,
+                () -> churchService.create("CH104", "Main Church", 1L, Church.Status.ACTIVE,
+                        null, null, null, null, null, 1L)
+        );
+
+        assertTrue(exception.getMessage().contains("Receipt language is required."));
     }
 
     @Test
@@ -195,6 +231,18 @@ class ChurchServiceTest {
     }
 
     @Test
+    void updateReceiptLanguageLogsChange() {
+        Church church = churchService.create("CH105", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, null, ReceiptLanguage.ENGLISH, 1L);
+
+        churchService.update(church.getId(), "CH105", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, null, ReceiptLanguage.SINHALA, 1L);
+
+        assertTrue(activityLogService.loggedActions.contains("ENGLISH -> SINHALA"));
+    }
+
+
+    @Test
     void deactivateChurch() {
         Church church = churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE, 1L);
 
@@ -246,6 +294,7 @@ class ChurchServiceTest {
             existing.setAuthorizedPersonPosition(church.getAuthorizedPersonPosition());
             existing.setAuthorizedPersonPositionOther(church.getAuthorizedPersonPositionOther());
             existing.setSmsMobileNumber(church.getSmsMobileNumber());
+            existing.setReceiptLanguage(church.getReceiptLanguage());
             existing.setUpdatedAt(church.getUpdatedAt());
             return existing;
         }
@@ -289,6 +338,15 @@ class ChurchServiceTest {
         @Override
         public void logChurchAction(long userId, String action, String churchCode) {
             loggedActions.add(action);
+        }
+
+        @Override
+        public void logChurchUpdated(long userId, String churchCode, ReceiptLanguage oldLanguage,
+                                     ReceiptLanguage newLanguage) {
+            loggedActions.add(CHURCH_UPDATED);
+            if (oldLanguage != newLanguage) {
+                loggedActions.add(oldLanguage + " -> " + newLanguage);
+            }
         }
     }
 }

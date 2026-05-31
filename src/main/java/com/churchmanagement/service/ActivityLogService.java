@@ -3,6 +3,7 @@ package com.churchmanagement.service;
 import com.churchmanagement.dto.CreateReceiptRequest;
 import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ActivityLogRepository;
 
@@ -83,6 +84,16 @@ public class ActivityLogService {
 
     public void logChurchAction(long userId, String action, String churchCode) {
         log(userId, action, "Church code: " + churchCode);
+    }
+
+    public void logChurchUpdated(long userId, String churchCode, ReceiptLanguage oldLanguage,
+                                 ReceiptLanguage newLanguage) {
+        String details = "Church code: " + churchCode;
+        if (oldLanguage != newLanguage) {
+            details += ", receipt_language: " + receiptLanguageName(oldLanguage)
+                    + " -> " + receiptLanguageName(newLanguage);
+        }
+        log(userId, CHURCH_UPDATED, details);
     }
 
     public void logReceiptNumberGenerated(Long userId, int year, long sequence, String receiptNumber) {
@@ -242,6 +253,10 @@ public class ActivityLogService {
 
     private String nullToBlank(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private String receiptLanguageName(ReceiptLanguage language) {
+        return language == null ? "" : language.getDisplayName();
     }
 
 }

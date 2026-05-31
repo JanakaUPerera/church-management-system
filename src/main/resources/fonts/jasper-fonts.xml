@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fontFamilies>
+    <fontFamily name="Noto Sans">
+        <normal>fonts/NotoSans-Regular.ttf</normal>
+        <bold>fonts/NotoSans-Regular.ttf</bold>
+        <italic>fonts/NotoSans-Regular.ttf</italic>
+        <boldItalic>fonts/NotoSans-Regular.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+    <fontFamily name="Noto Sans Sinhala">
+        <normal>fonts/NotoSansSinhala-Regular.ttf</normal>
+        <bold>fonts/NotoSansSinhala-Regular.ttf</bold>
+        <italic>fonts/NotoSansSinhala-Regular.ttf</italic>
+        <boldItalic>fonts/NotoSansSinhala-Regular.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+    <fontFamily name="Noto Sans Tamil">
+        <normal>fonts/NotoSansTamil-Regular.ttf</normal>
+        <bold>fonts/NotoSansTamil-Regular.ttf</bold>
+        <italic>fonts/NotoSansTamil-Regular.ttf</italic>
+        <boldItalic>fonts/NotoSansTamil-Regular.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+</fontFamilies>

@@ -36,7 +36,7 @@ SELECT
     CONCAT('Test Authorized Person ', LPAD(church_number, 3, '0')) AS authorized_person_name,
     'PASTOR' AS authorized_person_position,
     NULL AS authorized_person_position_other,
-    CONCAT('+947700', LPAD(church_number, 4, '0')) AS sms_mobile_number,
+    CONCAT('+947700', LPAD(church_number, 5, '0')) AS sms_mobile_number,
     CONCAT('Test Church ', LPAD(church_number, 3, '0')) AS church_name,
     CONCAT('Test Address ', LPAD(church_number, 3, '0')) AS address,
     CONCAT('0112', LPAD(church_number, 6, '0')) AS contact_number,

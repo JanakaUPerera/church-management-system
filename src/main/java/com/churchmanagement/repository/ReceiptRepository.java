@@ -6,6 +6,7 @@ import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Receipt;
 import com.churchmanagement.entity.ReceiptItem;
 import com.churchmanagement.enums.CollectionType;
+import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.exception.DatabaseException;
 
@@ -353,6 +354,7 @@ public class ReceiptRepository {
                 dto.setReceiptNo(resultSet.getString("receipt_no"));
                 dto.setChurchCode(resultSet.getString("church_code"));
                 dto.setChurchName(resultSet.getString("church_name"));
+                dto.setReceiptLanguage(ReceiptLanguage.valueOf(resultSet.getString("receipt_language")));
                 dto.setRegionCode(resultSet.getString("region_code"));
                 dto.setRegionName(resultSet.getString("region_name"));
                 dto.setWeekStartDate(resultSet.getDate("week_start_date").toLocalDate());
@@ -417,7 +419,8 @@ public class ReceiptRepository {
 
     private String baseReceiptDetailsSelect() {
         return """
-                SELECT r.id, r.receipt_no, c.church_code, c.church_name, rg.region_code, rg.region_name,
+                SELECT r.id, r.receipt_no, c.church_code, c.church_name, c.receipt_language,
+                       rg.region_code, rg.region_name,
                        r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
                        u.full_name AS issued_by_full_name, r.status, r.is_late_submission,
                        r.late_submission_reason, r.corrected_from_receipt_id,
@@ -453,7 +456,8 @@ public class ReceiptRepository {
 
     private String receiptDetailsGroupBy() {
         return """
-                 GROUP BY r.id, r.receipt_no, c.church_code, c.church_name, rg.region_code, rg.region_name,
+                 GROUP BY r.id, r.receipt_no, c.church_code, c.church_name, c.receipt_language,
+                          rg.region_code, rg.region_name,
                           r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
                           u.full_name, r.status, r.is_late_submission, r.late_submission_reason,
                           r.corrected_from_receipt_id, r.pdf_file_path, r.original_printed,

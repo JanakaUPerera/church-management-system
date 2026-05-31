@@ -3,6 +3,7 @@ package com.churchmanagement.service;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.RegionRepository;
@@ -66,8 +67,28 @@ public class ChurchService {
     public Church create(String churchCode, String churchName, Long regionId, Church.Status status,
                          String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
                          String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
+        return create(churchCode, churchName, regionId, status, authorizedPersonName, authorizedPersonPosition,
+                authorizedPersonPositionOther, smsMobileNumber, ReceiptLanguage.ENGLISH, userId);
+    }
+
+    public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status, long userId) {
+        return update(id, churchCode, churchName, regionId, status, null, null, null, null, userId);
+    }
+
+    public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status,
+                         String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
+                         String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
         Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
-                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber);
+                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber, ReceiptLanguage.ENGLISH);
+        return update(id, church, userId);
+    }
+
+    public Church create(String churchCode, String churchName, Long regionId, Church.Status status,
+                         String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
+                         String authorizedPersonPositionOther, String smsMobileNumber,
+                         ReceiptLanguage receiptLanguage, long userId) {
+        Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
+                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber, receiptLanguage);
         validate(church);
 
         try {
@@ -87,19 +108,23 @@ public class ChurchService {
         }
     }
 
-    public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status, long userId) {
-        return update(id, churchCode, churchName, regionId, status, null, null, null, null, userId);
-    }
-
     public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status,
                          String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
-                         String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
+                         String authorizedPersonPositionOther, String smsMobileNumber,
+                         ReceiptLanguage receiptLanguage, long userId) {
         Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
-                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber);
+                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber, receiptLanguage);
+        return update(id, church, userId);
+    }
+
+    private Church update(long id, Church church, long userId) {
         church.setId(id);
         validate(church);
 
         try {
+            Church existing = churchRepository.findById(id)
+                    .orElseThrow(() -> new ChurchException("Church could not be found."));
+            ReceiptLanguage previousReceiptLanguage = existing.getReceiptLanguage();
             ensureActiveRegion(church.getRegionId());
             if (churchRepository.existsByChurchCodeAndIdNot(church.getChurchCode(), id)) {
                 throw new ChurchException("A church with this code already exists.");
@@ -107,7 +132,8 @@ public class ChurchService {
 
             church.setUpdatedAt(LocalDateTime.now(clock));
             Church updatedChurch = churchRepository.update(church);
-            activityLogService.logChurchAction(userId, ActivityLogService.CHURCH_UPDATED, updatedChurch.getChurchCode());
+            activityLogService.logChurchUpdated(userId, updatedChurch.getChurchCode(),
+                    previousReceiptLanguage, updatedChurch.getReceiptLanguage());
             return updatedChurch;
         } catch (ChurchException exception) {
             throw exception;
@@ -137,7 +163,8 @@ public class ChurchService {
 
     private Church normalize(String churchCode, String churchName, Long regionId, Church.Status status,
                              String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
-                             String authorizedPersonPositionOther, String smsMobileNumber) {
+                             String authorizedPersonPositionOther, String smsMobileNumber,
+                             ReceiptLanguage receiptLanguage) {
         String normalizedCode = churchCode == null ? "" : churchCode.strip().toUpperCase(Locale.ROOT);
         String normalizedName = churchName == null ? "" : churchName.strip();
         Church church = new Church(null, normalizedCode, normalizedName, regionId, null, null, status, null, null);
@@ -147,6 +174,7 @@ public class ChurchService {
                 ? blankToNull(authorizedPersonPositionOther)
                 : null);
         church.setSmsMobileNumber(normalizeSmsMobileNumber(smsMobileNumber));
+        church.setReceiptLanguage(receiptLanguage);
         return church;
     }
 
@@ -158,7 +186,8 @@ public class ChurchService {
                 church.getStatus(),
                 church.getAuthorizedPersonPosition(),
                 church.getAuthorizedPersonPositionOther(),
-                church.getSmsMobileNumber()
+                church.getSmsMobileNumber(),
+                church.getReceiptLanguage()
         );
 
         if (!errors.isEmpty()) {

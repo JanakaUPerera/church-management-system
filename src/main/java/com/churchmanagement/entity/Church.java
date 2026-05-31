@@ -1,6 +1,7 @@
 package com.churchmanagement.entity;
 
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.ReceiptLanguage;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +17,7 @@ public class Church {
     private AuthorizedPersonPosition authorizedPersonPosition;
     private String authorizedPersonPositionOther;
     private String smsMobileNumber;
+    private ReceiptLanguage receiptLanguage = ReceiptLanguage.ENGLISH;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -126,6 +128,14 @@ public class Church {
 
     public void setSmsMobileNumber(String smsMobileNumber) {
         this.smsMobileNumber = smsMobileNumber;
+    }
+
+    public ReceiptLanguage getReceiptLanguage() {
+        return receiptLanguage;
+    }
+
+    public void setReceiptLanguage(ReceiptLanguage receiptLanguage) {
+        this.receiptLanguage = receiptLanguage;
     }
 
     public LocalDateTime getCreatedAt() {

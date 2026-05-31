@@ -1,6 +1,7 @@
 package com.churchmanagement.dto;
 
 import com.churchmanagement.enums.ReceiptStatus;
+import com.churchmanagement.enums.ReceiptLanguage;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ public class ReceiptResponseDto {
     private String receiptNo;
     private String churchCode;
     private String churchName;
+    private ReceiptLanguage receiptLanguage = ReceiptLanguage.ENGLISH;
     private String regionCode;
     private String regionName;
     private LocalDate weekStartDate;
@@ -72,6 +74,14 @@ public class ReceiptResponseDto {
 
     public void setChurchName(String churchName) {
         this.churchName = churchName;
+    }
+
+    public ReceiptLanguage getReceiptLanguage() {
+        return receiptLanguage;
+    }
+
+    public void setReceiptLanguage(ReceiptLanguage receiptLanguage) {
+        this.receiptLanguage = receiptLanguage == null ? ReceiptLanguage.ENGLISH : receiptLanguage;
     }
 
     public String getRegionCode() {
