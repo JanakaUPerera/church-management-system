@@ -19,6 +19,7 @@ public class ActivityLogService {
     public static final String NAVIGATE_USERS = "NAVIGATE_USERS";
     public static final String NAVIGATE_BACKUP_RESTORE = "NAVIGATE_BACKUP_RESTORE";
     public static final String NAVIGATE_ACTIVITY_LOGS = "NAVIGATE_ACTIVITY_LOGS";
+    public static final String NAVIGATE_SMS_LOGS = "NAVIGATE_SMS_LOGS";
     public static final String REGION_CREATED = "REGION_CREATED";
     public static final String REGION_UPDATED = "REGION_UPDATED";
     public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
@@ -43,6 +44,12 @@ public class ActivityLogService {
     public static final String SMS_SETTINGS_UPDATED = "SMS_SETTINGS_UPDATED";
     public static final String SMS_TEST_SENT = "SMS_TEST_SENT";
     public static final String SMS_TEST_FAILED = "SMS_TEST_FAILED";
+    public static final String SMS_LOGS_VIEWED = "SMS_LOGS_VIEWED";
+    public static final String SMS_LOGS_SEARCHED = "SMS_LOGS_SEARCHED";
+    public static final String SMS_RESENT_SUCCESS = "SMS_RESENT_SUCCESS";
+    public static final String SMS_RESENT_FAILED = "SMS_RESENT_FAILED";
+    public static final String SMS_RESEND_BLOCKED_EXPIRED = "SMS_RESEND_BLOCKED_EXPIRED";
+    public static final String SMS_RESEND_BLOCKED_PERMISSION = "SMS_RESEND_BLOCKED_PERMISSION";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -175,6 +182,46 @@ public class ActivityLogService {
     public void logSmsTestFailed(Long userId, String mobileNumber, String reason) {
         log(userId, SMS_TEST_FAILED,
                 "mobile_number: " + nullToBlank(mobileNumber) + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logSmsLogsViewed(Long userId, int resultCount) {
+        log(userId, SMS_LOGS_VIEWED, "result_count: " + resultCount);
+    }
+
+    public void logSmsLogsSearched(Long userId, int resultCount) {
+        log(userId, SMS_LOGS_SEARCHED, "result_count: " + resultCount);
+    }
+
+    public void logSmsResendSuccess(Long userId, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
+                                    Long churchId, String mobileNumber) {
+        logSmsResend(userId, SMS_RESENT_SUCCESS, originalSmsLogId, newSmsLogId, receiptId, churchId,
+                mobileNumber, "SUCCESS");
+    }
+
+    public void logSmsResendFailed(Long userId, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
+                                   Long churchId, String mobileNumber) {
+        logSmsResend(userId, SMS_RESENT_FAILED, originalSmsLogId, newSmsLogId, receiptId, churchId,
+                mobileNumber, "FAILED");
+    }
+
+    public void logSmsResendBlockedExpired(Long userId, Long originalSmsLogId) {
+        log(userId, SMS_RESEND_BLOCKED_EXPIRED, "original_sms_log_id: " + nullToBlank(originalSmsLogId));
+    }
+
+    public void logSmsResendBlockedPermission(Long userId, Long originalSmsLogId) {
+        log(userId, SMS_RESEND_BLOCKED_PERMISSION, "original_sms_log_id: " + nullToBlank(originalSmsLogId));
+    }
+
+    private void logSmsResend(Long userId, String action, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
+                              Long churchId, String mobileNumber, String resendStatus) {
+        log(userId, action,
+                "original_sms_log_id: " + nullToBlank(originalSmsLogId)
+                        + ", new_sms_log_id: " + nullToBlank(newSmsLogId)
+                        + ", receipt_id: " + nullToBlank(receiptId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + nullToBlank(mobileNumber)
+                        + ", resent_by_user_id: " + nullToBlank(userId)
+                        + ", resend_status: " + resendStatus);
     }
 
     private void log(Long userId, String action, String details) {

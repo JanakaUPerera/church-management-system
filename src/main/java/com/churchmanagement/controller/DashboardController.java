@@ -96,6 +96,9 @@ public class DashboardController {
     private Button activityLogsButton;
 
     @FXML
+    private Button smsLogsButton;
+
+    @FXML
     private Button settingsButton;
 
     @FXML
@@ -195,6 +198,11 @@ public class DashboardController {
     }
 
     @FXML
+    private void showSmsLogs() {
+        loadMenu(findMenu(smsLogsButton));
+    }
+
+    @FXML
     private void showSettings() {
         loadMenu(findMenu(settingsButton));
     }
@@ -238,6 +246,8 @@ public class DashboardController {
                         backupButton, ActivityLogService.NAVIGATE_BACKUP_RESTORE, "backup.create", "backup.restore"),
                 new MenuDefinition("Activity Logs", "/com/churchmanagement/view/activity-log-view.fxml",
                         activityLogsButton, ActivityLogService.NAVIGATE_ACTIVITY_LOGS, "activity.view"),
+                new MenuDefinition("SMS Logs", "/com/churchmanagement/view/sms-log-view.fxml",
+                        smsLogsButton, ActivityLogService.NAVIGATE_SMS_LOGS, "sms.logs.view"),
                 new MenuDefinition("Settings", "/com/churchmanagement/view/settings-view.fxml",
                         settingsButton, null, "settings.manage")
         );
@@ -262,6 +272,7 @@ public class DashboardController {
         setMenuIcon(rolesButton, "fas-user-lock");
         setMenuIcon(backupButton, "fas-database");
         setMenuIcon(activityLogsButton, "fas-list-alt");
+        setMenuIcon(smsLogsButton, "fas-sms");
         setMenuIcon(settingsButton, "fas-cog");
     }
 

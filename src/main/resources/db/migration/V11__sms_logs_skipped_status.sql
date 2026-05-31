@@ -1,0 +1,2 @@
+ALTER TABLE sms_logs
+    MODIFY status ENUM('SUCCESS','FAILED','SKIPPED') NOT NULL;
