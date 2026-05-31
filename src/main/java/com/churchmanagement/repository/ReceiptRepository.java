@@ -106,6 +106,31 @@ public class ReceiptRepository {
         }
     }
 
+    public Optional<Receipt> findReceiptById(long receiptId) {
+        String sql = """
+                SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
+                       receipt_datetime, submitted_by_name, issued_by_user_id, status,
+                       is_late_submission, late_submission_reason, corrected_from_receipt_id,
+                       pdf_file_path, original_printed, original_printed_at,
+                       original_printed_by_user_id, print_attempt_count, created_at, updated_at
+                FROM receipts
+                WHERE id = ?
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, receiptId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Optional.of(mapReceipt(resultSet));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load receipt.", exception);
+        }
+    }
+
     public void updateReceiptStatus(long receiptId, ReceiptStatus status, LocalDateTime updatedAt,
                                     Connection connection) {
         String sql = """
@@ -351,6 +376,11 @@ public class ReceiptRepository {
                 dto.setOriginalPrintedAt(originalPrintedAt == null ? null : originalPrintedAt.toLocalDateTime());
                 dto.setOriginalPrintedByFullName(resultSet.getString("original_printed_by_full_name"));
                 dto.setPrintAttemptCount(resultSet.getInt("print_attempt_count"));
+                dto.setSmsStatus(resultSet.getString("sms_status"));
+                dto.setSmsErrorMessage(resultSet.getString("sms_error_message"));
+                dto.setSmsProvider(resultSet.getString("sms_provider"));
+                Timestamp smsSentAt = resultSet.getTimestamp("sms_sent_at");
+                dto.setSmsSentAt(smsSentAt == null ? null : smsSentAt.toLocalDateTime());
                 dto.setTotalAmount(resultSet.getBigDecimal("total_amount"));
                 receipts.add(dto);
             }
@@ -396,7 +426,11 @@ public class ReceiptRepository {
                        corrected.receipt_no AS corrected_from_receipt_no,
                        correction.receipt_no AS correction_receipt_no,
                        rc.cancel_reason, cancelled_by.full_name AS cancelled_by_full_name,
-                       rc.cancelled_at, COALESCE(SUM(ri.amount), 0) AS total_amount
+                       rc.cancelled_at, latest_sms.status AS sms_status,
+                       latest_sms.error_message AS sms_error_message,
+                       latest_sms.provider AS sms_provider,
+                       latest_sms.sent_at AS sms_sent_at,
+                       COALESCE(SUM(ri.amount), 0) AS total_amount
                 FROM receipts r
                 JOIN churches c ON c.id = r.church_id
                 JOIN regions rg ON rg.id = r.region_id
@@ -407,6 +441,13 @@ public class ReceiptRepository {
                 LEFT JOIN receipt_cancellations rc ON rc.receipt_id = r.id
                 LEFT JOIN users cancelled_by ON cancelled_by.id = rc.cancelled_by_user_id
                 LEFT JOIN users printed_by ON printed_by.id = r.original_printed_by_user_id
+                LEFT JOIN sms_logs latest_sms ON latest_sms.id = (
+                    SELECT sl.id
+                    FROM sms_logs sl
+                    WHERE sl.receipt_id = r.id
+                    ORDER BY sl.created_at DESC, sl.id DESC
+                    LIMIT 1
+                )
                 """;
     }
 
@@ -418,7 +459,9 @@ public class ReceiptRepository {
                           r.corrected_from_receipt_id, r.pdf_file_path, r.original_printed,
                           r.original_printed_at, r.print_attempt_count, printed_by.full_name,
                           corrected.receipt_no, correction.receipt_no,
-                          rc.cancel_reason, cancelled_by.full_name, rc.cancelled_at
+                          rc.cancel_reason, cancelled_by.full_name, rc.cancelled_at,
+                          latest_sms.status, latest_sms.error_message, latest_sms.provider,
+                          latest_sms.sent_at
                 """;
     }
 

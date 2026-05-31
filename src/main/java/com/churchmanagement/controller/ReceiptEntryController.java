@@ -514,10 +514,12 @@ public class ReceiptEntryController {
     private String savedReceiptMessage(ReceiptResponseDto receipt) {
         String message = "Receipt No: " + receipt.getReceiptNo();
         if (receipt.isOriginalPrinted()) {
-            return message + "\nOriginal receipt printed successfully.";
+            message = message + "\nOriginal receipt printed successfully.";
+        } else if (receipt.getPrintAttemptCount() > 0) {
+            message = message + "\nOriginal print failed. You can print it from Receipt History.";
         }
-        if (receipt.getPrintAttemptCount() > 0) {
-            return message + "\nOriginal print failed. You can print it from Receipt History.";
+        if (receipt.getWarningMessage() != null && !receipt.getWarningMessage().isBlank()) {
+            message = message + "\n" + receipt.getWarningMessage();
         }
         return message;
     }

@@ -34,6 +34,11 @@ public class ReceiptResponseDto {
     private LocalDateTime originalPrintedAt;
     private String originalPrintedByFullName;
     private int printAttemptCount;
+    private String warningMessage;
+    private String smsStatus;
+    private String smsErrorMessage;
+    private String smsProvider;
+    private LocalDateTime smsSentAt;
     private BigDecimal totalAmount = BigDecimal.ZERO;
     private List<ReceiptItemDto> items = new ArrayList<>();
 
@@ -235,6 +240,46 @@ public class ReceiptResponseDto {
 
     public void setPrintAttemptCount(int printAttemptCount) {
         this.printAttemptCount = printAttemptCount;
+    }
+
+    public String getWarningMessage() {
+        return warningMessage;
+    }
+
+    public void setWarningMessage(String warningMessage) {
+        this.warningMessage = warningMessage;
+    }
+
+    public String getSmsStatus() {
+        return smsStatus;
+    }
+
+    public void setSmsStatus(String smsStatus) {
+        this.smsStatus = smsStatus;
+    }
+
+    public String getSmsErrorMessage() {
+        return smsErrorMessage;
+    }
+
+    public void setSmsErrorMessage(String smsErrorMessage) {
+        this.smsErrorMessage = smsErrorMessage;
+    }
+
+    public String getSmsProvider() {
+        return smsProvider;
+    }
+
+    public void setSmsProvider(String smsProvider) {
+        this.smsProvider = smsProvider;
+    }
+
+    public LocalDateTime getSmsSentAt() {
+        return smsSentAt;
+    }
+
+    public void setSmsSentAt(LocalDateTime smsSentAt) {
+        this.smsSentAt = smsSentAt;
     }
 
     public BigDecimal getTotalAmount() {

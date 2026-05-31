@@ -111,6 +111,23 @@ class ReceiptServiceTest {
     }
 
     @Test
+    void createReceiptRemainsSavedWhenSmsNotificationFails() {
+        FakeReceiptSmsNotificationService smsNotificationService = new FakeReceiptSmsNotificationService();
+        smsNotificationService.fail = true;
+        receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
+                receiptPrintService, smsNotificationService, activityLogService, fixedClock(), dataSource);
+
+        ReceiptResponseDto response = receiptService.createReceipt(validRequest());
+
+        assertEquals("REC26000001", response.getReceiptNo());
+        assertEquals(1, receiptRepository.insertedReceipts.size());
+        assertTrue(dataSource.connection.committed);
+        assertFalse(dataSource.connection.rolledBack);
+        assertEquals(100L, smsNotificationService.receiptId);
+        assertEquals("Receipt saved, but SMS notification failed.", response.getWarningMessage());
+    }
+
+    @Test
     void rejectFutureWeek() {
         CreateReceiptRequest request = validRequest();
         request.setWeekStartDate(LocalDate.of(2026, 5, 18));
@@ -494,6 +511,23 @@ class ReceiptServiceTest {
             }
             receiptRepository.autoPrintAttemptCount++;
             receiptRepository.autoPrinted = true;
+        }
+    }
+
+    private static class FakeReceiptSmsNotificationService extends ReceiptSmsNotificationService {
+        private boolean fail;
+        private long receiptId;
+
+        private FakeReceiptSmsNotificationService() {
+            super(null, null, null, null, null, null, Clock.systemUTC());
+        }
+
+        @Override
+        public void sendReceiptSubmissionSms(long receiptId) {
+            this.receiptId = receiptId;
+            if (fail) {
+                throw new SmsNotificationException("SMS gateway unavailable");
+            }
         }
     }
 

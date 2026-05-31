@@ -24,6 +24,7 @@ public class PermissionGuard {
         LEGACY_PERMISSION_ALIASES.put("backup.create", new String[]{"BACKUP_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("backup.restore", new String[]{"BACKUP_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("settings.manage", new String[]{"SETTINGS_MANAGE"});
+        LEGACY_PERMISSION_ALIASES.put("sms.settings.manage", new String[]{"SETTINGS_MANAGE"});
     }
 
     private final AuthenticatedUser user;

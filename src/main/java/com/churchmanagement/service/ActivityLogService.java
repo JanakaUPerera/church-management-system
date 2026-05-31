@@ -37,6 +37,12 @@ public class ActivityLogService {
     public static final String RECEIPT_PRINT_FAILED = "RECEIPT_PRINT_FAILED";
     public static final String RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED = "RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED";
     public static final String RECEIPT_PRINT_BLOCKED_CANCELLED = "RECEIPT_PRINT_BLOCKED_CANCELLED";
+    public static final String SMS_SENT = "SMS_SENT";
+    public static final String SMS_FAILED = "SMS_FAILED";
+    public static final String SMS_SKIPPED = "SMS_SKIPPED";
+    public static final String SMS_SETTINGS_UPDATED = "SMS_SETTINGS_UPDATED";
+    public static final String SMS_TEST_SENT = "SMS_TEST_SENT";
+    public static final String SMS_TEST_FAILED = "SMS_TEST_FAILED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -132,6 +138,43 @@ public class ActivityLogService {
 
     public void logReceiptPrintBlockedCancelled(Long userId, long receiptId) {
         log(userId, RECEIPT_PRINT_BLOCKED_CANCELLED, "receipt_id: " + receiptId);
+    }
+
+    public void logSmsSent(Long userId, long receiptId, Long churchId, String mobileNumber, String provider) {
+        log(userId, SMS_SENT,
+                "receipt_id: " + receiptId
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + nullToBlank(mobileNumber)
+                        + ", provider: " + nullToBlank(provider));
+    }
+
+    public void logSmsFailed(Long userId, Long receiptId, Long churchId, String mobileNumber, String reason) {
+        log(userId, SMS_FAILED,
+                "receipt_id: " + nullToBlank(receiptId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + nullToBlank(mobileNumber)
+                        + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logSmsSkipped(Long userId, Long receiptId, Long churchId, String reason) {
+        log(userId, SMS_SKIPPED,
+                "receipt_id: " + nullToBlank(receiptId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logSmsSettingsUpdated(Long userId, boolean enabled, String gatewayType) {
+        log(userId, SMS_SETTINGS_UPDATED, "sms_enabled: " + enabled + ", gateway_type: " + gatewayType);
+    }
+
+    public void logSmsTestSent(Long userId, String mobileNumber, String provider) {
+        log(userId, SMS_TEST_SENT,
+                "mobile_number: " + nullToBlank(mobileNumber) + ", provider: " + nullToBlank(provider));
+    }
+
+    public void logSmsTestFailed(Long userId, String mobileNumber, String reason) {
+        log(userId, SMS_TEST_FAILED,
+                "mobile_number: " + nullToBlank(mobileNumber) + ", reason: " + nullToBlank(reason));
     }
 
     private void log(Long userId, String action, String details) {

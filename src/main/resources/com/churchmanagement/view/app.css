@@ -764,6 +764,63 @@
     -fx-font-weight: bold;
 }
 
+.receipt-detail-tabs {
+    -fx-background-color: transparent;
+    -fx-tab-min-height: 36;
+}
+
+.receipt-detail-tabs .tab-header-area {
+    -fx-padding: 0;
+}
+
+.receipt-detail-tabs .tab-header-background {
+    -fx-background-color: #fef3c7;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5 1.5 0 1.5;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-radius: 6 6 0 0;
+}
+
+.receipt-detail-tabs .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6 6 0 0;
+    -fx-focus-color: #f59e0b;
+    -fx-faint-focus-color: transparent;
+    -fx-padding: 6 18;
+}
+
+.receipt-detail-tabs .tab:focused {
+    -fx-focus-color: #f59e0b;
+    -fx-faint-focus-color: transparent;
+}
+
+.receipt-detail-tabs .tab:selected {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.receipt-detail-tabs .tab .tab-label {
+    -fx-text-fill: #92400e;
+    -fx-font-weight: bold;
+}
+
+.receipt-detail-tabs .tab:selected .tab-label {
+    -fx-text-fill: #78350f;
+}
+
+.receipt-detail-tabs .tab-content-area {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 0 1.5 1.5 1.5;
+    -fx-background-radius: 0 0 6 6;
+    -fx-border-radius: 0 0 6 6;
+}
+
+.receipt-detail-tab-body {
+    -fx-background-color: #fffbeb;
+}
+
 /* ═══════════════════════════════════════════════
    VALUE LABEL  (data-displaying labels — not bold)
    ═══════════════════════════════════════════════ */

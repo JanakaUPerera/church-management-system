@@ -13,6 +13,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptCancellationService;
+import com.churchmanagement.service.ReceiptSmsNotificationService;
 import com.churchmanagement.service.ReceiptPrintService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.util.ButtonIconUtil;
@@ -42,6 +43,8 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -70,6 +73,7 @@ public class ReceiptHistoryController {
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final ReceiptCancellationService receiptCancellationService = new ReceiptCancellationService();
     private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
+    private final ReceiptSmsNotificationService receiptSmsNotificationService = new ReceiptSmsNotificationService();
     private final ChurchService churchService = new ChurchService();
     private final RegionService regionService = new RegionService();
     private final ObservableList<ReceiptResponseDto> receipts = FXCollections.observableArrayList();
@@ -169,9 +173,9 @@ public class ReceiptHistoryController {
         weekColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatWeek(cellData.getValue())));
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus().name()));
         totalColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatAmount(cellData.getValue().getTotalAmount())));
-        actionColumn.setMinWidth(130);
-        actionColumn.setPrefWidth(150);
-        actionColumn.setMaxWidth(170);
+        actionColumn.setMinWidth(165);
+        actionColumn.setPrefWidth(185);
+        actionColumn.setMaxWidth(215);
         actionColumn.setResizable(false);
         actionColumn.setCellFactory(column -> new ViewButtonCell());
         regionColumn.setCellFactory(column -> alignedTextCell("receipt-center-cell"));
@@ -270,15 +274,47 @@ public class ReceiptHistoryController {
     private VBox detailsContent(ReceiptResponseDto receipt) {
         VBox container = new VBox(14);
         container.setPrefWidth(920);
+        container.getChildren().add(receiptDetailsTabs(receipt));
+        return container;
+    }
+
+    private TabPane receiptDetailsTabs(ReceiptResponseDto receipt) {
+        Tab receiptTab = new Tab("Receipt Details", receiptDetailsTabContent(receipt));
+        Tab cancellationTab = new Tab("Cancellation Details", cancellationDetailsTabContent(receipt));
+        Tab followUpTab = new Tab("Print & SMS Details", printSmsTabContent(receipt));
+        receiptTab.setClosable(false);
+        cancellationTab.setClosable(false);
+        followUpTab.setClosable(false);
+
+        TabPane tabPane = new TabPane(receiptTab, cancellationTab, followUpTab);
+        tabPane.getStyleClass().add("receipt-detail-tabs");
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        tabPane.setPrefWidth(920);
+        return tabPane;
+    }
+
+    private VBox receiptDetailsTabContent(ReceiptResponseDto receipt) {
+        VBox content = new VBox(14);
         HBox detailsRow = new HBox(14,
                 detailCard("Receipt Information", receiptInformationGrid(receipt)),
                 detailCard("Submission Details", submissionDetailsGrid(receipt)));
         detailsRow.setFillHeight(true);
-        container.getChildren().addAll(
+        content.getChildren().addAll(
                 detailsRow,
-                detailCard("Cancellation Details", cancellationDetailsGrid(receipt)),
                 detailCard("Items", itemsGrid(receipt)));
-        return container;
+        return tabContent(content);
+    }
+
+    private VBox cancellationDetailsTabContent(ReceiptResponseDto receipt) {
+        return tabContent(detailCard("Cancellation Details", cancellationDetailsGrid(receipt)));
+    }
+
+    private VBox printSmsTabContent(ReceiptResponseDto receipt) {
+        HBox detailsRow = new HBox(14,
+                detailCard("Printing Details", printingDetailsGrid(receipt)),
+                detailCard("SMS Details", smsDetailsGrid(receipt)));
+        detailsRow.setFillHeight(true);
+        return tabContent(detailsRow);
     }
 
     private VBox detailCard(String title, Node content) {
@@ -295,6 +331,13 @@ public class ReceiptHistoryController {
         return card;
     }
 
+    private VBox tabContent(Node content) {
+        VBox body = new VBox(content);
+        body.getStyleClass().add("receipt-detail-tab-body");
+        body.setPadding(new Insets(12));
+        return body;
+    }
+
     private GridPane receiptInformationGrid(ReceiptResponseDto receipt) {
         GridPane grid = detailGrid();
         addDetailRow(grid, 0, "Receipt No", receipt.getReceiptNo());
@@ -302,9 +345,6 @@ public class ReceiptHistoryController {
         addDetailRow(grid, 2, "Church", receipt.getChurchCode() + " - " + receipt.getChurchName());
         addDetailRow(grid, 3, "Region", receipt.getRegionCode() + " - " + receipt.getRegionName());
         addDetailRow(grid, 4, "Total", formatAmount(receipt.getTotalAmount()));
-        addDetailRow(grid, 5, "Original Printed", receipt.isOriginalPrinted() ? "Yes" : "No");
-        addDetailRow(grid, 6, "Printed At", formatDateTime(receipt.getOriginalPrintedAt()));
-        addDetailRow(grid, 7, "Printed By", nullToDash(receipt.getOriginalPrintedByFullName()));
         return grid;
     }
 
@@ -316,6 +356,24 @@ public class ReceiptHistoryController {
         addDetailRow(grid, 3, "Submitted By", nullToDash(receipt.getSubmittedByName()));
         addDetailRow(grid, 4, "Issued By", nullToDash(receipt.getIssuedByFullName()));
         addDetailRow(grid, 5, "Correction", correctionNode(receipt));
+        return grid;
+    }
+
+    private GridPane printingDetailsGrid(ReceiptResponseDto receipt) {
+        GridPane grid = detailGrid();
+        addDetailRow(grid, 0, "Original Printed", receipt.isOriginalPrinted() ? "Yes" : "No");
+        addDetailRow(grid, 1, "Printed At", formatDateTime(receipt.getOriginalPrintedAt()));
+        addDetailRow(grid, 2, "Printed By", nullToDash(receipt.getOriginalPrintedByFullName()));
+        addDetailRow(grid, 3, "Print Attempts", String.valueOf(receipt.getPrintAttemptCount()));
+        return grid;
+    }
+
+    private GridPane smsDetailsGrid(ReceiptResponseDto receipt) {
+        GridPane grid = detailGrid();
+        addDetailRow(grid, 0, "Status", smsStatusNode(receipt));
+        addDetailRow(grid, 1, "Sent At", formatDateTime(receipt.getSmsSentAt()));
+        addDetailRow(grid, 2, "Provider", nullToDash(receipt.getSmsProvider()));
+        addDetailRow(grid, 3, "Error", nullToDash(receipt.getSmsErrorMessage()));
         return grid;
     }
 
@@ -366,6 +424,16 @@ public class ReceiptHistoryController {
     private Label lateSubmissionBadge(boolean lateSubmission) {
         Label badge = detailBadge(lateSubmission ? "YES" : "NO", "status-badge");
         badge.getStyleClass().add(lateSubmission ? "status-inactive" : "status-active");
+        return badge;
+    }
+
+    private Node smsStatusNode(ReceiptResponseDto receipt) {
+        String status = receipt.getSmsStatus();
+        if (status == null || status.isBlank()) {
+            return detailValueLabel("-");
+        }
+        Label badge = detailBadge(status, "status-badge");
+        badge.getStyleClass().add("SUCCESS".equals(status) ? "status-active" : "status-inactive");
         return badge;
     }
 
@@ -506,6 +574,16 @@ public class ReceiptHistoryController {
         }
     }
 
+    private void sendSms(ReceiptResponseDto receipt) {
+        try {
+            receiptSmsNotificationService.sendReceiptSubmissionSms(receipt.getId());
+            handleSearch();
+            setMessage("SMS notification processed for receipt " + receipt.getReceiptNo() + ".");
+        } catch (ReceiptSmsNotificationService.SmsNotificationException | SecurityException exception) {
+            showError("Send SMS", exception.getMessage());
+        }
+    }
+
     private boolean canPrintOriginal(ReceiptResponseDto receipt) {
         return permissionGuard != null
                 && permissionGuard.can("receipt.print")
@@ -518,6 +596,12 @@ public class ReceiptHistoryController {
         return receipt != null
                 && receipt.getStatus() == ReceiptStatus.CANCELLED
                 && receipt.getCorrectionReceiptNo() == null;
+    }
+
+    private boolean canSendFailedSms(ReceiptResponseDto receipt) {
+        return receipt != null
+                && receipt.getStatus() == ReceiptStatus.ACTIVE
+                && "FAILED".equals(receipt.getSmsStatus());
     }
 
     private Optional<String> promptCancellationReason(ReceiptResponseDto selected) {
@@ -622,8 +706,9 @@ public class ReceiptHistoryController {
         private final Button viewButton = new Button();
         private final Button pdfButton = new Button();
         private final Button printButton = new Button();
+        private final Button smsButton = new Button();
         private final Button recreateButton = new Button();
-        private final HBox actionBox = new HBox(6, viewButton, pdfButton, printButton, recreateButton);
+        private final HBox actionBox = new HBox(6, viewButton, pdfButton, printButton, smsButton, recreateButton);
 
         private ViewButtonCell() {
             getStyleClass().add("receipt-action-cell");
@@ -632,13 +717,16 @@ public class ReceiptHistoryController {
             recreateButton.getStyleClass().add("table-action-button");
             pdfButton.getStyleClass().add("table-action-button");
             printButton.getStyleClass().add("table-action-button");
+            smsButton.getStyleClass().add("table-action-button");
             ButtonIconUtil.applyTableActionIcon(viewButton, "fas-eye", "View receipt");
             ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Open PDF");
             ButtonIconUtil.applyTableActionIcon(printButton, "fas-print", "Print original");
+            ButtonIconUtil.applyTableActionIcon(smsButton, "fas-paper-plane", "Send SMS");
             ButtonIconUtil.applyTableActionIcon(recreateButton, "fas-redo", "Re-create receipt");
             viewButton.setOnAction(event -> showReceiptDetailsDialog(getTableView().getItems().get(getIndex())));
             pdfButton.setOnAction(event -> openPdf(getTableView().getItems().get(getIndex())));
             printButton.setOnAction(event -> printOriginal(getTableView().getItems().get(getIndex())));
+            smsButton.setOnAction(event -> sendSms(getTableView().getItems().get(getIndex())));
             recreateButton.setOnAction(event -> recreateReceipt(getTableView().getItems().get(getIndex())));
         }
 
@@ -653,8 +741,11 @@ public class ReceiptHistoryController {
             ReceiptResponseDto receipt = getTableView().getItems().get(getIndex());
             boolean canRecreate = canRecreateReceipt(receipt);
             boolean canPrint = canPrintOriginal(receipt);
+            boolean canSendSms = canSendFailedSms(receipt);
             printButton.setVisible(canPrint);
             printButton.setManaged(canPrint);
+            smsButton.setVisible(canSendSms);
+            smsButton.setManaged(canSendSms);
             recreateButton.setVisible(canRecreate);
             recreateButton.setManaged(canRecreate);
             setGraphic(actionBox);

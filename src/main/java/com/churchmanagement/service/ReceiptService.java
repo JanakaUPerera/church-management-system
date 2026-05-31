@@ -35,29 +35,42 @@ public class ReceiptService {
     private final ChurchRepository churchRepository;
     private final ReceiptNumberGeneratorService receiptNumberGeneratorService;
     private final ReceiptPrintService receiptPrintService;
+    private final ReceiptSmsNotificationService receiptSmsNotificationService;
     private final ActivityLogService activityLogService;
     private final Clock clock;
     private final DataSource dataSource;
 
     public ReceiptService() {
         this(new ReceiptRepository(), new ChurchRepository(), new ReceiptNumberGeneratorService(),
-                new ReceiptPrintService(), new ActivityLogService(), Clock.systemDefaultZone(), DatabaseConfig.getDataSource());
+                new ReceiptPrintService(), new ReceiptSmsNotificationService(), new ActivityLogService(),
+                Clock.systemDefaultZone(), DatabaseConfig.getDataSource());
     }
 
     public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
                           ReceiptNumberGeneratorService receiptNumberGeneratorService,
                           ActivityLogService activityLogService, Clock clock, DataSource dataSource) {
-        this(receiptRepository, churchRepository, receiptNumberGeneratorService, null, activityLogService, clock, dataSource);
+        this(receiptRepository, churchRepository, receiptNumberGeneratorService, null, null,
+                activityLogService, clock, dataSource);
     }
 
     public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
                           ReceiptNumberGeneratorService receiptNumberGeneratorService,
                           ReceiptPrintService receiptPrintService,
                           ActivityLogService activityLogService, Clock clock, DataSource dataSource) {
+        this(receiptRepository, churchRepository, receiptNumberGeneratorService, receiptPrintService, null,
+                activityLogService, clock, dataSource);
+    }
+
+    public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
+                          ReceiptNumberGeneratorService receiptNumberGeneratorService,
+                          ReceiptPrintService receiptPrintService,
+                          ReceiptSmsNotificationService receiptSmsNotificationService,
+                          ActivityLogService activityLogService, Clock clock, DataSource dataSource) {
         this.receiptRepository = receiptRepository;
         this.churchRepository = churchRepository;
         this.receiptNumberGeneratorService = receiptNumberGeneratorService;
         this.receiptPrintService = receiptPrintService;
+        this.receiptSmsNotificationService = receiptSmsNotificationService;
         this.activityLogService = activityLogService;
         this.clock = clock;
         this.dataSource = dataSource;
@@ -81,6 +94,7 @@ public class ReceiptService {
         Connection connection = null;
         boolean previousAutoCommit = true;
         boolean receiptCommitted = false;
+        String warningMessage = null;
         try {
             connection = dataSource.getConnection();
             previousAutoCommit = connection.getAutoCommit();
@@ -111,8 +125,16 @@ public class ReceiptService {
                     // Receipt remains saved; original_printed stays false so history can offer Print Original.
                 }
             }
+            if (receiptSmsNotificationService != null) {
+                try {
+                    receiptSmsNotificationService.sendReceiptSubmissionSms(receiptId);
+                } catch (ReceiptSmsNotificationService.SmsNotificationException exception) {
+                    warningMessage = "Receipt saved, but SMS notification failed.";
+                }
+            }
             ReceiptResponseDto response = receiptRepository.findReceiptDetailsById(receiptId)
                     .orElseThrow(() -> new ReceiptException("Receipt was saved but could not be loaded."));
+            response.setWarningMessage(warningMessage);
             activityLogService.logReceiptCreated(currentUser.getUserId(), response, church.getId(), totalAmount);
             return response;
         } catch (ReceiptException exception) {
