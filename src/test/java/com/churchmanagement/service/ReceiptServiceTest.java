@@ -48,6 +48,7 @@ class ReceiptServiceTest {
     private FakeReceiptRepository receiptRepository;
     private FakeChurchRepository churchRepository;
     private FakeReceiptNumberGeneratorService receiptNumberGeneratorService;
+    private FakeReceiptPrintService receiptPrintService;
     private FakeActivityLogService activityLogService;
     private FakeDataSource dataSource;
     private ReceiptService receiptService;
@@ -57,6 +58,7 @@ class ReceiptServiceTest {
         receiptRepository = new FakeReceiptRepository();
         churchRepository = new FakeChurchRepository();
         receiptNumberGeneratorService = new FakeReceiptNumberGeneratorService();
+        receiptPrintService = new FakeReceiptPrintService(receiptRepository);
         activityLogService = new FakeActivityLogService();
         dataSource = new FakeDataSource();
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
@@ -80,6 +82,32 @@ class ReceiptServiceTest {
         assertFalse(receiptRepository.insertedReceipts.getFirst().isLateSubmission());
         assertTrue(dataSource.connection.committed);
         assertEquals(ActivityLogService.RECEIPT_CREATED, activityLogService.createdAction);
+    }
+
+    @Test
+    void createReceiptPrintsOriginalAfterSaveWhenPrintServiceIsAvailable() {
+        receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
+                receiptPrintService, activityLogService, fixedClock(), dataSource);
+
+        ReceiptResponseDto response = receiptService.createReceipt(validRequest());
+
+        assertEquals(100L, receiptPrintService.printedReceiptId);
+        assertTrue(response.isOriginalPrinted());
+        assertEquals(1, response.getPrintAttemptCount());
+    }
+
+    @Test
+    void createReceiptRemainsSavedWhenAutomaticPrintFails() {
+        receiptPrintService.failPrint = true;
+        receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
+                receiptPrintService, activityLogService, fixedClock(), dataSource);
+
+        ReceiptResponseDto response = receiptService.createReceipt(validRequest());
+
+        assertEquals("REC26000001", response.getReceiptNo());
+        assertEquals(1, receiptRepository.insertedReceipts.size());
+        assertFalse(response.isOriginalPrinted());
+        assertEquals(1, response.getPrintAttemptCount());
     }
 
     @Test
@@ -344,6 +372,8 @@ class ReceiptServiceTest {
         private boolean existingActiveReceiptForExistsCheck;
         private boolean failItemInsert;
         private Receipt correctionReceipt;
+        private boolean autoPrinted;
+        private int autoPrintAttemptCount;
         private final List<Receipt> insertedReceipts = new ArrayList<>();
         private final List<ReceiptItem> insertedItems = new ArrayList<>();
         private Receipt lastReceipt;
@@ -406,6 +436,8 @@ class ReceiptServiceTest {
             response.setLateSubmissionReason(lastReceipt.getLateSubmissionReason());
             response.setCorrectedFromReceiptId(lastReceipt.getCorrectedFromReceiptId());
             response.setCorrectedFromReceiptNo(lastReceipt.getCorrectedFromReceiptId() == null ? null : "REC26000000");
+            response.setOriginalPrinted(autoPrinted);
+            response.setPrintAttemptCount(autoPrintAttemptCount);
             response.setItems(insertedItems.stream()
                     .map(item -> new ReceiptItemDto(item.getCollectionType(), item.getAmount(), item.getNote()))
                     .toList());
@@ -440,6 +472,28 @@ class ReceiptServiceTest {
         public String generateReceiptNumber(Connection connection) {
             generateCount++;
             return "REC2600000" + generateCount;
+        }
+    }
+
+    private static class FakeReceiptPrintService extends ReceiptPrintService {
+        private final FakeReceiptRepository receiptRepository;
+        private boolean failPrint;
+        private long printedReceiptId;
+
+        private FakeReceiptPrintService(FakeReceiptRepository receiptRepository) {
+            super(null, null, null, null, null, Clock.systemUTC());
+            this.receiptRepository = receiptRepository;
+        }
+
+        @Override
+        public void printOriginalReceipt(long receiptId) {
+            printedReceiptId = receiptId;
+            if (failPrint) {
+                receiptRepository.autoPrintAttemptCount++;
+                throw new ReceiptPrintException("Printer offline");
+            }
+            receiptRepository.autoPrintAttemptCount++;
+            receiptRepository.autoPrinted = true;
         }
     }
 

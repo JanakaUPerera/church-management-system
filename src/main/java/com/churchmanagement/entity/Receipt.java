@@ -19,6 +19,11 @@ public class Receipt {
     private boolean lateSubmission;
     private String lateSubmissionReason;
     private Long correctedFromReceiptId;
+    private String pdfFilePath;
+    private boolean originalPrinted;
+    private LocalDateTime originalPrintedAt;
+    private Long originalPrintedByUserId;
+    private int printAttemptCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -124,6 +129,46 @@ public class Receipt {
 
     public void setCorrectedFromReceiptId(Long correctedFromReceiptId) {
         this.correctedFromReceiptId = correctedFromReceiptId;
+    }
+
+    public String getPdfFilePath() {
+        return pdfFilePath;
+    }
+
+    public void setPdfFilePath(String pdfFilePath) {
+        this.pdfFilePath = pdfFilePath;
+    }
+
+    public boolean isOriginalPrinted() {
+        return originalPrinted;
+    }
+
+    public void setOriginalPrinted(boolean originalPrinted) {
+        this.originalPrinted = originalPrinted;
+    }
+
+    public LocalDateTime getOriginalPrintedAt() {
+        return originalPrintedAt;
+    }
+
+    public void setOriginalPrintedAt(LocalDateTime originalPrintedAt) {
+        this.originalPrintedAt = originalPrintedAt;
+    }
+
+    public Long getOriginalPrintedByUserId() {
+        return originalPrintedByUserId;
+    }
+
+    public void setOriginalPrintedByUserId(Long originalPrintedByUserId) {
+        this.originalPrintedByUserId = originalPrintedByUserId;
+    }
+
+    public int getPrintAttemptCount() {
+        return printAttemptCount;
+    }
+
+    public void setPrintAttemptCount(int printAttemptCount) {
+        this.printAttemptCount = printAttemptCount;
     }
 
     public LocalDateTime getCreatedAt() {

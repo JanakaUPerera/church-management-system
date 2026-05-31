@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="receipt_template" pageWidth="595" pageHeight="842" columnWidth="515"
+              leftMargin="40" rightMargin="40" topMargin="30" bottomMargin="30" uuid="a0bf2c1c-2a9c-44ce-90ea-fb312c9f0a31">
+    <parameter name="organizationName" class="java.lang.String"/>
+    <parameter name="receiptNo" class="java.lang.String"/>
+    <parameter name="receiptDateTime" class="java.lang.String"/>
+    <parameter name="churchCode" class="java.lang.String"/>
+    <parameter name="churchName" class="java.lang.String"/>
+    <parameter name="regionCode" class="java.lang.String"/>
+    <parameter name="regionName" class="java.lang.String"/>
+    <parameter name="week" class="java.lang.String"/>
+    <parameter name="bearerName" class="java.lang.String"/>
+    <parameter name="submittedBy" class="java.lang.String"/>
+    <parameter name="issuedBy" class="java.lang.String"/>
+    <parameter name="lateSubmission" class="java.lang.String"/>
+    <parameter name="lateSubmissionReason" class="java.lang.String"/>
+    <parameter name="itemsText" class="java.lang.String"/>
+    <parameter name="totalAmount" class="java.lang.String"/>
+    <parameter name="status" class="java.lang.String"/>
+    <parameter name="generatedAt" class="java.lang.String"/>
+    <parameter name="cancelReason" class="java.lang.String"/>
+    <parameter name="cancelledWatermark" class="java.lang.String"/>
+
+    <title>
+        <band height="110">
+            <textField>
+                <reportElement x="0" y="0" width="515" height="24" uuid="0b8b7675-a66c-41f5-8c2e-f17890135599"/>
+                <textElement textAlignment="Center"><font size="16" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{organizationName}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="0" y="28" width="515" height="24" uuid="07191953-9e61-4bb1-9bf4-d6343eca9d0e"/>
+                <textElement textAlignment="Center"><font size="15" isBold="true"/></textElement>
+                <text><![CDATA[Collection Receipt]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="0" y="58" width="255" height="18" uuid="17c5e091-e7d6-491f-ab9d-24b7303b3d98"/>
+                <textFieldExpression><![CDATA["Receipt No: " + $P{receiptNo}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="260" y="58" width="255" height="18" uuid="9fdc0be0-cbe0-481e-8e73-dbdcbb99c78d"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA["Receipt Date & Time: " + $P{receiptDateTime}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement forecolor="#B00020" x="0" y="78" width="515" height="28" uuid="f761719c-62a6-4832-9bcd-3bf74d3da82c"/>
+                <textElement textAlignment="Center"><font size="24" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{cancelledWatermark}]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+
+    <detail>
+        <band height="500">
+            <staticText><reportElement x="0" y="0" width="515" height="18" uuid="7049d8db-3557-4a07-8514-3975d99051a1"/><textElement><font isBold="true"/></textElement><text><![CDATA[Church Details]]></text></staticText>
+            <textField><reportElement x="0" y="24" width="255" height="18" uuid="42c74b4e-2cc0-4f76-8740-13e0d40440e1"/><textFieldExpression><![CDATA["Church Code: " + $P{churchCode}]]></textFieldExpression></textField>
+            <textField><reportElement x="260" y="24" width="255" height="18" uuid="2a31e7b2-f3cc-44b1-b4e4-0a7e79fa2955"/><textFieldExpression><![CDATA["Church Name: " + $P{churchName}]]></textFieldExpression></textField>
+            <textField><reportElement x="0" y="46" width="255" height="18" uuid="04196a0d-a5b3-4982-b7bd-425c91cd2c71"/><textFieldExpression><![CDATA["Region Code: " + $P{regionCode}]]></textFieldExpression></textField>
+            <textField><reportElement x="260" y="46" width="255" height="18" uuid="328d3d7e-3cbf-4202-a8ef-6260e5bd2fbb"/><textFieldExpression><![CDATA["Region Name: " + $P{regionName}]]></textFieldExpression></textField>
+
+            <staticText><reportElement x="0" y="82" width="515" height="18" uuid="e376bc5c-b4f2-4875-94a2-f6a955f3bb1"/><textElement><font isBold="true"/></textElement><text><![CDATA[Submission Details]]></text></staticText>
+            <textField><reportElement x="0" y="106" width="515" height="18" uuid="ae6846ff-c728-4647-9099-8c13258d1f9a"/><textFieldExpression><![CDATA["Week: " + $P{week}]]></textFieldExpression></textField>
+            <textField><reportElement x="0" y="128" width="255" height="18" uuid="a6ae46a8-8d40-4917-bc16-822e8218a20d"/><textFieldExpression><![CDATA["Bearer Name: " + $P{bearerName}]]></textFieldExpression></textField>
+            <textField><reportElement x="260" y="128" width="255" height="18" uuid="6773e18f-2636-476e-831e-cae2da6926ee"/><textFieldExpression><![CDATA["Submitted By: " + $P{submittedBy}]]></textFieldExpression></textField>
+            <textField><reportElement x="0" y="150" width="255" height="18" uuid="77126ba2-c4d4-41d6-a681-c6d862dd637c"/><textFieldExpression><![CDATA["Issued By: " + $P{issuedBy}]]></textFieldExpression></textField>
+            <textField><reportElement x="260" y="150" width="255" height="18" uuid="d615a819-100d-4d30-bc68-838dcfa6e8eb"/><textFieldExpression><![CDATA["Late Submission: " + $P{lateSubmission}]]></textFieldExpression></textField>
+            <textField textAdjust="StretchHeight"><reportElement x="0" y="172" width="515" height="36" uuid="d8238c05-6989-4978-b3e6-516db0d654ce"/><textFieldExpression><![CDATA["Late Submission Reason: " + $P{lateSubmissionReason}]]></textFieldExpression></textField>
+
+            <staticText><reportElement x="0" y="226" width="515" height="18" uuid="beeb5778-f611-4101-abfc-bbb8e2aa6cbd"/><textElement><font isBold="true"/></textElement><text><![CDATA[Collection Items]]></text></staticText>
+            <staticText><reportElement mode="Opaque" backcolor="#EEEEEE" x="0" y="250" width="180" height="18" uuid="5bb1a2f4-b066-436e-88a7-b93caa767528"/><textElement><font isBold="true"/></textElement><text><![CDATA[Collection Type]]></text></staticText>
+            <staticText><reportElement mode="Opaque" backcolor="#EEEEEE" x="180" y="250" width="95" height="18" uuid="a3f1739b-3a29-4f14-9677-54cc5fd933c7"/><textElement textAlignment="Right"><font isBold="true"/></textElement><text><![CDATA[Amount]]></text></staticText>
+            <staticText><reportElement mode="Opaque" backcolor="#EEEEEE" x="285" y="250" width="230" height="18" uuid="f94135ec-dcd0-4fbc-a75d-0931d6303ef7"/><textElement><font isBold="true"/></textElement><text><![CDATA[Note]]></text></staticText>
+            <textField textAdjust="StretchHeight">
+                <reportElement x="0" y="272" width="515" height="96" uuid="ac3cb6c9-eb2f-4c28-9b83-5f8a993f2447"/>
+                <textFieldExpression><![CDATA[$P{itemsText}]]></textFieldExpression>
+            </textField>
+
+            <textField><reportElement x="0" y="390" width="255" height="20" uuid="fb6cdf6d-72f1-46e1-8ced-d3976e01fbe3"/><textElement><font isBold="true"/></textElement><textFieldExpression><![CDATA["Total Amount: " + $P{totalAmount}]]></textFieldExpression></textField>
+            <textField><reportElement x="260" y="390" width="255" height="20" uuid="acc61cc8-0486-40c9-9407-ad0e3e7c0f8a"/><textElement textAlignment="Right"><font isBold="true"/></textElement><textFieldExpression><![CDATA["Status: " + $P{status}]]></textFieldExpression></textField>
+            <textField textAdjust="StretchHeight"><reportElement x="0" y="418" width="515" height="36" uuid="f5e8c872-6113-4b51-9eb6-c177c0950cb5"/><textFieldExpression><![CDATA["Cancellation Reason: " + $P{cancelReason}]]></textFieldExpression></textField>
+            <staticText><reportElement x="0" y="468" width="255" height="18" uuid="d5afe5c6-f283-42a1-8d2c-b42732800009"/><textElement><font isBold="true"/></textElement><text><![CDATA[Original Receipt]]></text></staticText>
+            <textField><reportElement x="260" y="468" width="255" height="18" uuid="8fbc1a48-47a9-4b35-a9f8-b3a0ae1210bb"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["Generated: " + $P{generatedAt}]]></textFieldExpression></textField>
+        </band>
+    </detail>
+</jasperReport>

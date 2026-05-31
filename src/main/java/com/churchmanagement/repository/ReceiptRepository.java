@@ -60,7 +60,8 @@ public class ReceiptRepository {
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
                        receipt_datetime, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
-                       created_at, updated_at
+                       pdf_file_path, original_printed, original_printed_at,
+                       original_printed_by_user_id, print_attempt_count, created_at, updated_at
                 FROM receipts
                 WHERE church_id = ? AND week_start_date = ? AND status = 'ACTIVE'
                 FOR UPDATE
@@ -85,7 +86,8 @@ public class ReceiptRepository {
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
                        receipt_datetime, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
-                       created_at, updated_at
+                       pdf_file_path, original_printed, original_printed_at,
+                       original_printed_by_user_id, print_attempt_count, created_at, updated_at
                 FROM receipts
                 WHERE id = ?
                 FOR UPDATE
@@ -343,6 +345,12 @@ public class ReceiptRepository {
                 dto.setCancelledByFullName(resultSet.getString("cancelled_by_full_name"));
                 Timestamp cancelledAt = resultSet.getTimestamp("cancelled_at");
                 dto.setCancelledAt(cancelledAt == null ? null : cancelledAt.toLocalDateTime());
+                dto.setPdfFilePath(resultSet.getString("pdf_file_path"));
+                dto.setOriginalPrinted(resultSet.getBoolean("original_printed"));
+                Timestamp originalPrintedAt = resultSet.getTimestamp("original_printed_at");
+                dto.setOriginalPrintedAt(originalPrintedAt == null ? null : originalPrintedAt.toLocalDateTime());
+                dto.setOriginalPrintedByFullName(resultSet.getString("original_printed_by_full_name"));
+                dto.setPrintAttemptCount(resultSet.getInt("print_attempt_count"));
                 dto.setTotalAmount(resultSet.getBigDecimal("total_amount"));
                 receipts.add(dto);
             }
@@ -365,6 +373,12 @@ public class ReceiptRepository {
         receipt.setLateSubmission(resultSet.getBoolean("is_late_submission"));
         receipt.setLateSubmissionReason(resultSet.getString("late_submission_reason"));
         receipt.setCorrectedFromReceiptId(nullableLong(resultSet, "corrected_from_receipt_id"));
+        receipt.setPdfFilePath(resultSet.getString("pdf_file_path"));
+        receipt.setOriginalPrinted(resultSet.getBoolean("original_printed"));
+        Timestamp originalPrintedAt = resultSet.getTimestamp("original_printed_at");
+        receipt.setOriginalPrintedAt(originalPrintedAt == null ? null : originalPrintedAt.toLocalDateTime());
+        receipt.setOriginalPrintedByUserId(nullableLong(resultSet, "original_printed_by_user_id"));
+        receipt.setPrintAttemptCount(resultSet.getInt("print_attempt_count"));
         receipt.setCreatedAt(resultSet.getTimestamp("created_at").toLocalDateTime());
         Timestamp updatedAt = resultSet.getTimestamp("updated_at");
         receipt.setUpdatedAt(updatedAt == null ? null : updatedAt.toLocalDateTime());
@@ -377,6 +391,8 @@ public class ReceiptRepository {
                        r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
                        u.full_name AS issued_by_full_name, r.status, r.is_late_submission,
                        r.late_submission_reason, r.corrected_from_receipt_id,
+                       r.pdf_file_path, r.original_printed, r.original_printed_at,
+                       r.print_attempt_count, printed_by.full_name AS original_printed_by_full_name,
                        corrected.receipt_no AS corrected_from_receipt_no,
                        correction.receipt_no AS correction_receipt_no,
                        rc.cancel_reason, cancelled_by.full_name AS cancelled_by_full_name,
@@ -390,6 +406,7 @@ public class ReceiptRepository {
                 LEFT JOIN receipts correction ON correction.corrected_from_receipt_id = r.id
                 LEFT JOIN receipt_cancellations rc ON rc.receipt_id = r.id
                 LEFT JOIN users cancelled_by ON cancelled_by.id = rc.cancelled_by_user_id
+                LEFT JOIN users printed_by ON printed_by.id = r.original_printed_by_user_id
                 """;
     }
 
@@ -398,7 +415,9 @@ public class ReceiptRepository {
                  GROUP BY r.id, r.receipt_no, c.church_code, c.church_name, rg.region_code, rg.region_name,
                           r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
                           u.full_name, r.status, r.is_late_submission, r.late_submission_reason,
-                          r.corrected_from_receipt_id, corrected.receipt_no, correction.receipt_no,
+                          r.corrected_from_receipt_id, r.pdf_file_path, r.original_printed,
+                          r.original_printed_at, r.print_attempt_count, printed_by.full_name,
+                          corrected.receipt_no, correction.receipt_no,
                           rc.cancel_reason, cancelled_by.full_name, rc.cancelled_at
                 """;
     }

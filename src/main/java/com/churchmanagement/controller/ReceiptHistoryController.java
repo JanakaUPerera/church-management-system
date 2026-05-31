@@ -13,6 +13,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptCancellationService;
+import com.churchmanagement.service.ReceiptPrintService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
@@ -50,6 +51,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.Duration;
@@ -65,6 +69,7 @@ public class ReceiptHistoryController {
 
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final ReceiptCancellationService receiptCancellationService = new ReceiptCancellationService();
+    private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
     private final ChurchService churchService = new ChurchService();
     private final RegionService regionService = new RegionService();
     private final ObservableList<ReceiptResponseDto> receipts = FXCollections.observableArrayList();
@@ -164,9 +169,9 @@ public class ReceiptHistoryController {
         weekColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatWeek(cellData.getValue())));
         statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus().name()));
         totalColumn.setCellValueFactory(cellData -> new SimpleStringProperty(formatAmount(cellData.getValue().getTotalAmount())));
-        actionColumn.setMinWidth(90);
-        actionColumn.setPrefWidth(100);
-        actionColumn.setMaxWidth(110);
+        actionColumn.setMinWidth(130);
+        actionColumn.setPrefWidth(150);
+        actionColumn.setMaxWidth(170);
         actionColumn.setResizable(false);
         actionColumn.setCellFactory(column -> new ViewButtonCell());
         regionColumn.setCellFactory(column -> alignedTextCell("receipt-center-cell"));
@@ -229,8 +234,14 @@ public class ReceiptHistoryController {
             dialog.setTitle("Receipt Details");
             dialog.setHeaderText("Receipt " + details.getReceiptNo());
             ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType openPdfButton = new ButtonType("Open PDF", ButtonBar.ButtonData.LEFT);
+            ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
             ButtonType cancelReceiptButton = new ButtonType("Cancel Receipt", ButtonBar.ButtonData.LEFT);
             ButtonType recreateButton = new ButtonType("Re-create Receipt", ButtonBar.ButtonData.LEFT);
+            dialog.getDialogPane().getButtonTypes().add(openPdfButton);
+            if (canPrintOriginal(details)) {
+                dialog.getDialogPane().getButtonTypes().add(printOriginalButton);
+            }
             if (canCancelReceipt(details)) {
                 dialog.getDialogPane().getButtonTypes().add(cancelReceiptButton);
             }
@@ -242,7 +253,11 @@ public class ReceiptHistoryController {
             dialog.getDialogPane().setPrefWidth(980);
 
             Optional<ButtonType> result = dialog.showAndWait();
-            if (result.filter(cancelReceiptButton::equals).isPresent()) {
+            if (result.filter(openPdfButton::equals).isPresent()) {
+                openPdf(details);
+            } else if (result.filter(printOriginalButton::equals).isPresent()) {
+                printOriginal(details);
+            } else if (result.filter(cancelReceiptButton::equals).isPresent()) {
                 cancelReceipt(details);
             } else if (result.filter(recreateButton::equals).isPresent()) {
                 recreateReceipt(details);
@@ -287,6 +302,9 @@ public class ReceiptHistoryController {
         addDetailRow(grid, 2, "Church", receipt.getChurchCode() + " - " + receipt.getChurchName());
         addDetailRow(grid, 3, "Region", receipt.getRegionCode() + " - " + receipt.getRegionName());
         addDetailRow(grid, 4, "Total", formatAmount(receipt.getTotalAmount()));
+        addDetailRow(grid, 5, "Original Printed", receipt.isOriginalPrinted() ? "Yes" : "No");
+        addDetailRow(grid, 6, "Printed At", formatDateTime(receipt.getOriginalPrintedAt()));
+        addDetailRow(grid, 7, "Printed By", nullToDash(receipt.getOriginalPrintedByFullName()));
         return grid;
     }
 
@@ -462,6 +480,40 @@ public class ReceiptHistoryController {
         DashboardController.openReceiptCorrection(receipt.getId());
     }
 
+    private void openPdf(ReceiptResponseDto receipt) {
+        try {
+            String path = receipt.getPdfFilePath();
+            if (path == null || path.isBlank()) {
+                path = receiptPrintService.generatePdf(receipt.getId());
+            }
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                showError("Open PDF", "PDF was generated, but this computer cannot open it automatically.");
+                return;
+            }
+            Desktop.getDesktop().open(new File(path));
+        } catch (IOException | ReceiptPrintService.ReceiptPrintException exception) {
+            showError("Open PDF", "PDF generation failed.");
+        }
+    }
+
+    private void printOriginal(ReceiptResponseDto receipt) {
+        try {
+            receiptPrintService.printOriginalReceipt(receipt.getId());
+            handleSearch();
+            setMessage("Original receipt " + receipt.getReceiptNo() + " was sent to the printer.");
+        } catch (ReceiptPrintService.ReceiptPrintException | SecurityException exception) {
+            showError("Print Original", exception.getMessage());
+        }
+    }
+
+    private boolean canPrintOriginal(ReceiptResponseDto receipt) {
+        return permissionGuard != null
+                && permissionGuard.can("receipt.print")
+                && receipt != null
+                && receipt.getStatus() == ReceiptStatus.ACTIVE
+                && !receipt.isOriginalPrinted();
+    }
+
     private boolean canRecreateReceipt(ReceiptResponseDto receipt) {
         return receipt != null
                 && receipt.getStatus() == ReceiptStatus.CANCELLED
@@ -568,17 +620,25 @@ public class ReceiptHistoryController {
 
     private class ViewButtonCell extends TableCell<ReceiptResponseDto, Void> {
         private final Button viewButton = new Button();
+        private final Button pdfButton = new Button();
+        private final Button printButton = new Button();
         private final Button recreateButton = new Button();
-        private final HBox actionBox = new HBox(6, viewButton, recreateButton);
+        private final HBox actionBox = new HBox(6, viewButton, pdfButton, printButton, recreateButton);
 
         private ViewButtonCell() {
             getStyleClass().add("receipt-action-cell");
             actionBox.setAlignment(Pos.CENTER);
             viewButton.getStyleClass().add("table-action-button");
             recreateButton.getStyleClass().add("table-action-button");
+            pdfButton.getStyleClass().add("table-action-button");
+            printButton.getStyleClass().add("table-action-button");
             ButtonIconUtil.applyTableActionIcon(viewButton, "fas-eye", "View receipt");
+            ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Open PDF");
+            ButtonIconUtil.applyTableActionIcon(printButton, "fas-print", "Print original");
             ButtonIconUtil.applyTableActionIcon(recreateButton, "fas-redo", "Re-create receipt");
             viewButton.setOnAction(event -> showReceiptDetailsDialog(getTableView().getItems().get(getIndex())));
+            pdfButton.setOnAction(event -> openPdf(getTableView().getItems().get(getIndex())));
+            printButton.setOnAction(event -> printOriginal(getTableView().getItems().get(getIndex())));
             recreateButton.setOnAction(event -> recreateReceipt(getTableView().getItems().get(getIndex())));
         }
 
@@ -592,6 +652,9 @@ public class ReceiptHistoryController {
 
             ReceiptResponseDto receipt = getTableView().getItems().get(getIndex());
             boolean canRecreate = canRecreateReceipt(receipt);
+            boolean canPrint = canPrintOriginal(receipt);
+            printButton.setVisible(canPrint);
+            printButton.setManaged(canPrint);
             recreateButton.setVisible(canRecreate);
             recreateButton.setManaged(canRecreate);
             setGraphic(actionBox);

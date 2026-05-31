@@ -10,6 +10,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
+import com.churchmanagement.service.ReceiptPrintService;
 import com.churchmanagement.service.ReceiptService;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.util.ComboBoxUtil;
@@ -23,6 +24,7 @@ import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -35,6 +37,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -50,6 +55,7 @@ public class ReceiptEntryController {
 
     private final ChurchService churchService = new ChurchService();
     private final ReceiptService receiptService = new ReceiptService();
+    private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final ObservableList<Church> activeChurches = FXCollections.observableArrayList();
     private static Long pendingCorrectionReceiptId;
@@ -121,7 +127,7 @@ public class ReceiptEntryController {
 
         try {
             ReceiptResponseDto response = receiptService.createReceipt(request);
-            showInfo("Receipt Saved", "Receipt " + response.getReceiptNo() + " was created successfully.");
+            showReceiptSavedDialog(response);
             setMessage("Receipt " + response.getReceiptNo() + " created successfully.");
             clearForm();
         } catch (ReceiptService.ReceiptException | SecurityException exception) {
@@ -482,6 +488,71 @@ public class ReceiptEntryController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void showReceiptSavedDialog(ReceiptResponseDto receipt) {
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.INFORMATION));
+        alert.setTitle("Receipt Saved");
+        alert.setHeaderText("Receipt saved successfully");
+        alert.setContentText(savedReceiptMessage(receipt));
+        ButtonType viewPdfButton = new ButtonType("View PDF", ButtonBar.ButtonData.LEFT);
+        ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
+        if (canPrintOriginal(receipt)) {
+            alert.getButtonTypes().setAll(viewPdfButton, printOriginalButton, ButtonType.OK);
+        } else {
+            alert.getButtonTypes().setAll(viewPdfButton, ButtonType.OK);
+        }
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.filter(viewPdfButton::equals).isPresent()) {
+            openPdf(receipt);
+        } else if (result.filter(printOriginalButton::equals).isPresent()) {
+            printOriginal(receipt);
+        }
+    }
+
+    private String savedReceiptMessage(ReceiptResponseDto receipt) {
+        String message = "Receipt No: " + receipt.getReceiptNo();
+        if (receipt.isOriginalPrinted()) {
+            return message + "\nOriginal receipt printed successfully.";
+        }
+        if (receipt.getPrintAttemptCount() > 0) {
+            return message + "\nOriginal print failed. You can print it from Receipt History.";
+        }
+        return message;
+    }
+
+    private boolean canPrintOriginal(ReceiptResponseDto receipt) {
+        return permissionGuard != null
+                && permissionGuard.can("receipt.print")
+                && receipt != null
+                && receipt.getStatus() == ReceiptStatus.ACTIVE
+                && !receipt.isOriginalPrinted();
+    }
+
+    private void openPdf(ReceiptResponseDto receipt) {
+        try {
+            String path = receipt.getPdfFilePath();
+            if (path == null || path.isBlank()) {
+                path = receiptPrintService.generatePdf(receipt.getId());
+            }
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                showFriendlyError("PDF was generated, but this computer cannot open it automatically.");
+                return;
+            }
+            Desktop.getDesktop().open(new File(path));
+        } catch (IOException | ReceiptPrintService.ReceiptPrintException exception) {
+            showFriendlyError("PDF generation failed.");
+        }
+    }
+
+    private void printOriginal(ReceiptResponseDto receipt) {
+        try {
+            receiptPrintService.printOriginalReceipt(receipt.getId());
+            showInfo("Print Original", "Original receipt was sent to the printer.");
+        } catch (ReceiptPrintService.ReceiptPrintException | SecurityException exception) {
+            showFriendlyError(exception.getMessage());
+        }
     }
 
     private String correctedReceiptText() {

@@ -29,6 +29,11 @@ public class ReceiptResponseDto {
     private String cancelReason;
     private String cancelledByFullName;
     private LocalDateTime cancelledAt;
+    private String pdfFilePath;
+    private boolean originalPrinted;
+    private LocalDateTime originalPrintedAt;
+    private String originalPrintedByFullName;
+    private int printAttemptCount;
     private BigDecimal totalAmount = BigDecimal.ZERO;
     private List<ReceiptItemDto> items = new ArrayList<>();
 
@@ -190,6 +195,46 @@ public class ReceiptResponseDto {
 
     public void setCancelledAt(LocalDateTime cancelledAt) {
         this.cancelledAt = cancelledAt;
+    }
+
+    public String getPdfFilePath() {
+        return pdfFilePath;
+    }
+
+    public void setPdfFilePath(String pdfFilePath) {
+        this.pdfFilePath = pdfFilePath;
+    }
+
+    public boolean isOriginalPrinted() {
+        return originalPrinted;
+    }
+
+    public void setOriginalPrinted(boolean originalPrinted) {
+        this.originalPrinted = originalPrinted;
+    }
+
+    public LocalDateTime getOriginalPrintedAt() {
+        return originalPrintedAt;
+    }
+
+    public void setOriginalPrintedAt(LocalDateTime originalPrintedAt) {
+        this.originalPrintedAt = originalPrintedAt;
+    }
+
+    public String getOriginalPrintedByFullName() {
+        return originalPrintedByFullName;
+    }
+
+    public void setOriginalPrintedByFullName(String originalPrintedByFullName) {
+        this.originalPrintedByFullName = originalPrintedByFullName;
+    }
+
+    public int getPrintAttemptCount() {
+        return printAttemptCount;
+    }
+
+    public void setPrintAttemptCount(int printAttemptCount) {
+        this.printAttemptCount = printAttemptCount;
     }
 
     public BigDecimal getTotalAmount() {

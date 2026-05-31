@@ -25,3 +25,6 @@ Thumbs.db
 # Environment/local config
 .env
 *.local
+
+# Saved receipts PDFs
+receipts/

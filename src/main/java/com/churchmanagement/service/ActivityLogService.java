@@ -32,6 +32,11 @@ public class ActivityLogService {
     public static final String RECEIPT_CREATE_FAILED = "RECEIPT_CREATE_FAILED";
     public static final String RECEIPT_CANCELLED = "RECEIPT_CANCELLED";
     public static final String CORRECTED_RECEIPT_CREATED = "CORRECTED_RECEIPT_CREATED";
+    public static final String RECEIPT_PDF_GENERATED = "RECEIPT_PDF_GENERATED";
+    public static final String RECEIPT_ORIGINAL_PRINTED = "RECEIPT_ORIGINAL_PRINTED";
+    public static final String RECEIPT_PRINT_FAILED = "RECEIPT_PRINT_FAILED";
+    public static final String RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED = "RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED";
+    public static final String RECEIPT_PRINT_BLOCKED_CANCELLED = "RECEIPT_PRINT_BLOCKED_CANCELLED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -107,6 +112,26 @@ public class ActivityLogService {
                         + ", total_amount: " + totalAmount
                         + ", is_late_submission: " + lateSubmission
                         + ", reason: " + reason);
+    }
+
+    public void logReceiptPdfGenerated(Long userId, long receiptId, String pdfPath) {
+        log(userId, RECEIPT_PDF_GENERATED, "receipt_id: " + receiptId + ", pdf_file_path: " + pdfPath);
+    }
+
+    public void logReceiptOriginalPrinted(Long userId, long receiptId) {
+        log(userId, RECEIPT_ORIGINAL_PRINTED, "receipt_id: " + receiptId);
+    }
+
+    public void logReceiptPrintFailed(Long userId, long receiptId, String reason) {
+        log(userId, RECEIPT_PRINT_FAILED, "receipt_id: " + receiptId + ", reason: " + reason);
+    }
+
+    public void logReceiptPrintBlockedAlreadyPrinted(Long userId, long receiptId) {
+        log(userId, RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED, "receipt_id: " + receiptId);
+    }
+
+    public void logReceiptPrintBlockedCancelled(Long userId, long receiptId) {
+        log(userId, RECEIPT_PRINT_BLOCKED_CANCELLED, "receipt_id: " + receiptId);
     }
 
     private void log(Long userId, String action, String details) {

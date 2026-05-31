@@ -34,21 +34,30 @@ public class ReceiptService {
     private final ReceiptRepository receiptRepository;
     private final ChurchRepository churchRepository;
     private final ReceiptNumberGeneratorService receiptNumberGeneratorService;
+    private final ReceiptPrintService receiptPrintService;
     private final ActivityLogService activityLogService;
     private final Clock clock;
     private final DataSource dataSource;
 
     public ReceiptService() {
         this(new ReceiptRepository(), new ChurchRepository(), new ReceiptNumberGeneratorService(),
-                new ActivityLogService(), Clock.systemDefaultZone(), DatabaseConfig.getDataSource());
+                new ReceiptPrintService(), new ActivityLogService(), Clock.systemDefaultZone(), DatabaseConfig.getDataSource());
     }
 
     public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
                           ReceiptNumberGeneratorService receiptNumberGeneratorService,
                           ActivityLogService activityLogService, Clock clock, DataSource dataSource) {
+        this(receiptRepository, churchRepository, receiptNumberGeneratorService, null, activityLogService, clock, dataSource);
+    }
+
+    public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
+                          ReceiptNumberGeneratorService receiptNumberGeneratorService,
+                          ReceiptPrintService receiptPrintService,
+                          ActivityLogService activityLogService, Clock clock, DataSource dataSource) {
         this.receiptRepository = receiptRepository;
         this.churchRepository = churchRepository;
         this.receiptNumberGeneratorService = receiptNumberGeneratorService;
+        this.receiptPrintService = receiptPrintService;
         this.activityLogService = activityLogService;
         this.clock = clock;
         this.dataSource = dataSource;
@@ -71,6 +80,7 @@ public class ReceiptService {
 
         Connection connection = null;
         boolean previousAutoCommit = true;
+        boolean receiptCommitted = false;
         try {
             connection = dataSource.getConnection();
             previousAutoCommit = connection.getAutoCommit();
@@ -93,21 +103,35 @@ public class ReceiptService {
             }
 
             connection.commit();
+            receiptCommitted = true;
+            if (receiptPrintService != null) {
+                try {
+                    receiptPrintService.printOriginalReceipt(receiptId);
+                } catch (ReceiptPrintService.ReceiptPrintException exception) {
+                    // Receipt remains saved; original_printed stays false so history can offer Print Original.
+                }
+            }
             ReceiptResponseDto response = receiptRepository.findReceiptDetailsById(receiptId)
                     .orElseThrow(() -> new ReceiptException("Receipt was saved but could not be loaded."));
             activityLogService.logReceiptCreated(currentUser.getUserId(), response, church.getId(), totalAmount);
             return response;
         } catch (ReceiptException exception) {
-            rollback(connection);
-            logCreateFailed(currentUser.getUserId(), request, church, totalAmount, lateSubmission, exception.getMessage());
+            if (!receiptCommitted) {
+                rollback(connection);
+                logCreateFailed(currentUser.getUserId(), request, church, totalAmount, lateSubmission, exception.getMessage());
+            }
             throw exception;
         } catch (SQLException | DatabaseException exception) {
-            rollback(connection);
-            logCreateFailed(currentUser.getUserId(), request, church, totalAmount, lateSubmission, exception.getMessage());
+            if (!receiptCommitted) {
+                rollback(connection);
+                logCreateFailed(currentUser.getUserId(), request, church, totalAmount, lateSubmission, exception.getMessage());
+            }
             throw new ReceiptException("Unable to save receipt right now. Please try again later.", exception);
         } catch (RuntimeException exception) {
-            rollback(connection);
-            logCreateFailed(currentUser.getUserId(), request, church, totalAmount, lateSubmission, exception.getMessage());
+            if (!receiptCommitted) {
+                rollback(connection);
+                logCreateFailed(currentUser.getUserId(), request, church, totalAmount, lateSubmission, exception.getMessage());
+            }
             throw new ReceiptException("Unable to save receipt right now. Please try again later.", exception);
         } finally {
             restoreAutoCommitAndClose(connection, previousAutoCommit);
