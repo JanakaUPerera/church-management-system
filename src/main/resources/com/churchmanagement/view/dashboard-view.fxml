@@ -69,6 +69,10 @@
             </padding>
             <Label fx:id="statusLabel" styleClass="value-label" text="Ready"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <HBox alignment="CENTER" spacing="6" styleClass="database-status">
+                <Label fx:id="databaseStatusDot" styleClass="database-status-dot"/>
+                <Label fx:id="databaseStatusLabel" styleClass="value-label" text="Database: Checking..."/>
+            </HBox>
             <Label fx:id="dateLabel" styleClass="value-label"/>
         </HBox>
     </bottom>

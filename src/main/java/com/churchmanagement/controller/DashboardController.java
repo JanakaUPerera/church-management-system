@@ -1,6 +1,7 @@
 package com.churchmanagement.controller;
 
 import com.churchmanagement.config.AppConfig;
+import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
@@ -24,6 +25,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.WindowEvent;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
@@ -31,6 +33,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class DashboardController {
     private static DashboardController activeController;
@@ -42,9 +47,11 @@ public class DashboardController {
     private boolean sidebarCollapsed;
     private double windowDragOffsetX;
     private double windowDragOffsetY;
+    private ScheduledExecutorService databaseStatusMonitor;
 
     private static final double SIDEBAR_EXPANDED_WIDTH = 235;
     private static final double SIDEBAR_COLLAPSED_WIDTH = 72;
+    private static final long DATABASE_STATUS_REFRESH_SECONDS = 30;
 
     @FXML
     private Label dateLabel;
@@ -60,6 +67,12 @@ public class DashboardController {
 
     @FXML
     private Label statusLabel;
+
+    @FXML
+    private Label databaseStatusDot;
+
+    @FXML
+    private Label databaseStatusLabel;
 
     @FXML
     private StackPane contentPane;
@@ -135,6 +148,7 @@ public class DashboardController {
         roleNameLabel.setText(currentUser.getRoleName());
         ButtonIconUtil.applyIcon(logoutButton, "fas-sign-out-alt");
         configureWindowHeader();
+        startDatabaseStatusMonitor();
 
         menuDefinitions = createMenuDefinitions();
         applyMenuIcons();
@@ -146,6 +160,7 @@ public class DashboardController {
 
     @FXML
     private void handleLogout() throws IOException {
+        stopDatabaseStatusMonitor();
         AutoBackupScheduler.getInstance().cancel();
         AuthContext.getCurrentUser()
                 .ifPresent(user -> activityLogService.logLogout(user.getUserId(), user.getUsername()));
@@ -212,6 +227,67 @@ public class DashboardController {
             stage.maximizedProperty().addListener((observable, oldValue, newValue) -> updateMaximizeIcon(stage));
             updateMaximizeIcon(stage);
         });
+    }
+
+    private void startDatabaseStatusMonitor() {
+        updateDatabaseStatusChecking();
+        databaseStatusMonitor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "database-status-monitor");
+            thread.setDaemon(true);
+            return thread;
+        });
+        databaseStatusMonitor.scheduleWithFixedDelay(this::checkDatabaseStatus,
+                0, DATABASE_STATUS_REFRESH_SECONDS, TimeUnit.SECONDS);
+
+        Platform.runLater(() -> {
+            if (dateLabel.getScene() != null && dateLabel.getScene().getWindow() != null) {
+                dateLabel.getScene().getWindow()
+                        .addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> stopDatabaseStatusMonitor());
+            }
+        });
+    }
+
+    private void checkDatabaseStatus() {
+        boolean connected;
+        try {
+            DatabaseConfig.testConnection();
+            connected = true;
+        } catch (RuntimeException exception) {
+            connected = false;
+        }
+
+        boolean finalConnected = connected;
+        Platform.runLater(() -> updateDatabaseStatus(finalConnected));
+    }
+
+    private void updateDatabaseStatusChecking() {
+        databaseStatusLabel.setText("Database: Checking...");
+        databaseStatusLabel.getStyleClass().removeAll(
+                "database-status-text-connected", "database-status-text-disconnected");
+        databaseStatusDot.getStyleClass().removeAll(
+                "database-status-dot-connected", "database-status-dot-disconnected");
+    }
+
+    private void updateDatabaseStatus(boolean connected) {
+        databaseStatusLabel.setText(connected ? "Database: Connected" : "Database: Disconnected");
+        databaseStatusLabel.getStyleClass().removeAll(
+                "database-status-text-connected", "database-status-text-disconnected");
+        databaseStatusLabel.getStyleClass().add(connected
+                ? "database-status-text-connected"
+                : "database-status-text-disconnected");
+
+        databaseStatusDot.getStyleClass().removeAll(
+                "database-status-dot-connected", "database-status-dot-disconnected");
+        databaseStatusDot.getStyleClass().add(connected
+                ? "database-status-dot-connected"
+                : "database-status-dot-disconnected");
+    }
+
+    private void stopDatabaseStatusMonitor() {
+        if (databaseStatusMonitor != null) {
+            databaseStatusMonitor.shutdownNow();
+            databaseStatusMonitor = null;
+        }
     }
 
     private void updateMaximizeIcon(Stage stage) {
