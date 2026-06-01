@@ -141,7 +141,8 @@ public class UserManagementService {
     public void resetPassword(long id, ResetPasswordRequest request) {
         AuthenticatedUser currentUser = requireUserManagePermission();
         ResetPasswordRequest normalized = new ResetPasswordRequest(
-                request == null ? "" : nullToBlank(request.getTemporaryPassword()));
+                request == null ? "" : nullToBlank(request.getTemporaryPassword()),
+                request != null && request.isForcePasswordChange());
         List<String> errors = UserValidator.validateForPasswordReset(normalized.getTemporaryPassword());
         if (!errors.isEmpty()) {
             throw new UserManagementException(String.join("\n", errors));
@@ -150,7 +151,8 @@ public class UserManagementService {
         try {
             User user = userRepository.findById(id)
                     .orElseThrow(() -> new UserManagementException("User could not be found."));
-            userRepository.updatePassword(id, hashPassword(normalized.getTemporaryPassword()), true,
+            userRepository.updatePassword(id, hashPassword(normalized.getTemporaryPassword()),
+                    normalized.isForcePasswordChange(),
                     LocalDateTime.now(clock));
             activityLogService.logUserAction(currentUser.getUserId(), ActivityLogService.USER_PASSWORD_RESET,
                     user.getUsername());

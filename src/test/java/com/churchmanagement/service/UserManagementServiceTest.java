@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -126,6 +127,18 @@ class UserManagementServiceTest {
         assertTrue(updated.isForcePasswordChange());
         assertTrue(BCrypt.checkpw("newSecret", updated.getPasswordHash()));
         assertTrue(activityLogService.loggedActions.contains(ActivityLogService.USER_PASSWORD_RESET));
+    }
+
+    @Test
+    void resetPasswordHonorsForcePasswordChangeChoice() {
+        User user = userManagementService.create(new CreateUserRequest(
+                "jane", "Jane Doe", 2L, User.Status.ACTIVE, "secret123", true));
+
+        userManagementService.resetPassword(user.getId(), new ResetPasswordRequest("newSecret", false));
+
+        User updated = userRepository.findById(user.getId()).orElseThrow();
+        assertFalse(updated.isForcePasswordChange());
+        assertTrue(BCrypt.checkpw("newSecret", updated.getPasswordHash()));
     }
 
     @Test

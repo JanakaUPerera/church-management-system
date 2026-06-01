@@ -17,13 +17,16 @@ import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Pagination;
@@ -32,7 +35,10 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -47,17 +53,7 @@ public class UserManagementController {
     private PermissionGuard permissionGuard;
     private UserDto selectedUser;
 
-    @FXML private TextField usernameField;
-    @FXML private TextField fullNameField;
-    @FXML private ComboBox<UserManagementRepository.RoleOption> roleComboBox;
-    @FXML private ComboBox<User.Status> statusComboBox;
-    @FXML private PasswordField temporaryPasswordField;
-    @FXML private CheckBox forcePasswordChangeCheckBox;
     @FXML private Button saveButton;
-    @FXML private Button updateButton;
-    @FXML private Button clearButton;
-    @FXML private Button resetPasswordButton;
-    @FXML private Button toggleStatusButton;
     @FXML private TextField searchField;
     @FXML private Button searchButton;
     @FXML private Button refreshButton;
@@ -92,7 +88,6 @@ public class UserManagementController {
         }
 
         configureButtonIcons();
-        configureForm();
         configureTable();
         refreshRoles();
         refreshUsers();
@@ -101,76 +96,7 @@ public class UserManagementController {
 
     @FXML
     private void handleSave() {
-        UserManagementRepository.RoleOption role = roleComboBox.getValue();
-        CreateUserRequest request = new CreateUserRequest(usernameField.getText(), fullNameField.getText(),
-                role == null ? null : role.id(), statusComboBox.getValue(), temporaryPasswordField.getText(),
-                forcePasswordChangeCheckBox.isSelected());
-
-        ProcessingDialog.run("Create User", "Creating user...",
-                () -> userManagementService.create(request),
-                () -> {
-                    setMessage("User created successfully.");
-                    clearForm();
-                    refreshUsers();
-                },
-                this::showProcessingError);
-    }
-
-    @FXML
-    private void handleUpdate() {
-        if (selectedUser == null) {
-            showFriendlyError("Select a user to update.");
-            return;
-        }
-
-        UserManagementRepository.RoleOption role = roleComboBox.getValue();
-        UpdateUserRequest request = new UpdateUserRequest(usernameField.getText(), fullNameField.getText(),
-                role == null ? null : role.id(), statusComboBox.getValue(),
-                forcePasswordChangeCheckBox.isSelected());
-
-        ProcessingDialog.run("Update User", "Updating user...",
-                () -> userManagementService.update(selectedUser.getId(), request),
-                () -> {
-                    setMessage("User updated successfully.");
-                    clearForm();
-                    refreshUsers();
-                },
-                this::showProcessingError);
-    }
-
-    @FXML
-    private void handleClear() {
-        clearForm();
-    }
-
-    @FXML
-    private void handleResetPassword() {
-        if (selectedUser == null) {
-            showFriendlyError("Select a user before resetting the password.");
-            return;
-        }
-        if (!confirmResetPassword(selectedUser)) {
-            return;
-        }
-
-        ResetPasswordRequest request = new ResetPasswordRequest(temporaryPasswordField.getText());
-        ProcessingDialog.run("Reset Password", "Resetting password...",
-                () -> userManagementService.resetPassword(selectedUser.getId(), request),
-                () -> {
-                    setMessage("Password reset successfully. The user must change it at next sign-in.");
-                    temporaryPasswordField.clear();
-                    refreshUsers();
-                },
-                this::showProcessingError);
-    }
-
-    @FXML
-    private void handleToggleStatus() {
-        if (selectedUser == null) {
-            showFriendlyError("Select a user to activate or deactivate.");
-            return;
-        }
-        toggleUserStatus(selectedUser);
+        showUserDialog(null);
     }
 
     @FXML
@@ -183,13 +109,6 @@ public class UserManagementController {
         searchField.clear();
         refreshRoles();
         refreshUsers();
-    }
-
-    private void configureForm() {
-        statusComboBox.setItems(FXCollections.observableArrayList(User.Status.ACTIVE, User.Status.INACTIVE));
-        roleComboBox.setItems(roles);
-        roleComboBox.setCellFactory(listView -> new RoleListCell());
-        roleComboBox.setButtonCell(new RoleListCell());
     }
 
     private void configureTable() {
@@ -213,11 +132,7 @@ public class UserManagementController {
     }
 
     private void configureButtonIcons() {
-        ButtonIconUtil.applyIcon(saveButton, "fas-save");
-        ButtonIconUtil.applyIcon(updateButton, "fas-edit");
-        ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
-        ButtonIconUtil.applyIcon(resetPasswordButton, "fas-key");
-        ButtonIconUtil.applyIcon(toggleStatusButton, "fas-toggle-off");
+        ButtonIconUtil.applyIcon(saveButton, "fas-plus");
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
         ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
@@ -252,17 +167,6 @@ public class UserManagementController {
 
     private void loadSelectedUser(UserDto user) {
         selectedUser = user;
-        usernameField.setText(user.getUsername());
-        fullNameField.setText(user.getFullName());
-        roleComboBox.getSelectionModel().select(findRole(user.getRoleId()));
-        statusComboBox.setValue(User.Status.valueOf(user.getStatus()));
-        forcePasswordChangeCheckBox.setSelected(user.isForcePasswordChange());
-        temporaryPasswordField.clear();
-        saveButton.setDisable(true);
-        updateButton.setDisable(false);
-        resetPasswordButton.setDisable(false);
-        toggleStatusButton.setDisable(false);
-        updateStatusButtonText(user);
         setMessage("Selected user " + user.getUsername() + ".");
     }
 
@@ -296,34 +200,9 @@ public class UserManagementController {
         return alert.showAndWait().filter(ButtonType.OK::equals).isPresent();
     }
 
-    private boolean confirmResetPassword(UserDto user) {
-        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.CONFIRMATION));
-        alert.setTitle("Reset Password");
-        alert.setHeaderText("Reset password for " + user.getUsername() + "?");
-        alert.setContentText("The temporary password will be saved securely and the user must change it next time.");
-        return alert.showAndWait().filter(ButtonType.OK::equals).isPresent();
-    }
-
     private void clearForm() {
         selectedUser = null;
         userTable.getSelectionModel().clearSelection();
-        usernameField.clear();
-        fullNameField.clear();
-        roleComboBox.getSelectionModel().clearSelection();
-        statusComboBox.setValue(User.Status.ACTIVE);
-        temporaryPasswordField.clear();
-        forcePasswordChangeCheckBox.setSelected(true);
-        saveButton.setDisable(false);
-        updateButton.setDisable(true);
-        resetPasswordButton.setDisable(true);
-        toggleStatusButton.setDisable(true);
-        toggleStatusButton.setText("Deactivate");
-        ButtonIconUtil.applyIcon(toggleStatusButton, "fas-toggle-off");
-    }
-
-    private void updateStatusButtonText(UserDto user) {
-        toggleStatusButton.setText(user.isActive() ? "Deactivate" : "Activate");
-        ButtonIconUtil.applyIcon(toggleStatusButton, user.isActive() ? "fas-toggle-off" : "fas-toggle-on");
     }
 
     private UserManagementRepository.RoleOption findRole(Long roleId) {
@@ -338,17 +217,7 @@ public class UserManagementController {
     }
 
     private void setFormDisabled(boolean disabled) {
-        usernameField.setDisable(disabled);
-        fullNameField.setDisable(disabled);
-        roleComboBox.setDisable(disabled);
-        statusComboBox.setDisable(disabled);
-        temporaryPasswordField.setDisable(disabled);
-        forcePasswordChangeCheckBox.setDisable(disabled);
         saveButton.setDisable(disabled);
-        updateButton.setDisable(disabled);
-        clearButton.setDisable(disabled);
-        resetPasswordButton.setDisable(disabled);
-        toggleStatusButton.setDisable(disabled);
         searchField.setDisable(disabled);
         searchButton.setDisable(disabled);
         refreshButton.setDisable(disabled);
@@ -375,6 +244,180 @@ public class UserManagementController {
     private void showProcessingError(Throwable throwable) {
         String message = throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
         showFriendlyError(message);
+    }
+
+    private void showUserDialog(UserDto user) {
+        boolean editing = user != null;
+        Dialog<ButtonType> dialog = DialogStyler.apply(new Dialog<>());
+        dialog.setTitle(editing ? "Update User" : "Create User");
+        dialog.setHeaderText(editing ? "Update " + user.getUsername() : "Create a new user");
+
+        ButtonType saveButtonType = new ButtonType(editing ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        dialog.getDialogPane().setContent(userDialogContent(user));
+        dialog.getDialogPane().setPrefWidth(560);
+
+        Button submitButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        submitButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            submitButton.setDisable(true);
+            UserDialogFields fields = (UserDialogFields) dialog.getDialogPane().getContent().getUserData();
+            UserManagementRepository.RoleOption role = fields.roleComboBox().getValue();
+            Long roleId = role == null ? null : role.id();
+            ProcessingDialog.run(editing ? "Update User" : "Create User",
+                    editing ? "Updating user..." : "Creating user...",
+                    () -> {
+                        if (editing) {
+                            userManagementService.update(user.getId(), new UpdateUserRequest(
+                                    fields.usernameField().getText(), fields.fullNameField().getText(), roleId,
+                                    fields.statusComboBox().getValue(),
+                                    fields.forcePasswordChangeCheckBox().isSelected()));
+                        } else {
+                            userManagementService.create(new CreateUserRequest(
+                                    fields.usernameField().getText(), fields.fullNameField().getText(), roleId,
+                                    fields.statusComboBox().getValue(),
+                                    fields.temporaryPasswordField().getText(),
+                                    fields.forcePasswordChangeCheckBox().isSelected()));
+                        }
+                    },
+                    () -> {
+                        clearForm();
+                        refreshUsers();
+                        setMessage(editing ? "User updated successfully." : "User created successfully.");
+                        dialog.close();
+                    },
+                    throwable -> {
+                        submitButton.setDisable(false);
+                        showProcessingError(throwable);
+                    });
+        });
+
+        dialog.showAndWait();
+    }
+
+    private GridPane userDialogContent(UserDto user) {
+        boolean editing = user != null;
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("username");
+        TextField fullNameField = new TextField();
+        fullNameField.setPromptText("Full name");
+        ComboBox<UserManagementRepository.RoleOption> roleComboBox = new ComboBox<>(roles);
+        roleComboBox.setCellFactory(listView -> new RoleListCell());
+        roleComboBox.setButtonCell(new RoleListCell());
+        roleComboBox.setMaxWidth(Double.MAX_VALUE);
+        ComboBox<User.Status> statusComboBox = new ComboBox<>(
+                FXCollections.observableArrayList(User.Status.ACTIVE, User.Status.INACTIVE));
+        statusComboBox.setMaxWidth(Double.MAX_VALUE);
+        PasswordField temporaryPasswordField = new PasswordField();
+        temporaryPasswordField.setPromptText("Temporary password");
+        CheckBox forcePasswordChangeCheckBox = new CheckBox("Force Password Change");
+
+        if (editing) {
+            usernameField.setText(user.getUsername());
+            fullNameField.setText(user.getFullName());
+            roleComboBox.getSelectionModel().select(findRole(user.getRoleId()));
+            statusComboBox.setValue(User.Status.valueOf(user.getStatus()));
+            temporaryPasswordField.setVisible(false);
+            temporaryPasswordField.setManaged(false);
+            forcePasswordChangeCheckBox.setSelected(user.isForcePasswordChange());
+        } else {
+            statusComboBox.setValue(User.Status.ACTIVE);
+            forcePasswordChangeCheckBox.setSelected(true);
+        }
+
+        GridPane grid = dialogGrid();
+        grid.add(DialogStyler.fieldLabel("Username"), 0, 0);
+        grid.add(usernameField, 1, 0);
+        grid.add(DialogStyler.fieldLabel("Full Name"), 0, 1);
+        grid.add(fullNameField, 1, 1);
+        grid.add(DialogStyler.fieldLabel("Role"), 0, 2);
+        grid.add(roleComboBox, 1, 2);
+        grid.add(DialogStyler.fieldLabel("Status"), 0, 3);
+        grid.add(statusComboBox, 1, 3);
+        if (!editing) {
+            grid.add(DialogStyler.fieldLabel("Temporary Password"), 0, 4);
+            grid.add(temporaryPasswordField, 1, 4);
+            grid.add(forcePasswordChangeCheckBox, 1, 5);
+        } else {
+            grid.add(forcePasswordChangeCheckBox, 1, 4);
+        }
+
+        grid.setUserData(new UserDialogFields(usernameField, fullNameField, roleComboBox, statusComboBox,
+                temporaryPasswordField, forcePasswordChangeCheckBox));
+        return grid;
+    }
+
+    private void showResetPasswordDialog(UserDto user) {
+        Dialog<ButtonType> dialog = DialogStyler.apply(new Dialog<>());
+        dialog.setTitle("Reset Password");
+        dialog.setHeaderText("Reset password for " + user.getUsername());
+
+        ButtonType resetButtonType = new ButtonType("Reset Password", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(resetButtonType, ButtonType.CANCEL);
+        dialog.getDialogPane().setContent(resetPasswordDialogContent());
+        dialog.getDialogPane().setPrefWidth(520);
+
+        Button submitButton = (Button) dialog.getDialogPane().lookupButton(resetButtonType);
+        submitButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            submitButton.setDisable(true);
+            ResetPasswordDialogFields fields =
+                    (ResetPasswordDialogFields) dialog.getDialogPane().getContent().getUserData();
+            ResetPasswordRequest request = new ResetPasswordRequest(fields.temporaryPasswordField().getText(),
+                    fields.forcePasswordChangeCheckBox().isSelected());
+            ProcessingDialog.run("Reset Password", "Resetting password...",
+                    () -> userManagementService.resetPassword(user.getId(), request),
+                    () -> {
+                        setMessage("Password reset successfully.");
+                        clearForm();
+                        refreshUsers();
+                        dialog.close();
+                    },
+                    throwable -> {
+                        submitButton.setDisable(false);
+                        showProcessingError(throwable);
+                    });
+        });
+
+        dialog.showAndWait();
+    }
+
+    private GridPane resetPasswordDialogContent() {
+        PasswordField temporaryPasswordField = new PasswordField();
+        temporaryPasswordField.setPromptText("Temporary password");
+        CheckBox forcePasswordChangeCheckBox = new CheckBox("Force Password Change");
+        forcePasswordChangeCheckBox.setSelected(true);
+
+        GridPane grid = dialogGrid();
+        grid.add(DialogStyler.fieldLabel("Temporary Password"), 0, 0);
+        grid.add(temporaryPasswordField, 1, 0);
+        grid.add(forcePasswordChangeCheckBox, 1, 1);
+        grid.setUserData(new ResetPasswordDialogFields(temporaryPasswordField, forcePasswordChangeCheckBox));
+        return grid;
+    }
+
+    private GridPane dialogGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(10);
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        labelColumn.setMinWidth(160);
+        ColumnConstraints valueColumn = new ColumnConstraints();
+        valueColumn.setHgrow(Priority.ALWAYS);
+        valueColumn.setMinWidth(320);
+        grid.getColumnConstraints().addAll(labelColumn, valueColumn);
+        return grid;
+    }
+
+    private record UserDialogFields(TextField usernameField, TextField fullNameField,
+                                    ComboBox<UserManagementRepository.RoleOption> roleComboBox,
+                                    ComboBox<User.Status> statusComboBox,
+                                    PasswordField temporaryPasswordField,
+                                    CheckBox forcePasswordChangeCheckBox) {
+    }
+
+    private record ResetPasswordDialogFields(PasswordField temporaryPasswordField,
+                                             CheckBox forcePasswordChangeCheckBox) {
     }
 
     private static class RoleListCell extends ListCell<UserManagementRepository.RoleOption> {
@@ -410,17 +453,21 @@ public class UserManagementController {
 
     private class ActionButtonCell extends TableCell<UserDto, Void> {
         private final Button editButton = new Button();
+        private final Button resetPasswordButton = new Button();
         private final Button statusButton = new Button();
-        private final HBox actionBox = new HBox(6, editButton, statusButton);
+        private final HBox actionBox = new HBox(6, editButton, resetPasswordButton, statusButton);
 
         private ActionButtonCell() {
             getStyleClass().add("centered-table-cell");
             setAlignment(Pos.CENTER);
             actionBox.setAlignment(Pos.CENTER);
             editButton.getStyleClass().add("table-action-button");
+            resetPasswordButton.getStyleClass().add("table-action-button");
             statusButton.getStyleClass().add("table-action-button");
             ButtonIconUtil.applyTableActionIcon(editButton, "fas-edit", "Edit user");
-            editButton.setOnAction(event -> loadSelectedUser(getTableView().getItems().get(getIndex())));
+            ButtonIconUtil.applyTableActionIcon(resetPasswordButton, "fas-key", "Reset password");
+            editButton.setOnAction(event -> showUserDialog(getTableView().getItems().get(getIndex())));
+            resetPasswordButton.setOnAction(event -> showResetPasswordDialog(getTableView().getItems().get(getIndex())));
             statusButton.setOnAction(event -> toggleUserStatus(getTableView().getItems().get(getIndex())));
         }
 
