@@ -51,6 +51,17 @@ public class ActivityLogService {
     public static final String SMS_RESENT_FAILED = "SMS_RESENT_FAILED";
     public static final String SMS_RESEND_BLOCKED_EXPIRED = "SMS_RESEND_BLOCKED_EXPIRED";
     public static final String SMS_RESEND_BLOCKED_PERMISSION = "SMS_RESEND_BLOCKED_PERMISSION";
+    public static final String BACKUP_CREATED = "BACKUP_CREATED";
+    public static final String BACKUP_FAILED = "BACKUP_FAILED";
+    public static final String AUTO_BACKUP_CREATED = "AUTO_BACKUP_CREATED";
+    public static final String AUTO_BACKUP_FAILED = "AUTO_BACKUP_FAILED";
+    public static final String PRE_RESTORE_BACKUP_CREATED = "PRE_RESTORE_BACKUP_CREATED";
+    public static final String PRE_RESTORE_BACKUP_FAILED = "PRE_RESTORE_BACKUP_FAILED";
+    public static final String RESTORE_STARTED = "RESTORE_STARTED";
+    public static final String RESTORE_SUCCESS = "RESTORE_SUCCESS";
+    public static final String RESTORE_FAILED = "RESTORE_FAILED";
+    public static final String BACKUP_SETTINGS_UPDATED = "BACKUP_SETTINGS_UPDATED";
+    public static final String BACKUP_RETENTION_CLEANUP = "BACKUP_RETENTION_CLEANUP";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -233,6 +244,41 @@ public class ActivityLogService {
                         + ", mobile_number: " + nullToBlank(mobileNumber)
                         + ", resent_by_user_id: " + nullToBlank(userId)
                         + ", resend_status: " + resendStatus);
+    }
+
+    public void logBackupCreated(Long userId, String action, String filePath, Long fileSizeBytes) {
+        log(userId, action, "backup_file_path: " + nullToBlank(filePath)
+                + ", file_size_bytes: " + nullToBlank(fileSizeBytes));
+    }
+
+    public void logBackupFailed(Long userId, String action, String filePath, String reason) {
+        log(userId, action, "backup_file_path: " + nullToBlank(filePath)
+                + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logRestoreStarted(Long userId, String backupFilePath, Long preRestoreBackupLogId) {
+        log(userId, RESTORE_STARTED, "backup_file_path: " + nullToBlank(backupFilePath)
+                + ", pre_restore_backup_log_id: " + nullToBlank(preRestoreBackupLogId));
+    }
+
+    public void logRestoreSuccess(Long userId, String backupFilePath, Long preRestoreBackupLogId) {
+        log(userId, RESTORE_SUCCESS, "backup_file_path: " + nullToBlank(backupFilePath)
+                + ", pre_restore_backup_log_id: " + nullToBlank(preRestoreBackupLogId));
+    }
+
+    public void logRestoreFailed(Long userId, String backupFilePath, String reason) {
+        log(userId, RESTORE_FAILED, "backup_file_path: " + nullToBlank(backupFilePath)
+                + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logBackupSettingsUpdated(Long userId, String backupFolder, boolean autoBackupEnabled) {
+        log(userId, BACKUP_SETTINGS_UPDATED, "backup_folder: " + nullToBlank(backupFolder)
+                + ", auto_backup_enabled: " + autoBackupEnabled);
+    }
+
+    public void logBackupRetentionCleanup(Long userId, String backupFolder, int deletedCount) {
+        log(userId, BACKUP_RETENTION_CLEANUP, "backup_folder: " + nullToBlank(backupFolder)
+                + ", deleted_count: " + deletedCount);
     }
 
     private void log(Long userId, String action, String details) {

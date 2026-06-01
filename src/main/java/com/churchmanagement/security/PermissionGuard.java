@@ -23,6 +23,8 @@ public class PermissionGuard {
         LEGACY_PERMISSION_ALIASES.put("role.manage", new String[]{"ROLE_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("backup.create", new String[]{"BACKUP_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("backup.restore", new String[]{"BACKUP_MANAGE"});
+        LEGACY_PERMISSION_ALIASES.put("backup.view", new String[]{"BACKUP_MANAGE"});
+        LEGACY_PERMISSION_ALIASES.put("backup.settings.manage", new String[]{"BACKUP_MANAGE", "SETTINGS_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("settings.manage", new String[]{"SETTINGS_MANAGE"});
         LEGACY_PERMISSION_ALIASES.put("sms.settings.manage", new String[]{"SETTINGS_MANAGE"});
     }

@@ -4,6 +4,7 @@ import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.config.MigrationRunner;
 import com.churchmanagement.exception.DatabaseException;
+import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.util.DialogStyler;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -50,6 +51,7 @@ public class MainApplication extends Application {
 
     @Override
     public void stop() {
+        AutoBackupScheduler.getInstance().cancel();
         DatabaseConfig.closeDataSource();
     }
 

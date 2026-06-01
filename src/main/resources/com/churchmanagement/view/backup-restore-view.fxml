@@ -1,13 +1,216 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="10" styleClass="placeholder-page" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<VBox spacing="14"
+      styleClass="backup-restore-page"
+      stylesheets="@app.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.churchmanagement.controller.BackupRestoreController">
     <padding>
-        <Insets bottom="28" left="28" right="28" top="28"/>
+        <Insets bottom="4" left="4" right="4" top="4"/>
     </padding>
-    <Label styleClass="placeholder-title" text="Backup &amp; Restore"/>
-    <Label styleClass="placeholder-text" text="Backup and restore actions will appear here."/>
+
+    <TabPane styleClass="receipt-detail-tabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <tabs>
+            <Tab text="Backups">
+                <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                    <content>
+                        <VBox spacing="16" styleClass="tab-content">
+                            <HBox spacing="16">
+                                <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card" HBox.hgrow="ALWAYS">
+                                    <Label styleClass="backup-card-title" text="Manual Backup"/>
+                                    <Label styleClass="muted-label" text="Create an on-demand database backup."/>
+                                    <VBox spacing="6">
+                                        <Label styleClass="field-label" text="Backup Folder"/>
+                                        <HBox spacing="8">
+                                            <TextField fx:id="backupFolderField" promptText="Backup folder" HBox.hgrow="ALWAYS"/>
+                                            <Button fx:id="browseBackupFolderButton" onAction="#browseBackupFolder" text="Browse"/>
+                                        </HBox>
+                                    </VBox>
+                                    <Region VBox.vgrow="ALWAYS"/>
+                                    <Button fx:id="backupNowButton" maxWidth="Infinity" onAction="#createManualBackup" styleClass="primary-button" text="Backup Now"/>
+                                </VBox>
+
+                                <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card" HBox.hgrow="ALWAYS">
+                                    <Label styleClass="backup-card-title" text="Automatic Backup"/>
+                                    <Label styleClass="muted-label" text="Schedule backups while the application is open."/>
+                                    <CheckBox fx:id="autoBackupEnabledCheckBox" text="Enable Auto Backup"/>
+                                    <GridPane hgap="10" vgap="10">
+                                        <columnConstraints>
+                                            <ColumnConstraints percentWidth="50"/>
+                                            <ColumnConstraints percentWidth="50"/>
+                                        </columnConstraints>
+                                        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                            <Label styleClass="field-label" text="Backup Time"/>
+                                            <TextField fx:id="autoBackupTimeField" promptText="HH:mm"/>
+                                        </VBox>
+                                        <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                            <Label styleClass="field-label" text="Retention Days"/>
+                                            <TextField fx:id="retentionDaysField" promptText="30"/>
+                                        </VBox>
+                                    </GridPane>
+                                    <VBox spacing="6">
+                                        <Label styleClass="field-label" text="mysqldump Path"/>
+                                        <TextField fx:id="mysqldumpPathField" promptText="Optional"/>
+                                    </VBox>
+                                    <VBox spacing="6">
+                                        <Label styleClass="field-label" text="mysql Client Path"/>
+                                        <TextField fx:id="mysqlClientPathField" promptText="Optional"/>
+                                    </VBox>
+                                    <Label fx:id="schedulerTodoLabel" styleClass="muted-label"/>
+                                    <Button fx:id="saveSettingsButton" maxWidth="Infinity" onAction="#saveSettings" styleClass="primary-button" text="Save Settings"/>
+                                </VBox>
+                            </HBox>
+
+                            <VBox fx:id="backupHistorySection" maxWidth="Infinity" spacing="10" styleClass="backup-restore-card">
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label styleClass="backup-card-title" text="Backup Logs"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="backupMessageLabel" styleClass="muted-label"/>
+                                </HBox>
+                                <GridPane hgap="10" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="80" prefWidth="95"/>
+                                        <ColumnConstraints minWidth="130" prefWidth="150"/>
+                                        <ColumnConstraints minWidth="70" prefWidth="80"/>
+                                        <ColumnConstraints minWidth="130" prefWidth="150"/>
+                                        <ColumnConstraints minWidth="70" prefWidth="80"/>
+                                        <ColumnConstraints minWidth="130" prefWidth="150"/>
+                                        <ColumnConstraints minWidth="70" prefWidth="80"/>
+                                        <ColumnConstraints minWidth="120" prefWidth="140"/>
+                                        <ColumnConstraints hgrow="ALWAYS" minWidth="150" prefWidth="220"/>
+                                    </columnConstraints>
+                                    <Label styleClass="field-label" text="Date From" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                                    <DatePicker fx:id="backupDateFromPicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                    <Label styleClass="field-label" text="Date To" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                                    <DatePicker fx:id="backupDateToPicker" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+                                    <Label styleClass="field-label" text="Type" GridPane.columnIndex="4" GridPane.rowIndex="0"/>
+                                    <ComboBox fx:id="backupTypeFilterComboBox" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="0"/>
+                                    <Label styleClass="field-label" text="Status" GridPane.columnIndex="6" GridPane.rowIndex="0"/>
+                                    <ComboBox fx:id="backupStatusFilterComboBox" maxWidth="Infinity" GridPane.columnIndex="7" GridPane.rowIndex="0"/>
+                                    <TextField fx:id="backupSearchField" promptText="Search file, user, error" GridPane.columnIndex="8" GridPane.rowIndex="0"/>
+                                    <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="7" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                                        <Button fx:id="backupSearchButton" onAction="#searchBackupLogs" styleClass="primary-button" text="Search"/>
+                                        <Button fx:id="backupClearButton" onAction="#clearBackupFilters" text="Clear"/>
+                                        <Button fx:id="backupRefreshButton" onAction="#refreshBackupLogs" text="Refresh"/>
+                                    </HBox>
+                                </GridPane>
+                                <TableView fx:id="backupHistoryTable" prefHeight="260">
+                                    <columns>
+                                        <TableColumn fx:id="backupDateColumn" prefWidth="130" text="Date"/>
+                                        <TableColumn fx:id="backupTypeColumn" prefWidth="110" text="Type"/>
+                                        <TableColumn fx:id="backupFileNameColumn" prefWidth="260" text="File Name"/>
+                                        <TableColumn fx:id="backupFileSizeColumn" prefWidth="100" text="File Size"/>
+                                        <TableColumn fx:id="backupStatusColumn" prefWidth="90" text="Status"/>
+                                        <TableColumn fx:id="backupCreatedByColumn" prefWidth="150" text="Created By"/>
+                                        <TableColumn fx:id="backupErrorColumn" prefWidth="260" text="Error"/>
+                                    </columns>
+                                </TableView>
+                                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="table-pagination-bar">
+                                    <Label styleClass="pagination-label" text="Backup logs per page"/>
+                                    <ComboBox fx:id="backupLogItemsPerPageComboBox" prefWidth="76" styleClass="items-per-page-combo"/>
+                                    <Label fx:id="backupLogPaginationSummaryLabel" styleClass="pagination-summary" text="0 of 0 backup logs"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Pagination fx:id="backupLogPagination" maxHeight="48"/>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Restore">
+                <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                    <content>
+                        <VBox spacing="16" styleClass="tab-content">
+                            <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card">
+                                <Label styleClass="backup-card-title" text="Restore Backup"/>
+                                <Label fx:id="restoreWarningLabel"
+                                       styleClass="warning-label"
+                                       text="Restore will replace current database data. A pre-restore backup will be created automatically."/>
+                                <VBox spacing="6">
+                                    <Label styleClass="field-label" text="Backup File"/>
+                                    <HBox spacing="8">
+                                        <TextField fx:id="restoreBackupFileField" promptText="Select SQL backup file" HBox.hgrow="ALWAYS"/>
+                                        <Button fx:id="browseRestoreFileButton" onAction="#browseRestoreFile" text="Browse"/>
+                                    </HBox>
+                                </VBox>
+                                <VBox spacing="6">
+                                    <Label styleClass="field-label" text="Confirmation"/>
+                                    <TextField fx:id="restoreConfirmationField" promptText="Type RESTORE"/>
+                                </VBox>
+                                <Button fx:id="restoreButton" maxWidth="Infinity" onAction="#restoreBackup" styleClass="danger-button" text="Restore"/>
+                            </VBox>
+
+                            <VBox fx:id="restoreHistorySection" maxWidth="Infinity" spacing="10" styleClass="backup-restore-card">
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label styleClass="backup-card-title" text="Restore Logs"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="restoreMessageLabel" styleClass="muted-label"/>
+                                </HBox>
+                                <GridPane hgap="10" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="80" prefWidth="95"/>
+                                        <ColumnConstraints minWidth="130" prefWidth="150"/>
+                                        <ColumnConstraints minWidth="70" prefWidth="80"/>
+                                        <ColumnConstraints minWidth="130" prefWidth="150"/>
+                                        <ColumnConstraints minWidth="70" prefWidth="80"/>
+                                        <ColumnConstraints minWidth="120" prefWidth="140"/>
+                                        <ColumnConstraints hgrow="ALWAYS" minWidth="150" prefWidth="260"/>
+                                    </columnConstraints>
+                                    <Label styleClass="field-label" text="Date From" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                                    <DatePicker fx:id="restoreDateFromPicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                    <Label styleClass="field-label" text="Date To" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                                    <DatePicker fx:id="restoreDateToPicker" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+                                    <Label styleClass="field-label" text="Status" GridPane.columnIndex="4" GridPane.rowIndex="0"/>
+                                    <ComboBox fx:id="restoreStatusFilterComboBox" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="0"/>
+                                    <TextField fx:id="restoreSearchField" promptText="Search file, user, error" GridPane.columnIndex="6" GridPane.rowIndex="0"/>
+                                    <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="5" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                                        <Button fx:id="restoreSearchButton" onAction="#searchRestoreLogs" styleClass="primary-button" text="Search"/>
+                                        <Button fx:id="restoreClearButton" onAction="#clearRestoreFilters" text="Clear"/>
+                                        <Button fx:id="restoreRefreshButton" onAction="#refreshRestoreLogs" text="Refresh"/>
+                                    </HBox>
+                                </GridPane>
+                                <TableView fx:id="restoreHistoryTable" prefHeight="260">
+                                    <columns>
+                                        <TableColumn fx:id="restoreDateColumn" prefWidth="130" text="Date"/>
+                                        <TableColumn fx:id="restoreFileNameColumn" prefWidth="280" text="File Name"/>
+                                        <TableColumn fx:id="restoreStatusColumn" prefWidth="90" text="Status"/>
+                                        <TableColumn fx:id="restoreRestoredByColumn" prefWidth="160" text="Restored By"/>
+                                        <TableColumn fx:id="restoreErrorColumn" prefWidth="320" text="Error"/>
+                                    </columns>
+                                </TableView>
+                                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="table-pagination-bar">
+                                    <Label styleClass="pagination-label" text="Restore logs per page"/>
+                                    <ComboBox fx:id="restoreLogItemsPerPageComboBox" prefWidth="76" styleClass="items-per-page-combo"/>
+                                    <Label fx:id="restoreLogPaginationSummaryLabel" styleClass="pagination-summary" text="0 of 0 restore logs"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Pagination fx:id="restoreLogPagination" maxHeight="48"/>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+        </tabs>
+    </TabPane>
 </VBox>

@@ -5,6 +5,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
+import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import javafx.application.Platform;
@@ -139,11 +140,13 @@ public class DashboardController {
         applyMenuIcons();
         configureSidebarToggle();
         applyMenuVisibility();
+        AutoBackupScheduler.getInstance().reloadSchedule();
         loadMenu(menuDefinitions.getFirst());
     }
 
     @FXML
     private void handleLogout() throws IOException {
+        AutoBackupScheduler.getInstance().cancel();
         AuthContext.getCurrentUser()
                 .ifPresent(user -> activityLogService.logLogout(user.getUserId(), user.getUsername()));
         AuthContext.clear();
@@ -314,7 +317,8 @@ public class DashboardController {
                 new MenuDefinition("Roles & Permissions", "/com/churchmanagement/view/role-permission-view.fxml",
                         rolesButton, ActivityLogService.NAVIGATE_USERS, "role.manage"),
                 new MenuDefinition("Backup & Restore", "/com/churchmanagement/view/backup-restore-view.fxml",
-                        backupButton, ActivityLogService.NAVIGATE_BACKUP_RESTORE, "backup.create", "backup.restore"),
+                        backupButton, ActivityLogService.NAVIGATE_BACKUP_RESTORE,
+                        "backup.view", "backup.create", "backup.restore"),
                 new MenuDefinition("Activity Logs", "/com/churchmanagement/view/activity-log-view.fxml",
                         activityLogsButton, ActivityLogService.NAVIGATE_ACTIVITY_LOGS, "activity.view"),
                 new MenuDefinition("SMS Logs", "/com/churchmanagement/view/sms-log-view.fxml",

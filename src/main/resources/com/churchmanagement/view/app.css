@@ -764,6 +764,50 @@
     -fx-text-fill: #78350f;
 }
 
+.backup-restore-page {
+    -fx-background-color: transparent;
+}
+
+.transparent-scroll-pane,
+.transparent-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.tab-content {
+    -fx-padding: 18;
+}
+
+.backup-restore-card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 16;
+}
+
+.backup-card-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #451a03;
+}
+
+.field-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #78350f;
+}
+
+.muted-label {
+    -fx-text-fill: #92400e;
+}
+
+.warning-label {
+    -fx-text-fill: #9a3412;
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
+}
+
 /* ═══════════════════════════════════════════════
    PLACEHOLDER PAGES
    ═══════════════════════════════════════════════ */

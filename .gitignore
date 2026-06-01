@@ -28,3 +28,6 @@ Thumbs.db
 
 # Saved receipts PDFs
 receipts/
+
+# Backups
+Backups/
