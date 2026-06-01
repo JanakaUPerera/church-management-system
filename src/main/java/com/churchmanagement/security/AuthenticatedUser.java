@@ -14,9 +14,15 @@ public class AuthenticatedUser {
     private final String roleName;
     private final List<String> permissions;
     private final Set<String> permissionSet;
+    private final boolean forcePasswordChange;
 
     public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
                              List<String> permissions) {
+        this(userId, username, fullName, roleId, roleName, permissions, false);
+    }
+
+    public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
+                             List<String> permissions, boolean forcePasswordChange) {
         this.userId = userId;
         this.username = username;
         this.fullName = fullName;
@@ -24,6 +30,7 @@ public class AuthenticatedUser {
         this.roleName = roleName;
         this.permissions = List.copyOf(permissions);
         this.permissionSet = new HashSet<>(this.permissions);
+        this.forcePasswordChange = forcePasswordChange;
     }
 
     public long getUserId() {
@@ -48,6 +55,14 @@ public class AuthenticatedUser {
 
     public List<String> getPermissions() {
         return Collections.unmodifiableList(permissions);
+    }
+
+    public boolean isForcePasswordChange() {
+        return forcePasswordChange;
+    }
+
+    public AuthenticatedUser withForcePasswordChange(boolean forcePasswordChange) {
+        return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange);
     }
 
     public boolean hasPermission(String permissionCode) {

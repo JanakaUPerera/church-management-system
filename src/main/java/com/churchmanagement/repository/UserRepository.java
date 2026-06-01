@@ -27,7 +27,9 @@ public class UserRepository {
 
     public Optional<UserCredentials> findByUsername(String username) {
         String sql = """
-                SELECT u.id, u.username, u.password_hash, u.full_name, u.active, r.id AS role_id, r.name AS role_name
+                SELECT u.id, u.username, u.password_hash, u.full_name, u.active,
+                       COALESCE(u.force_password_change, FALSE) AS force_password_change,
+                       r.id AS role_id, r.name AS role_name
                 FROM users u
                 JOIN roles r ON r.id = u.role_id
                 WHERE u.username = ?
@@ -49,7 +51,8 @@ public class UserRepository {
                         resultSet.getString("full_name"),
                         resultSet.getLong("role_id"),
                         resultSet.getString("role_name"),
-                        resultSet.getBoolean("active")
+                        resultSet.getBoolean("active"),
+                        resultSet.getBoolean("force_password_change")
                 ));
             }
         } catch (SQLException exception) {
@@ -67,6 +70,42 @@ public class UserRepository {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Unable to update user login timestamp.", exception);
+        }
+    }
+
+    public Optional<String> findPasswordHashByUserId(long userId) {
+        String sql = "SELECT password_hash FROM users WHERE id = ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(resultSet.getString("password_hash"));
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load user password.", exception);
+        }
+    }
+
+    public void updatePasswordAndClearForceChange(long userId, String newPasswordHash, LocalDateTime updatedAt) {
+        String sql = """
+                UPDATE users
+                SET password_hash = ?, force_password_change = FALSE, updated_at = ?
+                WHERE id = ?
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newPasswordHash);
+            statement.setTimestamp(2, Timestamp.valueOf(updatedAt));
+            statement.setLong(3, userId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to change user password.", exception);
         }
     }
 
@@ -102,7 +141,8 @@ public class UserRepository {
             String fullName,
             long roleId,
             String roleName,
-            boolean active
+            boolean active,
+            boolean forcePasswordChange
     ) {
     }
 

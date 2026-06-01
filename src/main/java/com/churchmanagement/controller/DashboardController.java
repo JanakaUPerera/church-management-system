@@ -142,6 +142,12 @@ public class DashboardController {
         }
 
         currentUser = user.get();
+        if (currentUser.isForcePasswordChange()) {
+            statusLabel.setText("Password change required before accessing the dashboard.");
+            Platform.runLater(this::openForcePasswordChange);
+            return;
+        }
+
         activeController = this;
         permissionGuard = new PermissionGuard(currentUser);
         fullNameLabel.setText(currentUser.getFullName());
@@ -452,6 +458,11 @@ public class DashboardController {
     }
 
     private void loadMenu(MenuDefinition menuDefinition) {
+        if (currentUser != null && currentUser.isForcePasswordChange()) {
+            showError("Password change required", "You must change your password before accessing modules.");
+            return;
+        }
+
         if (!permissionGuard.canAny((String[]) menuDefinition.permissionCodes())) {
             showError("Access denied", "You do not have permission to open " + menuDefinition.title() + ".");
             return;
@@ -489,6 +500,27 @@ public class DashboardController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void openForcePasswordChange() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.FORCE_PASSWORD_CHANGE_VIEW));
+            Scene scene = new Scene(loader.load(), AppConfig.FORCE_PASSWORD_CHANGE_WIDTH,
+                    AppConfig.FORCE_PASSWORD_CHANGE_HEIGHT);
+            scene.setFill(Color.TRANSPARENT);
+            Stage dashboardStage = (Stage) dateLabel.getScene().getWindow();
+            Stage stage = new Stage(StageStyle.TRANSPARENT);
+
+            stage.setTitle(AppConfig.APPLICATION_NAME + " - Change Password");
+            stage.setScene(scene);
+            stage.setMinWidth(AppConfig.FORCE_PASSWORD_CHANGE_WIDTH);
+            stage.setMinHeight(AppConfig.FORCE_PASSWORD_CHANGE_HEIGHT);
+            stage.centerOnScreen();
+            stage.show();
+            dashboardStage.close();
+        } catch (IOException exception) {
+            statusLabel.setText("Unable to open password change screen.");
+        }
     }
 
     public static void openReceiptCorrection(long cancelledReceiptId) {

@@ -36,6 +36,10 @@ public class PermissionGuard {
     }
 
     public boolean can(String permissionCode) {
+        if (user.isForcePasswordChange()) {
+            return false;
+        }
+
         if (permissionCode == null || permissionCode.isBlank()) {
             return true;
         }
@@ -53,6 +57,10 @@ public class PermissionGuard {
     }
 
     public boolean canAny(String... permissionCodes) {
+        if (user.isForcePasswordChange()) {
+            return false;
+        }
+
         if (permissionCodes == null || permissionCodes.length == 0) {
             return true;
         }

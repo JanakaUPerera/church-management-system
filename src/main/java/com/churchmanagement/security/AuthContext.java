@@ -16,6 +16,12 @@ public final class AuthContext {
         currentUser = user;
     }
 
+    public static void clearForcePasswordChange() {
+        if (currentUser != null) {
+            currentUser = currentUser.withForcePasswordChange(false);
+        }
+    }
+
     public static void clear() {
         currentUser = null;
     }

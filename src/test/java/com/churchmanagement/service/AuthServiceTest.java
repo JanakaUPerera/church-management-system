@@ -38,8 +38,19 @@ class AuthServiceTest {
         assertEquals("System Administrator", user.getFullName());
         assertEquals(1L, user.getRoleId());
         assertEquals("Admin", user.getRoleName());
+        assertFalse(user.isForcePasswordChange());
         assertEquals(1L, userRepository.lastLoginUserId);
         assertEquals(1, activityLogService.successCount);
+    }
+
+    @Test
+    void forcedPasswordChangeUserIsFlaggedAfterLogin() {
+        userRepository.forcePasswordChange = true;
+
+        AuthenticatedUser user = authService.login("admin", "admin123");
+
+        assertTrue(user.isForcePasswordChange());
+        assertEquals(1, activityLogService.forceRequiredCount);
     }
 
     @Test
@@ -80,6 +91,7 @@ class AuthServiceTest {
 
     private static class FakeUserRepository extends UserRepository {
         private boolean active = true;
+        private boolean forcePasswordChange;
         private boolean lastLoginUpdated;
         private long lastLoginUserId;
 
@@ -100,7 +112,8 @@ class AuthServiceTest {
                     "System Administrator",
                     1L,
                     "Admin",
-                    active
+                    active,
+                    forcePasswordChange
             ));
         }
 
@@ -125,6 +138,7 @@ class AuthServiceTest {
     private static class FakeActivityLogService extends ActivityLogService {
         private int successCount;
         private int failedCount;
+        private int forceRequiredCount;
 
         private FakeActivityLogService() {
             super(null);
@@ -138,6 +152,11 @@ class AuthServiceTest {
         @Override
         public void logLoginFailed(String username, String reason) {
             failedCount++;
+        }
+
+        @Override
+        public void logForcePasswordChangeRequired(long userId, String username) {
+            forceRequiredCount++;
         }
     }
 }

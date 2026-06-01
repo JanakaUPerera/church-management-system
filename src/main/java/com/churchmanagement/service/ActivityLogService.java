@@ -75,6 +75,10 @@ public class ActivityLogService {
     public static final String USER_ACTIVATED = "USER_ACTIVATED";
     public static final String USER_DEACTIVATED = "USER_DEACTIVATED";
     public static final String USER_PASSWORD_RESET = "USER_PASSWORD_RESET";
+    public static final String FORCE_PASSWORD_CHANGE_REQUIRED = "FORCE_PASSWORD_CHANGE_REQUIRED";
+    public static final String PASSWORD_CHANGED_FORCE = "PASSWORD_CHANGED_FORCE";
+    public static final String FORCE_PASSWORD_CHANGE_LOGOUT = "FORCE_PASSWORD_CHANGE_LOGOUT";
+    public static final String PASSWORD_CHANGE_FAILED = "PASSWORD_CHANGE_FAILED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -96,6 +100,23 @@ public class ActivityLogService {
 
     public void logLogout(long userId, String username) {
         log(userId, LOGOUT, "Logout for username: " + username);
+    }
+
+    public void logForcePasswordChangeRequired(long userId, String username) {
+        log(userId, FORCE_PASSWORD_CHANGE_REQUIRED, "Force password change required for username: " + username);
+    }
+
+    public void logForcedPasswordChanged(long userId, String username) {
+        log(userId, PASSWORD_CHANGED_FORCE, "Forced password change completed for username: " + username);
+    }
+
+    public void logForcePasswordChangeLogout(long userId, String username) {
+        log(userId, FORCE_PASSWORD_CHANGE_LOGOUT, "Logout during forced password change for username: " + username);
+    }
+
+    public void logPasswordChangeFailed(long userId, String username, String reason) {
+        log(userId, PASSWORD_CHANGE_FAILED, "Forced password change failed for username: " + username
+                + ". Reason: " + nullToBlank(reason));
     }
 
     public void logNavigation(long userId, String action, String moduleName) {

@@ -67,7 +67,11 @@ public class LoginController {
         try {
             AuthenticatedUser authenticatedUser = authService.login(usernameField.getText(), passwordField.getText());
             AuthContext.setCurrentUser(authenticatedUser);
-            openDashboard();
+            if (authenticatedUser.isForcePasswordChange()) {
+                openForcePasswordChange();
+            } else {
+                openDashboard();
+            }
         } catch (AuthService.AuthException exception) {
             errorLabel.setText(exception.getMessage());
         }
@@ -124,5 +128,22 @@ public class LoginController {
         stage.show();
         loginStage.close();
         Platform.runLater(() -> stage.setMaximized(true));
+    }
+
+    private void openForcePasswordChange() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.FORCE_PASSWORD_CHANGE_VIEW));
+        Scene scene = new Scene(loader.load(), AppConfig.FORCE_PASSWORD_CHANGE_WIDTH,
+                AppConfig.FORCE_PASSWORD_CHANGE_HEIGHT);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        Stage loginStage = (Stage) usernameField.getScene().getWindow();
+        Stage stage = new Stage(StageStyle.TRANSPARENT);
+
+        stage.setTitle(AppConfig.APPLICATION_NAME + " - Change Password");
+        stage.setScene(scene);
+        stage.setMinWidth(AppConfig.FORCE_PASSWORD_CHANGE_WIDTH);
+        stage.setMinHeight(AppConfig.FORCE_PASSWORD_CHANGE_HEIGHT);
+        stage.centerOnScreen();
+        stage.show();
+        loginStage.close();
     }
 }

@@ -59,11 +59,15 @@ public class AuthService {
                     credentials.fullName(),
                     credentials.roleId(),
                     credentials.roleName(),
-                    permissions
+                    permissions,
+                    credentials.forcePasswordChange()
             );
 
             userRepository.updateLastLoginAt(credentials.userId(), LocalDateTime.now(clock));
             activityLogService.logLoginSuccess(credentials.userId(), credentials.username());
+            if (credentials.forcePasswordChange()) {
+                activityLogService.logForcePasswordChangeRequired(credentials.userId(), credentials.username());
+            }
 
             return authenticatedUser;
         } catch (AuthException exception) {

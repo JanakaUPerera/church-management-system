@@ -15,9 +15,9 @@
 <StackPane fx:id="loginRoot" styleClass="login-root" stylesheets="@app.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.churchmanagement.controller.LoginController">
     <BorderPane>
         <center>
-            <VBox alignment="CENTER" maxWidth="320" spacing="10">
+            <VBox alignment="CENTER" maxWidth="360" spacing="10">
                 <padding>
-                    <Insets bottom="28" left="32" right="32" top="20" />
+                    <Insets bottom="28" left="32" right="32" top="24"/>
                 </padding>
                <children>
    
