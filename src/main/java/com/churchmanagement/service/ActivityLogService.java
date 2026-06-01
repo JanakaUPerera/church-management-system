@@ -70,6 +70,11 @@ public class ActivityLogService {
     public static final String ACTIVITY_LOGS_VIEWED = "ACTIVITY_LOGS_VIEWED";
     public static final String ACTIVITY_LOGS_SEARCHED = "ACTIVITY_LOGS_SEARCHED";
     public static final String ACTIVITY_LOG_DETAILS_VIEWED = "ACTIVITY_LOG_DETAILS_VIEWED";
+    public static final String USER_CREATED = "USER_CREATED";
+    public static final String USER_UPDATED = "USER_UPDATED";
+    public static final String USER_ACTIVATED = "USER_ACTIVATED";
+    public static final String USER_DEACTIVATED = "USER_DEACTIVATED";
+    public static final String USER_PASSWORD_RESET = "USER_PASSWORD_RESET";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -317,6 +322,10 @@ public class ActivityLogService {
     public void logActivityLogDetailsViewed(Long userId, long activityLogId) {
         log(userId, ACTIVITY_LOG_DETAILS_VIEWED, "Activity Logs", String.valueOf(activityLogId),
                 "activity_log_id: " + activityLogId);
+    }
+
+    public void logUserAction(long userId, String action, String username) {
+        log(userId, action, "Users", username, "username: " + nullToBlank(username));
     }
 
     private void log(Long userId, String action, String details) {
