@@ -348,5 +348,13 @@ class ChurchServiceTest {
                 loggedActions.add(oldLanguage + " -> " + newLanguage);
             }
         }
+
+        @Override
+        public void logChurchUpdated(long userId, Church oldChurch, Church newChurch) {
+            loggedActions.add(CHURCH_UPDATED);
+            if (oldChurch.getReceiptLanguage() != newChurch.getReceiptLanguage()) {
+                loggedActions.add(oldChurch.getReceiptLanguage() + " -> " + newChurch.getReceiptLanguage());
+            }
+        }
     }
 }

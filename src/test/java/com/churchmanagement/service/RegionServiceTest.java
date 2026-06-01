@@ -158,5 +158,10 @@ class RegionServiceTest {
         public void logRegionAction(long userId, String action, String regionCode) {
             loggedActions.add(action);
         }
+
+        @Override
+        public void logRegionUpdated(long userId, Region oldRegion, Region newRegion) {
+            loggedActions.add(REGION_UPDATED);
+        }
     }
 }

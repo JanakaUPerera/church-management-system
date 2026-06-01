@@ -10,6 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class UserRepository {
@@ -68,6 +70,31 @@ public class UserRepository {
         }
     }
 
+    public List<UserSummary> findActiveUserSummaries() {
+        String sql = """
+                SELECT id, username, full_name
+                FROM users
+                WHERE active = TRUE
+                ORDER BY username
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<UserSummary> users = new ArrayList<>();
+            while (resultSet.next()) {
+                users.add(new UserSummary(
+                        resultSet.getLong("id"),
+                        resultSet.getString("username"),
+                        resultSet.getString("full_name")
+                ));
+            }
+            return users;
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load users.", exception);
+        }
+    }
+
     public record UserCredentials(
             long userId,
             String username,
@@ -77,5 +104,12 @@ public class UserRepository {
             String roleName,
             boolean active
     ) {
+    }
+
+    public record UserSummary(long userId, String username, String fullName) {
+        @Override
+        public String toString() {
+            return username + " - " + fullName;
+        }
     }
 }

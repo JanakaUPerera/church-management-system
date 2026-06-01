@@ -124,7 +124,7 @@ public class ChurchService {
         try {
             Church existing = churchRepository.findById(id)
                     .orElseThrow(() -> new ChurchException("Church could not be found."));
-            ReceiptLanguage previousReceiptLanguage = existing.getReceiptLanguage();
+            Church previous = copyChurch(existing);
             ensureActiveRegion(church.getRegionId());
             if (churchRepository.existsByChurchCodeAndIdNot(church.getChurchCode(), id)) {
                 throw new ChurchException("A church with this code already exists.");
@@ -132,8 +132,7 @@ public class ChurchService {
 
             church.setUpdatedAt(LocalDateTime.now(clock));
             Church updatedChurch = churchRepository.update(church);
-            activityLogService.logChurchUpdated(userId, updatedChurch.getChurchCode(),
-                    previousReceiptLanguage, updatedChurch.getReceiptLanguage());
+            activityLogService.logChurchUpdated(userId, previous, updatedChurch);
             return updatedChurch;
         } catch (ChurchException exception) {
             throw exception;
@@ -176,6 +175,18 @@ public class ChurchService {
         church.setSmsMobileNumber(normalizeSmsMobileNumber(smsMobileNumber));
         church.setReceiptLanguage(receiptLanguage);
         return church;
+    }
+
+    private Church copyChurch(Church church) {
+        Church copy = new Church(church.getId(), church.getChurchCode(), church.getChurchName(), church.getRegionId(),
+                church.getRegionCode(), church.getRegionName(), church.getStatus(), church.getCreatedAt(),
+                church.getUpdatedAt());
+        copy.setAuthorizedPersonName(church.getAuthorizedPersonName());
+        copy.setAuthorizedPersonPosition(church.getAuthorizedPersonPosition());
+        copy.setAuthorizedPersonPositionOther(church.getAuthorizedPersonPositionOther());
+        copy.setSmsMobileNumber(church.getSmsMobileNumber());
+        copy.setReceiptLanguage(church.getReceiptLanguage());
+        return copy;
     }
 
     private void validate(Church church) {

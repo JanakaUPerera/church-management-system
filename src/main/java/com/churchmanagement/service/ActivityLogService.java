@@ -3,11 +3,15 @@ package com.churchmanagement.service;
 import com.churchmanagement.dto.CreateReceiptRequest;
 import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ActivityLogRepository;
 
 import java.math.BigDecimal;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Objects;
 
 public class ActivityLogService {
     public static final String LOGIN_SUCCESS = "LOGIN_SUCCESS";
@@ -63,6 +67,9 @@ public class ActivityLogService {
     public static final String BACKUP_SETTINGS_UPDATED = "BACKUP_SETTINGS_UPDATED";
     public static final String BACKUP_RETENTION_CLEANUP = "BACKUP_RETENTION_CLEANUP";
     public static final String AUTO_BACKUP_SCRIPT_GENERATED = "AUTO_BACKUP_SCRIPT_GENERATED";
+    public static final String ACTIVITY_LOGS_VIEWED = "ACTIVITY_LOGS_VIEWED";
+    public static final String ACTIVITY_LOGS_SEARCHED = "ACTIVITY_LOGS_SEARCHED";
+    public static final String ACTIVITY_LOG_DETAILS_VIEWED = "ACTIVITY_LOG_DETAILS_VIEWED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -94,8 +101,20 @@ public class ActivityLogService {
         log(userId, action, "Region code: " + regionCode);
     }
 
+    public void logRegionUpdated(long userId, Region oldRegion, Region newRegion) {
+        String regionCode = newRegion == null ? "" : newRegion.getRegionCode();
+        log(userId, REGION_UPDATED, "Region", regionCode,
+                regionSummary(oldRegion), regionSummary(newRegion), "Region code: " + regionCode);
+    }
+
     public void logChurchAction(long userId, String action, String churchCode) {
         log(userId, action, "Church code: " + churchCode);
+    }
+
+    public void logChurchUpdated(long userId, Church oldChurch, Church newChurch) {
+        String churchCode = newChurch == null ? "" : newChurch.getChurchCode();
+        log(userId, CHURCH_UPDATED, "Church", churchCode,
+                churchSummary(oldChurch), churchSummary(newChurch), churchUpdateDescription(oldChurch, newChurch));
     }
 
     public void logChurchUpdated(long userId, String churchCode, ReceiptLanguage oldLanguage,
@@ -105,7 +124,9 @@ public class ActivityLogService {
             details += ", receipt_language: " + receiptLanguageName(oldLanguage)
                     + " -> " + receiptLanguageName(newLanguage);
         }
-        log(userId, CHURCH_UPDATED, details);
+        log(userId, CHURCH_UPDATED, "Church", churchCode,
+                "receipt_language: " + receiptLanguageName(oldLanguage),
+                "receipt_language: " + receiptLanguageName(newLanguage), details);
     }
 
     public void logReceiptNumberGenerated(Long userId, int year, long sequence, String receiptNumber) {
@@ -285,9 +306,31 @@ public class ActivityLogService {
         log(userId, AUTO_BACKUP_SCRIPT_GENERATED, "script_path: " + nullToBlank(scriptPath));
     }
 
+    public void logActivityLogsViewed(Long userId, int resultCount) {
+        log(userId, ACTIVITY_LOGS_VIEWED, "Activity Logs", null, "result_count: " + resultCount);
+    }
+
+    public void logActivityLogsSearched(Long userId, int resultCount) {
+        log(userId, ACTIVITY_LOGS_SEARCHED, "Activity Logs", null, "result_count: " + resultCount);
+    }
+
+    public void logActivityLogDetailsViewed(Long userId, long activityLogId) {
+        log(userId, ACTIVITY_LOG_DETAILS_VIEWED, "Activity Logs", String.valueOf(activityLogId),
+                "activity_log_id: " + activityLogId);
+    }
+
     private void log(Long userId, String action, String details) {
+        log(userId, action, "AUTH", null, null, null, details);
+    }
+
+    private void log(Long userId, String action, String module, String recordId, String details) {
+        log(userId, action, module, recordId, null, null, details);
+    }
+
+    private void log(Long userId, String action, String module, String recordId, String oldValue, String newValue,
+                     String details) {
         try {
-            activityLogRepository.save(userId, action, details);
+            activityLogRepository.save(userId, action, module, recordId, oldValue, newValue, null, machineName(), details);
         } catch (DatabaseException exception) {
             System.err.println("Activity logging failed: " + exception.getMessage());
         }
@@ -307,6 +350,51 @@ public class ActivityLogService {
 
     private String receiptLanguageName(ReceiptLanguage language) {
         return language == null ? "" : language.getDisplayName();
+    }
+
+    private String regionSummary(Region region) {
+        if (region == null) {
+            return "";
+        }
+        return "region_code: " + nullToBlank(region.getRegionCode())
+                + ", region_name: " + nullToBlank(region.getRegionName())
+                + ", status: " + nullToBlank(region.getStatus());
+    }
+
+    private String churchSummary(Church church) {
+        if (church == null) {
+            return "";
+        }
+        return "church_code: " + nullToBlank(church.getChurchCode())
+                + ", church_name: " + nullToBlank(church.getChurchName())
+                + ", region_id: " + nullToBlank(church.getRegionId())
+                + ", status: " + nullToBlank(church.getStatus())
+                + ", authorized_person_name: " + nullToBlank(church.getAuthorizedPersonName())
+                + ", authorized_person_position: " + nullToBlank(church.getAuthorizedPersonPosition())
+                + ", authorized_person_position_other: " + nullToBlank(church.getAuthorizedPersonPositionOther())
+                + ", sms_mobile_number: " + nullToBlank(church.getSmsMobileNumber())
+                + ", receipt_language: " + receiptLanguageName(church.getReceiptLanguage());
+    }
+
+    private String churchUpdateDescription(Church oldChurch, Church newChurch) {
+        String churchCode = newChurch == null ? "" : newChurch.getChurchCode();
+        String details = "Church code: " + churchCode;
+        if (oldChurch == null || newChurch == null) {
+            return details;
+        }
+        if (!Objects.equals(oldChurch.getReceiptLanguage(), newChurch.getReceiptLanguage())) {
+            details += ", receipt_language: " + receiptLanguageName(oldChurch.getReceiptLanguage())
+                    + " -> " + receiptLanguageName(newChurch.getReceiptLanguage());
+        }
+        return details;
+    }
+
+    private String machineName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException exception) {
+            return System.getenv("COMPUTERNAME");
+        }
     }
 
 }

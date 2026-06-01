@@ -71,13 +71,17 @@ public class RegionService {
         validate(region);
 
         try {
+            Region existing = regionRepository.findById(id)
+                    .orElseThrow(() -> new RegionException("Region could not be found."));
+            Region previous = new Region(existing.getId(), existing.getRegionCode(), existing.getRegionName(),
+                    existing.getStatus(), existing.getCreatedAt(), existing.getUpdatedAt());
             if (regionRepository.existsByRegionCodeAndIdNot(region.getRegionCode(), id)) {
                 throw new RegionException("A region with this code already exists.");
             }
 
             region.setUpdatedAt(LocalDateTime.now(clock));
             Region updatedRegion = regionRepository.update(region);
-            activityLogService.logRegionAction(userId, ActivityLogService.REGION_UPDATED, updatedRegion.getRegionCode());
+            activityLogService.logRegionUpdated(userId, previous, updatedRegion);
             return updatedRegion;
         } catch (RegionException exception) {
             throw exception;
