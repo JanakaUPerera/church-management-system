@@ -79,6 +79,10 @@ public class ActivityLogService {
     public static final String PASSWORD_CHANGED_FORCE = "PASSWORD_CHANGED_FORCE";
     public static final String FORCE_PASSWORD_CHANGE_LOGOUT = "FORCE_PASSWORD_CHANGE_LOGOUT";
     public static final String PASSWORD_CHANGE_FAILED = "PASSWORD_CHANGE_FAILED";
+    public static final String PROFILE_UPDATED = "PROFILE_UPDATED";
+    public static final String PROFILE_PICTURE_UPDATED = "PROFILE_PICTURE_UPDATED";
+    public static final String OWN_PASSWORD_CHANGED = "OWN_PASSWORD_CHANGED";
+    public static final String OWN_PASSWORD_CHANGE_FAILED = "OWN_PASSWORD_CHANGE_FAILED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -347,6 +351,28 @@ public class ActivityLogService {
 
     public void logUserAction(long userId, String action, String username) {
         log(userId, action, "Users", username, "username: " + nullToBlank(username));
+    }
+
+    public void logProfileUpdated(long userId, String username) {
+        log(userId, PROFILE_UPDATED, "My Profile", String.valueOf(userId),
+                "Profile updated for username: " + nullToBlank(username));
+    }
+
+    public void logProfilePictureUpdated(long userId, String username, String profilePicturePath) {
+        log(userId, PROFILE_PICTURE_UPDATED, "My Profile", String.valueOf(userId),
+                "Profile picture updated for username: " + nullToBlank(username)
+                        + ", profile_picture_path: " + nullToBlank(profilePicturePath));
+    }
+
+    public void logOwnPasswordChanged(long userId, String username) {
+        log(userId, OWN_PASSWORD_CHANGED, "My Profile", String.valueOf(userId),
+                "Own password changed for username: " + nullToBlank(username));
+    }
+
+    public void logOwnPasswordChangeFailed(long userId, String username, String reason) {
+        log(userId, OWN_PASSWORD_CHANGE_FAILED, "My Profile", String.valueOf(userId),
+                "Own password change failed for username: " + nullToBlank(username)
+                        + ". Reason: " + nullToBlank(reason));
     }
 
     private void log(Long userId, String action, String details) {

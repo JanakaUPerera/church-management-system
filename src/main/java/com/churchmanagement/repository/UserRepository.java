@@ -27,7 +27,7 @@ public class UserRepository {
 
     public Optional<UserCredentials> findByUsername(String username) {
         String sql = """
-                SELECT u.id, u.username, u.password_hash, u.full_name, u.active,
+                SELECT u.id, u.username, u.password_hash, u.full_name, u.active, u.profile_picture_path,
                        COALESCE(u.force_password_change, FALSE) AS force_password_change,
                        r.id AS role_id, r.name AS role_name
                 FROM users u
@@ -52,7 +52,8 @@ public class UserRepository {
                         resultSet.getLong("role_id"),
                         resultSet.getString("role_name"),
                         resultSet.getBoolean("active"),
-                        resultSet.getBoolean("force_password_change")
+                        resultSet.getBoolean("force_password_change"),
+                        resultSet.getString("profile_picture_path")
                 ));
             }
         } catch (SQLException exception) {
@@ -142,7 +143,8 @@ public class UserRepository {
             long roleId,
             String roleName,
             boolean active,
-            boolean forcePasswordChange
+            boolean forcePasswordChange,
+            String profilePicturePath
     ) {
     }
 

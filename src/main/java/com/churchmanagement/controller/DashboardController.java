@@ -19,16 +19,22 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -63,6 +69,12 @@ public class DashboardController {
     private Label roleNameLabel;
 
     @FXML
+    private ImageView profileImageView;
+
+    @FXML
+    private Label profileAvatarLabel;
+
+    @FXML
     private Label pageTitleLabel;
 
     @FXML
@@ -88,6 +100,9 @@ public class DashboardController {
 
     @FXML
     private Button logoutButton;
+
+    @FXML
+    private Button myProfileButton;
 
     @FXML
     private Button minimizeWindowButton;
@@ -150,9 +165,9 @@ public class DashboardController {
 
         activeController = this;
         permissionGuard = new PermissionGuard(currentUser);
-        fullNameLabel.setText(currentUser.getFullName());
-        roleNameLabel.setText(currentUser.getRoleName());
+        refreshHeaderFromAuthContext();
         ButtonIconUtil.applyIcon(logoutButton, "fas-sign-out-alt");
+        ButtonIconUtil.applyIcon(myProfileButton, "fas-user");
         configureWindowHeader();
         startDatabaseStatusMonitor();
 
@@ -364,6 +379,12 @@ public class DashboardController {
     }
 
     @FXML
+    private void showMyProfile() {
+        loadMenu(new MenuDefinition("My Profile", "/com/churchmanagement/view/user-profile-view.fxml",
+                myProfileButton, null));
+    }
+
+    @FXML
     private void toggleSidebar() {
         sidebarCollapsed = !sidebarCollapsed;
         sidebar.setMinWidth(sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH);
@@ -485,7 +506,10 @@ public class DashboardController {
         for (MenuDefinition menuDefinition : menuDefinitions) {
             menuDefinition.button().getStyleClass().remove("active-menu-button");
         }
-        selectedButton.getStyleClass().add("active-menu-button");
+        myProfileButton.getStyleClass().remove("active-menu-button");
+        if (selectedButton != null) {
+            selectedButton.getStyleClass().add("active-menu-button");
+        }
     }
 
     private void logNavigation(MenuDefinition menuDefinition) {
@@ -530,6 +554,68 @@ public class DashboardController {
 
         ReceiptEntryController.prepareCorrection(cancelledReceiptId);
         activeController.loadMenu(activeController.findMenu(activeController.weeklyReceiptsButton));
+    }
+
+    public static void refreshActiveHeader() {
+        if (activeController != null) {
+            activeController.refreshHeaderFromAuthContext();
+        }
+    }
+
+    private void refreshHeaderFromAuthContext() {
+        AuthContext.getCurrentUser().ifPresent(user -> {
+            currentUser = user;
+            fullNameLabel.setText(user.getFullName());
+            roleNameLabel.setText(user.getRoleName());
+            updateProfileImage(user.getProfilePicturePath());
+        });
+    }
+
+    private void updateProfileImage(String profilePicturePath) {
+        if (profileImageView == null) {
+            return;
+        }
+        profileImageView.setFitWidth(42);
+        profileImageView.setFitHeight(42);
+        profileImageView.setPreserveRatio(false);
+        profileImageView.setClip(new Circle(21, 21, 21));
+
+        if (profilePicturePath != null && !profilePicturePath.isBlank()
+                && Files.exists(Path.of(profilePicturePath))) {
+            setCircularImage(profileImageView, Path.of(profilePicturePath), 42);
+            profileAvatarLabel.setVisible(false);
+        } else {
+            profileImageView.setImage(null);
+            profileImageView.setViewport(null);
+            profileAvatarLabel.setText(initials(currentUser == null ? "" : currentUser.getFullName()));
+            profileAvatarLabel.setVisible(true);
+        }
+    }
+
+    private void setCircularImage(ImageView imageView, Path imagePath, double size) {
+        Image image = new Image(imagePath.toUri().toString());
+        double width = image.getWidth();
+        double height = image.getHeight();
+        double squareSize = Math.min(width, height);
+        imageView.setViewport(new Rectangle2D(
+                (width - squareSize) / 2,
+                (height - squareSize) / 2,
+                squareSize,
+                squareSize));
+        imageView.setFitWidth(size);
+        imageView.setFitHeight(size);
+        imageView.setPreserveRatio(false);
+        imageView.setImage(image);
+    }
+
+    private String initials(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return "?";
+        }
+        String[] parts = fullName.strip().split("\\s+");
+        String first = parts[0].substring(0, 1);
+        String second = parts.length > 1 ? parts[1].substring(0, 1) : "";
+        return (first + second).toUpperCase();
     }
 
     private record MenuDefinition(String title, String viewPath, Button button, String activityAction,

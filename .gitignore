@@ -34,3 +34,6 @@ backups/
 
 # Logs
 logs/
+
+# User uploads
+user_uploads/

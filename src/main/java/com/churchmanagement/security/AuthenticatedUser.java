@@ -15,14 +15,20 @@ public class AuthenticatedUser {
     private final List<String> permissions;
     private final Set<String> permissionSet;
     private final boolean forcePasswordChange;
+    private final String profilePicturePath;
 
     public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
                              List<String> permissions) {
-        this(userId, username, fullName, roleId, roleName, permissions, false);
+        this(userId, username, fullName, roleId, roleName, permissions, false, null);
     }
 
     public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
                              List<String> permissions, boolean forcePasswordChange) {
+        this(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange, null);
+    }
+
+    public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
+                             List<String> permissions, boolean forcePasswordChange, String profilePicturePath) {
         this.userId = userId;
         this.username = username;
         this.fullName = fullName;
@@ -31,6 +37,7 @@ public class AuthenticatedUser {
         this.permissions = List.copyOf(permissions);
         this.permissionSet = new HashSet<>(this.permissions);
         this.forcePasswordChange = forcePasswordChange;
+        this.profilePicturePath = profilePicturePath;
     }
 
     public long getUserId() {
@@ -62,7 +69,17 @@ public class AuthenticatedUser {
     }
 
     public AuthenticatedUser withForcePasswordChange(boolean forcePasswordChange) {
-        return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange);
+        return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange,
+                profilePicturePath);
+    }
+
+    public String getProfilePicturePath() {
+        return profilePicturePath;
+    }
+
+    public AuthenticatedUser withProfile(String fullName, String profilePicturePath) {
+        return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange,
+                profilePicturePath);
     }
 
     public boolean hasPermission(String permissionCode) {

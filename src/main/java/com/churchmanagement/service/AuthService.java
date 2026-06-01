@@ -60,7 +60,8 @@ public class AuthService {
                     credentials.roleId(),
                     credentials.roleName(),
                     permissions,
-                    credentials.forcePasswordChange()
+                    credentials.forcePasswordChange(),
+                    credentials.profilePicturePath()
             );
 
             userRepository.updateLastLoginAt(credentials.userId(), LocalDateTime.now(clock));

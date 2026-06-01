@@ -648,6 +648,52 @@
     -fx-font-weight: normal;
 }
 
+.header-avatar,
+.profile-picture-frame {
+    -fx-background-color: #fef3c7;
+    -fx-background-radius: 999;
+    -fx-border-color: #fcd34d;
+    -fx-border-radius: 999;
+    -fx-border-width: 2;
+}
+
+.header-avatar {
+    -fx-min-width: 42;
+    -fx-min-height: 42;
+    -fx-pref-width: 42;
+    -fx-pref-height: 42;
+    -fx-max-width: 42;
+    -fx-max-height: 42;
+}
+
+.header-avatar-initials {
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold;
+}
+
+.header-profile-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #fef3c7;
+    -fx-border-color: #fcd34d;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 8 12;
+}
+
+.header-profile-button .button-icon {
+    -fx-icon-color: #fef3c7;
+}
+
+.header-profile-button:hover,
+.header-profile-button.active-menu-button {
+    -fx-background-color: #78350f;
+}
+
+.header-profile-button:hover .button-icon,
+.header-profile-button.active-menu-button .button-icon {
+    -fx-icon-color: #fcd34d;
+}
+
 /* Logout — overrides base .button entirely */
 .logout-button {
     -fx-background-color: #f59e0b;
@@ -860,6 +906,21 @@
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #78350f;
+}
+
+.profile-picture-frame {
+    -fx-min-width: 118;
+    -fx-min-height: 118;
+    -fx-pref-width: 118;
+    -fx-pref-height: 118;
+    -fx-max-width: 118;
+    -fx-max-height: 118;
+}
+
+.profile-picture-initials {
+    -fx-text-fill: #78350f;
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
 }
 
 .backup-restore-page {

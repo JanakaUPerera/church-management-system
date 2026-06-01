@@ -113,7 +113,8 @@ class AuthServiceTest {
                     1L,
                     "Admin",
                     active,
-                    forcePasswordChange
+                    forcePasswordChange,
+                    null
             ));
         }
 

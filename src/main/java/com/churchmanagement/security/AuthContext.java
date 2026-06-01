@@ -22,6 +22,12 @@ public final class AuthContext {
         }
     }
 
+    public static void updateCurrentUserProfile(String fullName, String profilePicturePath) {
+        if (currentUser != null) {
+            currentUser = currentUser.withProfile(fullName, profilePicturePath);
+        }
+    }
+
     public static void clear() {
         currentUser = null;
     }
