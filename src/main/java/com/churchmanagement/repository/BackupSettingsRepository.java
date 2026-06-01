@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
@@ -28,8 +27,7 @@ public class BackupSettingsRepository {
 
     public BackupSettingsDto getSettings() {
         String sql = """
-                SELECT id, backup_folder, auto_backup_enabled, auto_backup_time, retention_days,
-                       mysqldump_path, mysql_client_path
+                SELECT id, backup_folder, retention_days, mysqldump_path, mysql_client_path
                 FROM backup_settings
                 ORDER BY id
                 LIMIT 1
@@ -80,14 +78,13 @@ public class BackupSettingsRepository {
     private void insertSettings(BackupSettingsDto settings) throws SQLException {
         String sql = """
                 INSERT INTO backup_settings
-                    (backup_folder, auto_backup_enabled, auto_backup_time, retention_days,
-                     mysqldump_path, mysql_client_path, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (backup_folder, retention_days, mysqldump_path, mysql_client_path, created_at)
+                VALUES (?, ?, ?, ?, ?)
                 """;
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             setSettingsParameters(statement, settings);
-            statement.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
+            statement.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
             statement.executeUpdate();
         }
     }
@@ -95,30 +92,23 @@ public class BackupSettingsRepository {
     private void updateSettings(long id, BackupSettingsDto settings) throws SQLException {
         String sql = """
                 UPDATE backup_settings
-                SET backup_folder = ?, auto_backup_enabled = ?, auto_backup_time = ?, retention_days = ?,
-                    mysqldump_path = ?, mysql_client_path = ?, updated_at = ?
+                SET backup_folder = ?, retention_days = ?, mysqldump_path = ?, mysql_client_path = ?, updated_at = ?
                 WHERE id = ?
                 """;
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             setSettingsParameters(statement, settings);
-            statement.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
-            statement.setLong(8, id);
+            statement.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+            statement.setLong(6, id);
             statement.executeUpdate();
         }
     }
 
     private void setSettingsParameters(PreparedStatement statement, BackupSettingsDto settings) throws SQLException {
         statement.setString(1, settings.getBackupFolder());
-        statement.setBoolean(2, settings.isAutoBackupEnabled());
-        if (settings.getAutoBackupTime() == null) {
-            statement.setNull(3, Types.TIME);
-        } else {
-            statement.setTime(3, Time.valueOf(settings.getAutoBackupTime()));
-        }
-        statement.setInt(4, settings.getRetentionDays());
-        setNullableString(statement, 5, settings.getMysqldumpPath());
-        setNullableString(statement, 6, settings.getMysqlClientPath());
+        statement.setInt(2, settings.getRetentionDays());
+        setNullableString(statement, 3, settings.getMysqldumpPath());
+        setNullableString(statement, 4, settings.getMysqlClientPath());
     }
 
     private void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
@@ -132,9 +122,6 @@ public class BackupSettingsRepository {
     private BackupSettingsDto mapSettings(ResultSet resultSet) throws SQLException {
         BackupSettingsDto settings = new BackupSettingsDto();
         settings.setBackupFolder(resultSet.getString("backup_folder"));
-        settings.setAutoBackupEnabled(resultSet.getBoolean("auto_backup_enabled"));
-        Time backupTime = resultSet.getTime("auto_backup_time");
-        settings.setAutoBackupTime(backupTime == null ? null : backupTime.toLocalTime());
         settings.setRetentionDays(resultSet.getInt("retention_days"));
         settings.setMysqldumpPath(resultSet.getString("mysqldump_path"));
         settings.setMysqlClientPath(resultSet.getString("mysql_client_path"));

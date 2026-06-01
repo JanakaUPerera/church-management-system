@@ -1,6 +1,7 @@
 package com.churchmanagement.controller;
 
 import com.churchmanagement.dto.BackupLogDto;
+import com.churchmanagement.dto.BackupScheduleDto;
 import com.churchmanagement.dto.BackupSettingsDto;
 import com.churchmanagement.dto.RestoreLogDto;
 import com.churchmanagement.dto.RestoreRequest;
@@ -10,27 +11,35 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.BackupService;
+import com.churchmanagement.service.BackupScheduleService;
 import com.churchmanagement.service.BackupSettingsService;
 import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.service.RestoreService;
+import com.churchmanagement.service.WindowsTaskSchedulerScriptService;
+import com.churchmanagement.util.ApplicationRestartUtil;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.TablePaginationUtil;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Pagination;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
@@ -38,26 +47,32 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class BackupRestoreController {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter TIME_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
     private static final String FILTER_ALL = "ALL";
 
     private final BackupService backupService = new BackupService();
     private final RestoreService restoreService = new RestoreService();
     private final BackupSettingsService backupSettingsService = new BackupSettingsService();
+    private final BackupScheduleService backupScheduleService = new BackupScheduleService();
+    private final WindowsTaskSchedulerScriptService taskSchedulerScriptService = new WindowsTaskSchedulerScriptService();
     private final BackupRepository backupRepository = new BackupRepository();
     private final RestoreRepository restoreRepository = new RestoreRepository();
     private final ObservableList<BackupLogDto> allBackupLogs = FXCollections.observableArrayList();
     private final ObservableList<BackupLogDto> filteredBackupLogs = FXCollections.observableArrayList();
+    private final ObservableList<BackupScheduleDto> backupSchedules = FXCollections.observableArrayList();
     private final ObservableList<RestoreLogDto> allRestoreLogs = FXCollections.observableArrayList();
     private final ObservableList<RestoreLogDto> filteredRestoreLogs = FXCollections.observableArrayList();
 
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
+    private boolean canManageBackupSettings;
 
     @FXML private TextField backupFolderField;
     @FXML private Button browseBackupFolderButton;
@@ -70,12 +85,29 @@ public class BackupRestoreController {
     @FXML private Button backupSearchButton;
     @FXML private Button backupClearButton;
     @FXML private Button backupRefreshButton;
-    @FXML private CheckBox autoBackupEnabledCheckBox;
-    @FXML private TextField autoBackupTimeField;
+    @FXML private TextField scheduleNameField;
+    @FXML private Spinner<Integer> scheduleHourSpinner;
+    @FXML private Spinner<Integer> scheduleMinuteSpinner;
+    @FXML private ComboBox<String> scheduleAmPmComboBox;
+    @FXML private CheckBox scheduleEnabledCheckBox;
+    @FXML private Button addScheduleButton;
+    @FXML private Button updateScheduleButton;
+    @FXML private Button clearScheduleButton;
+    @FXML private Button toggleScheduleButton;
+    @FXML private Button deleteScheduleButton;
+    @FXML private TableView<BackupScheduleDto> backupScheduleTable;
+    @FXML private TableColumn<BackupScheduleDto, String> scheduleNameColumn;
+    @FXML private TableColumn<BackupScheduleDto, String> scheduleTimeColumn;
+    @FXML private TableColumn<BackupScheduleDto, String> scheduleEnabledColumn;
+    @FXML private TextField autoBackupFolderField;
+    @FXML private Button browseAutoBackupFolderButton;
     @FXML private TextField retentionDaysField;
     @FXML private TextField mysqldumpPathField;
     @FXML private TextField mysqlClientPathField;
     @FXML private Button saveSettingsButton;
+    @FXML private Button generateAutoBackupScriptButton;
+    @FXML private Label autoBackupScriptPathLabel;
+    @FXML private TextArea autoBackupSchedulerCommandArea;
     @FXML private TextField restoreBackupFileField;
     @FXML private Button browseRestoreFileButton;
     @FXML private TextField restoreConfirmationField;
@@ -122,8 +154,10 @@ public class BackupRestoreController {
         configureButtonIcons();
         configureFilters();
         configurePermissions();
+        configureScheduleTimeInputs();
         configureTables();
         loadSettings();
+        loadSchedules();
         loadHistory();
     }
 
@@ -134,6 +168,16 @@ public class BackupRestoreController {
         File selected = chooser.showDialog(window());
         if (selected != null) {
             backupFolderField.setText(selected.getAbsolutePath());
+        }
+    }
+
+    @FXML
+    private void browseAutoBackupFolder() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Select Automatic Backup Folder");
+        File selected = chooser.showDialog(window());
+        if (selected != null) {
+            autoBackupFolderField.setText(selected.getAbsolutePath());
         }
     }
 
@@ -195,8 +239,9 @@ public class BackupRestoreController {
         ProcessingDialog.run("Restore", "Restoring database backup...",
                 () -> restoreService.restoreBackup(request),
                 log -> {
-                    showInfo("Restore completed", "Restore completed. Please restart the application.");
-                    loadHistory();
+                    showInfo("Restore completed", "Restore completed. The application will restart now.");
+                    ApplicationRestartUtil.logoutAndRestart();
+                    Platform.exit();
                 },
                 throwable -> showError("Restore failed", processingMessage(throwable)));
     }
@@ -230,16 +275,120 @@ public class BackupRestoreController {
                 () -> backupSettingsService.updateSettings(settings),
                 saved -> {
                     loadSettings(saved);
-                    AutoBackupScheduler.getInstance().reloadSchedule();
                     showInfo("Settings saved", "Backup settings were saved.");
                 },
                 throwable -> showError("Settings failed", processingMessage(throwable)));
     }
 
+    @FXML
+    private void addBackupSchedule() {
+        BackupScheduleDto schedule = readScheduleForm(null);
+        if (schedule == null) {
+            return;
+        }
+        try {
+            backupScheduleService.addSchedule(schedule);
+            loadSchedules();
+            AutoBackupScheduler.getInstance().reloadSchedule();
+            clearScheduleForm();
+        } catch (RuntimeException exception) {
+            showError("Schedule failed", processingMessage(exception));
+        }
+    }
+
+    @FXML
+    private void updateBackupSchedule() {
+        BackupScheduleDto selected = backupScheduleTable.getSelectionModel().getSelectedItem();
+        BackupScheduleDto schedule = readScheduleForm(selected);
+        if (schedule == null) {
+            return;
+        }
+        try {
+            backupScheduleService.updateSchedule(schedule);
+            loadSchedules();
+            AutoBackupScheduler.getInstance().reloadSchedule();
+            clearScheduleForm();
+        } catch (RuntimeException exception) {
+            showError("Schedule failed", processingMessage(exception));
+        }
+    }
+
+    @FXML
+    private void toggleBackupSchedule() {
+        BackupScheduleDto selected = backupScheduleTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Schedule failed", "Select a schedule to update.");
+            return;
+        }
+        try {
+            backupScheduleService.setScheduleEnabled(selected, !selected.isEnabled());
+            loadSchedules();
+            AutoBackupScheduler.getInstance().reloadSchedule();
+            clearScheduleForm();
+        } catch (RuntimeException exception) {
+            showError("Schedule failed", processingMessage(exception));
+        }
+    }
+
+    @FXML
+    private void clearBackupScheduleForm() {
+        clearScheduleForm();
+    }
+
+    @FXML
+    private void deleteBackupSchedule() {
+        BackupScheduleDto selected = backupScheduleTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Schedule failed", "Select a schedule to delete.");
+            return;
+        }
+        Alert confirm = DialogStyler.apply(new Alert(Alert.AlertType.CONFIRMATION));
+        confirm.setTitle("Delete schedule");
+        confirm.setHeaderText("Delete automatic backup schedule?");
+        confirm.setContentText("Schedule: " + selected.getScheduleName());
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+        try {
+            backupScheduleService.deleteSchedule(selected);
+            loadSchedules();
+            AutoBackupScheduler.getInstance().reloadSchedule();
+            clearScheduleForm();
+        } catch (RuntimeException exception) {
+            showError("Schedule failed", processingMessage(exception));
+        }
+    }
+
+    @FXML
+    private void generateAutoBackupScript() {
+        try {
+            Path scriptPath = taskSchedulerScriptService.generateBackupBatScript();
+            autoBackupScriptPathLabel.setText("Generated: " + scriptPath);
+            autoBackupSchedulerCommandArea.setText(String.join(System.lineSeparator(),
+                    taskSchedulerScriptService.buildSchtasksCommands()));
+            showInfo("Script generated",
+                    "Use Windows Task Scheduler to run this file daily at the selected backup time.");
+        } catch (RuntimeException exception) {
+            showError("Script generation failed", processingMessage(exception));
+        }
+    }
+
     private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(browseBackupFolderButton, "fas-folder-open");
+        ButtonIconUtil.applyIcon(backupNowButton, "fas-database");
+        ButtonIconUtil.applyIcon(addScheduleButton, "fas-plus");
+        ButtonIconUtil.applyIcon(updateScheduleButton, "fas-edit");
+        ButtonIconUtil.applyIcon(clearScheduleButton, "fas-eraser");
+        ButtonIconUtil.applyIcon(toggleScheduleButton, "fas-toggle-on");
+        ButtonIconUtil.applyIcon(deleteScheduleButton, "fas-trash-alt");
+        ButtonIconUtil.applyIcon(browseAutoBackupFolderButton, "fas-folder-open");
+        ButtonIconUtil.applyIcon(saveSettingsButton, "fas-save");
+        ButtonIconUtil.applyIcon(generateAutoBackupScriptButton, "fas-file-code");
         ButtonIconUtil.applyIcon(backupSearchButton, "fas-search");
         ButtonIconUtil.applyIcon(backupClearButton, "fas-eraser");
         ButtonIconUtil.applyIcon(backupRefreshButton, "fas-sync-alt");
+        ButtonIconUtil.applyIcon(browseRestoreFileButton, "fas-file-upload");
+        ButtonIconUtil.applyIcon(restoreButton, "fas-upload");
         ButtonIconUtil.applyIcon(restoreSearchButton, "fas-search");
         ButtonIconUtil.applyIcon(restoreClearButton, "fas-eraser");
         ButtonIconUtil.applyIcon(restoreRefreshButton, "fas-sync-alt");
@@ -252,6 +401,8 @@ public class BackupRestoreController {
         backupStatusFilterComboBox.setValue(FILTER_ALL);
         restoreStatusFilterComboBox.setItems(FXCollections.observableArrayList(FILTER_ALL, "SUCCESS", "FAILED"));
         restoreStatusFilterComboBox.setValue(FILTER_ALL);
+        scheduleAmPmComboBox.setItems(FXCollections.observableArrayList("AM", "PM"));
+        scheduleAmPmComboBox.setValue("AM");
     }
 
     private void configurePermissions() {
@@ -259,6 +410,7 @@ public class BackupRestoreController {
         boolean canRestore = permissionGuard.can("backup.restore");
         boolean canManageSettings = permissionGuard.can("backup.settings.manage");
         boolean canView = permissionGuard.can("backup.view");
+        canManageBackupSettings = canManageSettings;
 
         backupNowButton.setVisible(canCreate);
         backupNowButton.setManaged(canCreate);
@@ -270,13 +422,22 @@ public class BackupRestoreController {
         restoreBackupFileField.setDisable(!canRestore);
         restoreConfirmationField.setDisable(!canRestore);
 
-        autoBackupEnabledCheckBox.setDisable(!canManageSettings);
-        autoBackupTimeField.setDisable(!canManageSettings);
+        scheduleNameField.setDisable(!canManageSettings);
+        scheduleHourSpinner.setDisable(!canManageSettings);
+        scheduleMinuteSpinner.setDisable(!canManageSettings);
+        scheduleAmPmComboBox.setDisable(!canManageSettings);
+        scheduleEnabledCheckBox.setDisable(!canManageSettings);
+        updateScheduleModeButtons();
+        autoBackupFolderField.setDisable(!canManageSettings);
+        browseAutoBackupFolderButton.setDisable(!canManageSettings);
         retentionDaysField.setDisable(!canManageSettings);
         mysqldumpPathField.setDisable(!canManageSettings);
         mysqlClientPathField.setDisable(!canManageSettings);
         saveSettingsButton.setVisible(canManageSettings);
         saveSettingsButton.setManaged(canManageSettings);
+        generateAutoBackupScriptButton.setVisible(false);
+        generateAutoBackupScriptButton.setManaged(false);
+        generateAutoBackupScriptButton.setDisable(true);
         browseBackupFolderButton.setDisable(!canCreate && !canManageSettings);
         backupSearchButton.setDisable(!canView);
         backupClearButton.setDisable(!canView);
@@ -311,21 +472,54 @@ public class BackupRestoreController {
         restoreStatusColumn.setCellFactory(column -> statusBadgeCell());
         restoreRestoredByColumn.setCellValueFactory(data -> value(data.getValue().getRestoredByFullName()));
         restoreErrorColumn.setCellValueFactory(data -> value(data.getValue().getErrorMessage()));
+
+        backupScheduleTable.setItems(backupSchedules);
+        scheduleNameColumn.setCellValueFactory(data -> value(data.getValue().getScheduleName()));
+        scheduleTimeColumn.setCellValueFactory(data -> value(formatTime12Hour(data.getValue().getBackupTime())));
+        scheduleEnabledColumn.setCellValueFactory(data -> value(data.getValue().isEnabled() ? "Enabled" : "Disabled"));
+        scheduleEnabledColumn.setCellFactory(column -> scheduleStatusBadgeCell());
+        backupScheduleTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, selected) -> {
+            if (selected != null) {
+                scheduleNameField.setText(selected.getScheduleName());
+                LocalTime backupTime = selected.getBackupTime();
+                if (backupTime != null) {
+                    scheduleHourSpinner.getValueFactory().setValue(hour12(backupTime));
+                    scheduleMinuteSpinner.getValueFactory().setValue(backupTime.getMinute());
+                    scheduleAmPmComboBox.setValue(backupTime.getHour() < 12 ? "AM" : "PM");
+                }
+                scheduleEnabledCheckBox.setSelected(selected.isEnabled());
+                toggleScheduleButton.setText(selected.isEnabled() ? "Disable Schedule" : "Enable Schedule");
+            }
+            updateScheduleModeButtons();
+        });
     }
 
     private void loadSettings() {
         loadSettings(backupSettingsService.getSettings());
     }
 
+    private void configureScheduleTimeInputs() {
+        scheduleHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 12, 8));
+        scheduleMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0));
+        scheduleHourSpinner.setEditable(true);
+        scheduleMinuteSpinner.setEditable(true);
+    }
+
     private void loadSettings(BackupSettingsDto settings) {
         backupFolderField.setText(nullToBlank(settings.getBackupFolder()));
-        autoBackupEnabledCheckBox.setSelected(settings.isAutoBackupEnabled());
-        autoBackupTimeField.setText(settings.getAutoBackupTime() == null ? "" : settings.getAutoBackupTime().toString());
+        autoBackupFolderField.setText(nullToBlank(settings.getBackupFolder()));
         retentionDaysField.setText(Integer.toString(settings.getRetentionDays()));
         mysqldumpPathField.setText(nullToBlank(settings.getMysqldumpPath()));
         mysqlClientPathField.setText(nullToBlank(settings.getMysqlClientPath()));
-        // TODO Phase later: create Windows Task Scheduler script generation.
-        schedulerTodoLabel.setText("Phase later: create Windows Task Scheduler script generation.");
+        schedulerTodoLabel.setText("");
+        schedulerTodoLabel.setVisible(false);
+        schedulerTodoLabel.setManaged(false);
+        generateAutoBackupScriptButton.setVisible(false);
+        generateAutoBackupScriptButton.setManaged(false);
+        autoBackupScriptPathLabel.setVisible(false);
+        autoBackupScriptPathLabel.setManaged(false);
+        autoBackupSchedulerCommandArea.setVisible(false);
+        autoBackupSchedulerCommandArea.setManaged(false);
     }
 
     private void loadHistory() {
@@ -333,6 +527,11 @@ public class BackupRestoreController {
             loadBackupLogs();
             loadRestoreLogs();
         }
+    }
+
+    private void loadSchedules() {
+        backupSchedules.setAll(backupScheduleService.getSchedules());
+        clearScheduleForm();
     }
 
     private void loadBackupLogs() {
@@ -368,13 +567,7 @@ public class BackupRestoreController {
 
     private BackupSettingsDto readSettingsForm() {
         BackupSettingsDto settings = new BackupSettingsDto();
-        settings.setBackupFolder(backupFolderField.getText());
-        settings.setAutoBackupEnabled(autoBackupEnabledCheckBox.isSelected());
-        LocalTime backupTime = parseBackupTime();
-        if (backupTime == null && autoBackupTimeField.getText() != null && !autoBackupTimeField.getText().isBlank()) {
-            return null;
-        }
-        settings.setAutoBackupTime(backupTime);
+        settings.setBackupFolder(autoBackupFolderField.getText());
         try {
             settings.setRetentionDays(Integer.parseInt(retentionDaysField.getText().strip()));
         } catch (RuntimeException exception) {
@@ -386,17 +579,55 @@ public class BackupRestoreController {
         return settings;
     }
 
-    private LocalTime parseBackupTime() {
-        String value = autoBackupTimeField.getText();
-        if (value == null || value.isBlank()) {
-            return null;
-        }
+    private BackupScheduleDto readScheduleForm(BackupScheduleDto selected) {
+        BackupScheduleDto schedule = new BackupScheduleDto();
+        schedule.setId(selected == null ? null : selected.getId());
+        schedule.setScheduleName(scheduleNameField.getText());
         try {
-            return LocalTime.parse(value.strip());
+            schedule.setBackupTime(readScheduleTime());
         } catch (RuntimeException exception) {
-            showError("Invalid backup time", "Backup time must use HH:mm format.");
+            showError("Invalid schedule time", processingMessage(exception));
             return null;
         }
+        schedule.setEnabled(scheduleEnabledCheckBox.isSelected());
+        return schedule;
+    }
+
+    private LocalTime readScheduleTime() {
+        try {
+            int hour = spinnerEditorValue(scheduleHourSpinner);
+            int minute = spinnerEditorValue(scheduleMinuteSpinner);
+            return LocalTime.of(hour24(hour, scheduleAmPmComboBox.getValue()), minute);
+        } catch (RuntimeException exception) {
+            throw new BackupScheduleService.BackupScheduleException("Backup time is invalid.");
+        }
+    }
+
+    private int spinnerEditorValue(Spinner<Integer> spinner) {
+        Integer value = spinner.getValueFactory().getConverter().fromString(spinner.getEditor().getText());
+        spinner.getValueFactory().setValue(value);
+        return value;
+    }
+
+    private void clearScheduleForm() {
+        scheduleNameField.clear();
+        scheduleHourSpinner.getValueFactory().setValue(8);
+        scheduleMinuteSpinner.getValueFactory().setValue(0);
+        scheduleAmPmComboBox.setValue("AM");
+        scheduleEnabledCheckBox.setSelected(true);
+        toggleScheduleButton.setText("Enable/Disable Schedule");
+        backupScheduleTable.getSelectionModel().clearSelection();
+        updateScheduleModeButtons();
+    }
+
+    private void updateScheduleModeButtons() {
+        boolean selected = backupScheduleTable != null
+                && backupScheduleTable.getSelectionModel().getSelectedItem() != null;
+        addScheduleButton.setDisable(!canManageBackupSettings || selected);
+        updateScheduleButton.setDisable(!canManageBackupSettings || !selected);
+        clearScheduleButton.setDisable(!canManageBackupSettings);
+        toggleScheduleButton.setDisable(!canManageBackupSettings || !selected);
+        deleteScheduleButton.setDisable(!canManageBackupSettings || !selected);
     }
 
     private SimpleStringProperty value(Object value) {
@@ -426,6 +657,29 @@ public class BackupRestoreController {
         };
     }
 
+    private TableCell<BackupScheduleDto, String> scheduleStatusBadgeCell() {
+        return new TableCell<>() {
+            private final Label badge = new Label();
+
+            {
+                badge.getStyleClass().add("status-badge");
+            }
+
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null || status.isBlank()) {
+                    setGraphic(null);
+                    return;
+                }
+                badge.setText(status);
+                badge.getStyleClass().removeAll("status-active", "status-inactive", "status-skipped");
+                badge.getStyleClass().add("Enabled".equals(status) ? "status-active" : "status-inactive");
+                setGraphic(badge);
+            }
+        };
+    }
+
     private TableCell<BackupLogDto, String> backupTypeBadgeCell() {
         return new TableCell<>() {
             private final Label badge = new Label();
@@ -443,10 +697,10 @@ public class BackupRestoreController {
                 }
                 badge.setText(backupType);
                 badge.getStyleClass().removeAll("status-active", "status-inactive", "status-skipped",
-                        "status-correction-note");
+                        "status-correction-note", "status-auto");
                 switch (backupType) {
                     case "MANUAL" -> badge.getStyleClass().add("status-active");
-                    case "AUTO" -> badge.getStyleClass().add("status-skipped");
+                    case "AUTO" -> badge.getStyleClass().add("status-auto");
                     case "PRE_RESTORE" -> badge.getStyleClass().add("status-correction-note");
                     default -> badge.getStyleClass().add("status-skipped");
                 }
@@ -485,6 +739,20 @@ public class BackupRestoreController {
 
     private String formatDateTime(LocalDateTime value) {
         return value == null ? "" : value.format(DATE_TIME_FORMAT);
+    }
+
+    private String formatTime12Hour(LocalTime value) {
+        return value == null ? "" : value.format(TIME_DISPLAY_FORMAT);
+    }
+
+    private int hour12(LocalTime value) {
+        int hour = value.getHour() % 12;
+        return hour == 0 ? 12 : hour;
+    }
+
+    private int hour24(int hour12, String amPm) {
+        int normalizedHour = hour12 % 12;
+        return "PM".equals(amPm) ? normalizedHour + 12 : normalizedHour;
     }
 
     private String formatFileSize(Long bytes) {

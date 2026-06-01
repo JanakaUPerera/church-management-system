@@ -36,7 +36,7 @@ public class BackupSettingsService {
         }
         validate(settings);
         BackupSettingsDto saved = backupSettingsRepository.updateSettings(settings);
-        activityLogService.logBackupSettingsUpdated(currentUser.getUserId(), saved.getBackupFolder(), saved.isAutoBackupEnabled());
+        activityLogService.logBackupSettingsUpdated(currentUser.getUserId(), saved.getBackupFolder());
         return saved;
     }
 

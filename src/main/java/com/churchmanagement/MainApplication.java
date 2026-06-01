@@ -6,6 +6,7 @@ import com.churchmanagement.config.MigrationRunner;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ApplicationRestartUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -53,9 +54,14 @@ public class MainApplication extends Application {
     public void stop() {
         AutoBackupScheduler.getInstance().cancel();
         DatabaseConfig.closeDataSource();
+        ApplicationRestartUtil.restartIfRequested();
     }
 
     public static void main(String[] args) {
+        launchUi(args);
+    }
+
+    public static void launchUi(String[] args) {
         launch(args);
     }
 

@@ -1,11 +1,14 @@
 package com.churchmanagement.service;
 
+import com.churchmanagement.config.MigrationRunner;
 import com.churchmanagement.dto.BackupLogDto;
 import com.churchmanagement.dto.BackupSettingsDto;
 import com.churchmanagement.dto.RestoreLogDto;
 import com.churchmanagement.dto.RestoreRequest;
 import com.churchmanagement.enums.BackupStatus;
+import com.churchmanagement.enums.BackupType;
 import com.churchmanagement.enums.RestoreStatus;
+import com.churchmanagement.repository.BackupRepository;
 import com.churchmanagement.repository.BackupSettingsRepository;
 import com.churchmanagement.repository.RestoreRepository;
 import com.churchmanagement.security.AuthContext;
@@ -19,26 +22,46 @@ import java.time.LocalDateTime;
 
 public class RestoreService {
     private final RestoreRepository restoreRepository;
+    private final BackupRepository backupRepository;
     private final BackupSettingsRepository backupSettingsRepository;
     private final BackupService backupService;
     private final BackupCommandBuilder commandBuilder;
     private final ActivityLogService activityLogService;
     private final BackupService.CommandRunner commandRunner;
+    private final Runnable postRestoreMigrationRunner;
 
     public RestoreService() {
-        this(new RestoreRepository(), new BackupSettingsRepository(), new BackupService(), new BackupCommandBuilder(),
-                new ActivityLogService(), new BackupService.ProcessCommandRunner());
+        this(new RestoreRepository(), new BackupRepository(), new BackupSettingsRepository(), new BackupService(), new BackupCommandBuilder(),
+                new ActivityLogService(), new BackupService.ProcessCommandRunner(), MigrationRunner::runMigrations);
     }
 
     public RestoreService(RestoreRepository restoreRepository, BackupSettingsRepository backupSettingsRepository,
                           BackupService backupService, BackupCommandBuilder commandBuilder,
                           ActivityLogService activityLogService, BackupService.CommandRunner commandRunner) {
+        this(restoreRepository, new BackupRepository(), backupSettingsRepository, backupService, commandBuilder, activityLogService,
+                commandRunner, MigrationRunner::runMigrations);
+    }
+
+    public RestoreService(RestoreRepository restoreRepository, BackupSettingsRepository backupSettingsRepository,
+                          BackupService backupService, BackupCommandBuilder commandBuilder,
+                          ActivityLogService activityLogService, BackupService.CommandRunner commandRunner,
+                          Runnable postRestoreMigrationRunner) {
+        this(restoreRepository, new BackupRepository(), backupSettingsRepository, backupService, commandBuilder,
+                activityLogService, commandRunner, postRestoreMigrationRunner);
+    }
+
+    public RestoreService(RestoreRepository restoreRepository, BackupRepository backupRepository,
+                          BackupSettingsRepository backupSettingsRepository, BackupService backupService,
+                          BackupCommandBuilder commandBuilder, ActivityLogService activityLogService,
+                          BackupService.CommandRunner commandRunner, Runnable postRestoreMigrationRunner) {
         this.restoreRepository = restoreRepository;
+        this.backupRepository = backupRepository;
         this.backupSettingsRepository = backupSettingsRepository;
         this.backupService = backupService;
         this.commandBuilder = commandBuilder;
         this.activityLogService = activityLogService;
         this.commandRunner = commandRunner;
+        this.postRestoreMigrationRunner = postRestoreMigrationRunner;
     }
 
     public RestoreLogDto restoreBackup(RestoreRequest request) {
@@ -55,6 +78,8 @@ public class RestoreService {
                 return failedRestore(backupFile, preRestoreBackup.getId(), currentUser,
                         "Restore failed. Please check selected SQL file.");
             }
+            postRestoreMigrationRunner.run();
+            preRestoreBackup = recordPreRestoreBackupAfterRestore(preRestoreBackup, currentUser);
             RestoreLogDto log = restoreRepository.insertRestoreLog(backupFile.getFileName().toString(),
                     backupFile.toAbsolutePath().toString(), preRestoreBackup.getId(), RestoreStatus.SUCCESS,
                     null, currentUser.getUserId(), LocalDateTime.now());
@@ -83,6 +108,14 @@ public class RestoreService {
         } catch (RuntimeException exception) {
             throw new RestoreException("Pre-restore backup failed. Restore was blocked.", exception);
         }
+    }
+
+    private BackupLogDto recordPreRestoreBackupAfterRestore(BackupLogDto preRestoreBackup,
+                                                            AuthenticatedUser currentUser) {
+        return backupRepository.insertBackupLog(BackupType.PRE_RESTORE, preRestoreBackup.getFileName(),
+                preRestoreBackup.getFilePath(), preRestoreBackup.getFileSizeBytes(), preRestoreBackup.getStatus(),
+                preRestoreBackup.getErrorMessage(), currentUser.getUserId(),
+                preRestoreBackup.getCreatedAt() == null ? LocalDateTime.now() : preRestoreBackup.getCreatedAt());
     }
 
     private RestoreLogDto failedRestore(Path backupFile, Long preRestoreBackupLogId, AuthenticatedUser currentUser,

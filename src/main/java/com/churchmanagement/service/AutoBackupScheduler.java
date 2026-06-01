@@ -1,9 +1,12 @@
 package com.churchmanagement.service;
 
-import com.churchmanagement.dto.BackupSettingsDto;
+import com.churchmanagement.dto.BackupScheduleDto;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -12,21 +15,21 @@ import java.util.concurrent.TimeUnit;
 public class AutoBackupScheduler {
     private static final AutoBackupScheduler INSTANCE = new AutoBackupScheduler();
 
-    private final BackupSettingsService backupSettingsService;
+    private final BackupScheduleService backupScheduleService;
     private final BackupService backupService;
     private final ScheduledExecutorService executorService;
-    private ScheduledFuture<?> scheduledBackup;
+    private final List<ScheduledFuture<?>> scheduledBackups = new ArrayList<>();
 
     public AutoBackupScheduler() {
-        this(new BackupSettingsService(), new BackupService());
+        this(new BackupScheduleService(), new BackupService());
     }
 
     public static AutoBackupScheduler getInstance() {
         return INSTANCE;
     }
 
-    public AutoBackupScheduler(BackupSettingsService backupSettingsService, BackupService backupService) {
-        this.backupSettingsService = backupSettingsService;
+    public AutoBackupScheduler(BackupScheduleService backupScheduleService, BackupService backupService) {
+        this.backupScheduleService = backupScheduleService;
         this.backupService = backupService;
         this.executorService = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "auto-backup-scheduler");
@@ -37,28 +40,31 @@ public class AutoBackupScheduler {
 
     public synchronized void reloadSchedule() {
         cancel();
-        BackupSettingsDto settings = backupSettingsService.getSettings();
-        if (!settings.isAutoBackupEnabled() || settings.getAutoBackupTime() == null) {
-            return;
+        for (BackupScheduleDto schedule : backupScheduleService.getEnabledSchedules()) {
+            scheduleDailyBackup(schedule);
         }
+    }
+
+    protected void scheduleDailyBackup(BackupScheduleDto schedule) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime nextRun = now.with(settings.getAutoBackupTime());
+        LocalDateTime nextRun = LocalDateTime.of(LocalDate.now(), schedule.getBackupTime());
         if (!nextRun.isAfter(now)) {
             nextRun = nextRun.plusDays(1);
         }
         long initialDelaySeconds = Duration.between(now, nextRun).toSeconds();
-        scheduledBackup = executorService.scheduleAtFixedRate(
+        ScheduledFuture<?> scheduledBackup = executorService.scheduleAtFixedRate(
                 backupService::createAutoBackup,
                 initialDelaySeconds,
                 Duration.ofDays(1).toSeconds(),
                 TimeUnit.SECONDS
         );
+        scheduledBackups.add(scheduledBackup);
     }
 
     public synchronized void cancel() {
-        if (scheduledBackup != null) {
+        for (ScheduledFuture<?> scheduledBackup : scheduledBackups) {
             scheduledBackup.cancel(false);
-            scheduledBackup = null;
         }
+        scheduledBackups.clear();
     }
 }

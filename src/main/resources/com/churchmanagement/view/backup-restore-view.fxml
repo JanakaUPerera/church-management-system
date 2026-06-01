@@ -8,10 +8,12 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
@@ -35,8 +37,8 @@
                 <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
                     <content>
                         <VBox spacing="16" styleClass="tab-content">
-                            <HBox spacing="16">
-                                <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card" HBox.hgrow="ALWAYS">
+                            <VBox spacing="16">
+                                <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card">
                                     <Label styleClass="backup-card-title" text="Manual Backup"/>
                                     <Label styleClass="muted-label" text="Create an on-demand database backup."/>
                                     <VBox spacing="6">
@@ -50,36 +52,83 @@
                                     <Button fx:id="backupNowButton" maxWidth="Infinity" onAction="#createManualBackup" styleClass="primary-button" text="Backup Now"/>
                                 </VBox>
 
-                                <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card" HBox.hgrow="ALWAYS">
+                                <VBox maxWidth="Infinity" spacing="12" styleClass="backup-restore-card">
                                     <Label styleClass="backup-card-title" text="Automatic Backup"/>
-                                    <Label styleClass="muted-label" text="Schedule backups while the application is open."/>
-                                    <CheckBox fx:id="autoBackupEnabledCheckBox" text="Enable Auto Backup"/>
-                                    <GridPane hgap="10" vgap="10">
-                                        <columnConstraints>
-                                            <ColumnConstraints percentWidth="50"/>
-                                            <ColumnConstraints percentWidth="50"/>
-                                        </columnConstraints>
-                                        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                            <Label styleClass="field-label" text="Backup Time"/>
-                                            <TextField fx:id="autoBackupTimeField" promptText="HH:mm"/>
+                                    <Label styleClass="muted-label" text="Schedule one or more automatic backups per day."/>
+                                    <HBox spacing="16">
+                                        <VBox spacing="10" HBox.hgrow="ALWAYS">
+                                            <GridPane hgap="10" vgap="10">
+                                                <columnConstraints>
+                                                    <ColumnConstraints percentWidth="50"/>
+                                                    <ColumnConstraints percentWidth="50"/>
+                                                </columnConstraints>
+                                                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                                    <Label styleClass="field-label" text="Schedule Name"/>
+                                                    <TextField fx:id="scheduleNameField" promptText="Morning backup"/>
+                                                </VBox>
+                                                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                                    <Label styleClass="field-label" text="Backup Time"/>
+                                                    <HBox spacing="8">
+                                                        <Spinner fx:id="scheduleHourSpinner" editable="true" prefWidth="78"/>
+                                                        <Label text=":"/>
+                                                        <Spinner fx:id="scheduleMinuteSpinner" editable="true" prefWidth="78"/>
+                                                        <ComboBox fx:id="scheduleAmPmComboBox" prefWidth="82"/>
+                                                    </HBox>
+                                                </VBox>
+                                                <CheckBox fx:id="scheduleEnabledCheckBox" selected="true" text="Enabled" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                                                <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                    <Button fx:id="addScheduleButton" onAction="#addBackupSchedule" text="Add Schedule"/>
+                                                    <Button fx:id="updateScheduleButton" onAction="#updateBackupSchedule" text="Edit Schedule"/>
+                                                    <Button fx:id="clearScheduleButton" onAction="#clearBackupScheduleForm" text="Clear"/>
+                                                </HBox>
+                                            </GridPane>
+                                            <TableView fx:id="backupScheduleTable" prefHeight="160">
+                                                <columns>
+                                                    <TableColumn fx:id="scheduleNameColumn" prefWidth="220" text="Schedule"/>
+                                                    <TableColumn fx:id="scheduleTimeColumn" prefWidth="100" text="Time"/>
+                                                    <TableColumn fx:id="scheduleEnabledColumn" prefWidth="120" text="Status"/>
+                                                </columns>
+                                            </TableView>
+                                            <HBox spacing="8">
+                                                <Button fx:id="toggleScheduleButton" maxWidth="Infinity" onAction="#toggleBackupSchedule" text="Enable/Disable Schedule" HBox.hgrow="ALWAYS"/>
+                                                <Button fx:id="deleteScheduleButton" maxWidth="Infinity" onAction="#deleteBackupSchedule" text="Delete Schedule" HBox.hgrow="ALWAYS"/>
+                                            </HBox>
                                         </VBox>
-                                        <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                            <Label styleClass="field-label" text="Retention Days"/>
-                                            <TextField fx:id="retentionDaysField" promptText="30"/>
+
+                                        <VBox spacing="10" HBox.hgrow="ALWAYS">
+                                            <VBox spacing="6">
+                                                <Label styleClass="field-label" text="Automatic Backup Folder"/>
+                                                <HBox spacing="8">
+                                                    <TextField fx:id="autoBackupFolderField" promptText="Automatic backup folder" HBox.hgrow="ALWAYS"/>
+                                                    <Button fx:id="browseAutoBackupFolderButton" onAction="#browseAutoBackupFolder" text="Browse"/>
+                                                </HBox>
+                                            </VBox>
+                                            <VBox spacing="6">
+                                                <Label styleClass="field-label" text="Retention Days"/>
+                                                <TextField fx:id="retentionDaysField" promptText="30"/>
+                                            </VBox>
+                                            <VBox spacing="6">
+                                                <Label styleClass="field-label" text="mysqldump Path"/>
+                                                <TextField fx:id="mysqldumpPathField" promptText="Optional"/>
+                                            </VBox>
+                                            <VBox spacing="6">
+                                                <Label styleClass="field-label" text="mysql Client Path"/>
+                                                <TextField fx:id="mysqlClientPathField" promptText="Optional"/>
+                                            </VBox>
+                                            <Region VBox.vgrow="ALWAYS"/>
+                                            <Label fx:id="schedulerTodoLabel" styleClass="muted-label"/>
+                                            <Button fx:id="saveSettingsButton" maxWidth="Infinity" onAction="#saveSettings" styleClass="primary-button" text="Save Settings"/>
+                                            <Button fx:id="generateAutoBackupScriptButton" maxWidth="Infinity" onAction="#generateAutoBackupScript" text="Generate Auto Backup Script"/>
+                                            <Label fx:id="autoBackupScriptPathLabel" styleClass="muted-label" wrapText="true"/>
+                                            <TextArea fx:id="autoBackupSchedulerCommandArea"
+                                                      editable="false"
+                                                      prefRowCount="3"
+                                                      promptText="Task Scheduler command will appear here."
+                                                      wrapText="true"/>
                                         </VBox>
-                                    </GridPane>
-                                    <VBox spacing="6">
-                                        <Label styleClass="field-label" text="mysqldump Path"/>
-                                        <TextField fx:id="mysqldumpPathField" promptText="Optional"/>
-                                    </VBox>
-                                    <VBox spacing="6">
-                                        <Label styleClass="field-label" text="mysql Client Path"/>
-                                        <TextField fx:id="mysqlClientPathField" promptText="Optional"/>
-                                    </VBox>
-                                    <Label fx:id="schedulerTodoLabel" styleClass="muted-label"/>
-                                    <Button fx:id="saveSettingsButton" maxWidth="Infinity" onAction="#saveSettings" styleClass="primary-button" text="Save Settings"/>
+                                    </HBox>
                                 </VBox>
-                            </HBox>
+                            </VBox>
 
                             <VBox fx:id="backupHistorySection" maxWidth="Infinity" spacing="10" styleClass="backup-restore-card">
                                 <HBox alignment="CENTER_LEFT">
@@ -120,7 +169,7 @@
                                         <TableColumn fx:id="backupTypeColumn" prefWidth="110" text="Type"/>
                                         <TableColumn fx:id="backupFileNameColumn" prefWidth="260" text="File Name"/>
                                         <TableColumn fx:id="backupFileSizeColumn" prefWidth="100" text="File Size"/>
-                                        <TableColumn fx:id="backupStatusColumn" prefWidth="90" text="Status"/>
+                                        <TableColumn fx:id="backupStatusColumn" prefWidth="120" text="Status"/>
                                         <TableColumn fx:id="backupCreatedByColumn" prefWidth="150" text="Created By"/>
                                         <TableColumn fx:id="backupErrorColumn" prefWidth="260" text="Error"/>
                                     </columns>
@@ -158,7 +207,7 @@
                                     <Label styleClass="field-label" text="Confirmation"/>
                                     <TextField fx:id="restoreConfirmationField" promptText="Type RESTORE"/>
                                 </VBox>
-                                <Button fx:id="restoreButton" maxWidth="Infinity" onAction="#restoreBackup" styleClass="danger-button" text="Restore"/>
+                                <Button fx:id="restoreButton" maxWidth="Infinity" onAction="#restoreBackup" styleClass="primary-button" text="Restore"/>
                             </VBox>
 
                             <VBox fx:id="restoreHistorySection" maxWidth="Infinity" spacing="10" styleClass="backup-restore-card">
@@ -194,7 +243,7 @@
                                     <columns>
                                         <TableColumn fx:id="restoreDateColumn" prefWidth="130" text="Date"/>
                                         <TableColumn fx:id="restoreFileNameColumn" prefWidth="280" text="File Name"/>
-                                        <TableColumn fx:id="restoreStatusColumn" prefWidth="90" text="Status"/>
+                                        <TableColumn fx:id="restoreStatusColumn" prefWidth="120" text="Status"/>
                                         <TableColumn fx:id="restoreRestoredByColumn" prefWidth="160" text="Restored By"/>
                                         <TableColumn fx:id="restoreErrorColumn" prefWidth="320" text="Error"/>
                                     </columns>

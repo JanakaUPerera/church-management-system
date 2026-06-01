@@ -30,4 +30,7 @@ Thumbs.db
 receipts/
 
 # Backups
-Backups/
+backups/
+
+# Logs
+logs/

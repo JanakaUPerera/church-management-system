@@ -55,6 +55,7 @@
 .processing-dialog-label {
     -fx-text-fill: #78350f;
     -fx-font-weight: bold !important;
+    -fx-font-size: 15px;
 }
 
 /* ═══════════════════════════════════════════════
@@ -607,7 +608,7 @@
 
 .login-field-label {
     -fx-text-fill: #fde68a;
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
 
@@ -793,13 +794,14 @@
 }
 
 .field-label {
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-text-fill: #78350f;
 }
 
 .muted-label {
     -fx-text-fill: #92400e;
+    -fx-font-weight: normal;
 }
 
 .warning-label {
@@ -865,6 +867,11 @@
 .status-skipped {
     -fx-background-color: #fef3c7;
     -fx-text-fill: #92400e;
+}
+
+.status-auto {
+    -fx-background-color: #ede9fe;
+    -fx-text-fill: #5b21b6;
 }
 
 .status-correction-note {

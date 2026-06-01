@@ -2,9 +2,11 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.dto.BackupLogDto;
 import com.churchmanagement.dto.BackupSettingsDto;
+import com.churchmanagement.dto.RestoreLogDto;
 import com.churchmanagement.dto.RestoreRequest;
 import com.churchmanagement.enums.BackupStatus;
 import com.churchmanagement.enums.BackupType;
+import com.churchmanagement.enums.RestoreStatus;
 import com.churchmanagement.repository.BackupRepository;
 import com.churchmanagement.repository.BackupSettingsRepository;
 import com.churchmanagement.repository.RestoreRepository;
@@ -91,6 +93,18 @@ class RestoreServiceTest {
         assertEquals("Pre-restore backup failed. Restore was blocked.", exception.getMessage());
     }
 
+    @Test
+    void runsMigrationsBeforeSavingSuccessfulRestoreLog() throws Exception {
+        TrackingRestoreRepository restoreRepository = new TrackingRestoreRepository();
+        RestoreService service = restoreService(restoreRepository, new SuccessfulPreRestoreBackupService(),
+                (command, inputFile) -> 0, () -> restoreRepository.migrationsRan = true);
+
+        service.restoreBackup(validRequest());
+
+        assertEquals(true, restoreRepository.migrationsRanBeforeInsert);
+        assertEquals(100L, restoreRepository.savedPreRestoreBackupLogId);
+    }
+
     private RestoreRequest validRequest() throws Exception {
         Path file = tempDir.resolve("backup.sql");
         Files.writeString(file, "select 1;");
@@ -101,15 +115,23 @@ class RestoreServiceTest {
     }
 
     private RestoreService restoreService(BackupService backupService, BackupService.CommandRunner commandRunner) {
+        return restoreService(new RestoreRepository((DataSource) null), backupService, commandRunner, () -> {
+        });
+    }
+
+    private RestoreService restoreService(RestoreRepository restoreRepository, BackupService backupService,
+                                          BackupService.CommandRunner commandRunner, Runnable migrationRunner) {
         BackupSettingsDto settings = new BackupSettingsDto();
         settings.setBackupFolder(tempDir.toString());
-        return new RestoreService(new RestoreRepository((DataSource) null),
+        return new RestoreService(restoreRepository,
+                new TrackingBackupRepository(),
                 new FakeBackupSettingsRepository(settings),
                 backupService,
                 new BackupCommandBuilder(new BackupCommandBuilder.DatabaseCredentials(
                         "localhost", 3306, "church_collection", "root", "secret")),
-                new ActivityLogService(null),
-                commandRunner);
+                new FakeActivityLogService(),
+                commandRunner,
+                migrationRunner);
     }
 
     private static class SuccessfulPreRestoreBackupService extends BackupService {
@@ -125,6 +147,9 @@ class RestoreServiceTest {
             BackupLogDto log = new BackupLogDto();
             log.setId(99L);
             log.setBackupType(BackupType.PRE_RESTORE);
+            log.setFileName("church_collection_pre_restore_20260601_120000.sql");
+            log.setFilePath("D:/backups/church_collection_pre_restore_20260601_120000.sql");
+            log.setFileSizeBytes(128L);
             log.setStatus(BackupStatus.SUCCESS);
             log.setCreatedAt(LocalDateTime.now());
             return log;
@@ -149,6 +174,73 @@ class RestoreServiceTest {
         @Override
         public BackupSettingsDto getSettings() {
             return settings;
+        }
+    }
+
+    private static class FakeActivityLogService extends ActivityLogService {
+        private FakeActivityLogService() {
+            super(null);
+        }
+
+        @Override
+        public void logRestoreStarted(Long userId, String backupFilePath, Long preRestoreBackupLogId) {
+        }
+
+        @Override
+        public void logRestoreSuccess(Long userId, String backupFilePath, Long preRestoreBackupLogId) {
+        }
+
+        @Override
+        public void logRestoreFailed(Long userId, String backupFilePath, String reason) {
+        }
+    }
+
+    private static class TrackingRestoreRepository extends RestoreRepository {
+        private boolean migrationsRan;
+        private boolean migrationsRanBeforeInsert;
+        private Long savedPreRestoreBackupLogId;
+
+        private TrackingRestoreRepository() {
+            super((DataSource) null);
+        }
+
+        @Override
+        public RestoreLogDto insertRestoreLog(String backupFileName, String backupFilePath, Long preRestoreBackupLogId,
+                                              RestoreStatus status, String errorMessage, long restoredByUserId,
+                                              LocalDateTime restoredAt) {
+            migrationsRanBeforeInsert = migrationsRan;
+            savedPreRestoreBackupLogId = preRestoreBackupLogId;
+            RestoreLogDto log = new RestoreLogDto();
+            log.setId(1L);
+            log.setBackupFileName(backupFileName);
+            log.setBackupFilePath(backupFilePath);
+            log.setPreRestoreBackupLogId(preRestoreBackupLogId);
+            log.setStatus(status);
+            log.setErrorMessage(errorMessage);
+            log.setRestoredAt(restoredAt);
+            return log;
+        }
+    }
+
+    private static class TrackingBackupRepository extends BackupRepository {
+        private TrackingBackupRepository() {
+            super((DataSource) null);
+        }
+
+        @Override
+        public BackupLogDto insertBackupLog(BackupType backupType, String fileName, String filePath, Long fileSizeBytes,
+                                            BackupStatus status, String errorMessage, Long createdByUserId,
+                                            LocalDateTime createdAt) {
+            BackupLogDto log = new BackupLogDto();
+            log.setId(100L);
+            log.setBackupType(backupType);
+            log.setFileName(fileName);
+            log.setFilePath(filePath);
+            log.setFileSizeBytes(fileSizeBytes);
+            log.setStatus(status);
+            log.setErrorMessage(errorMessage);
+            log.setCreatedAt(createdAt);
+            return log;
         }
     }
 }

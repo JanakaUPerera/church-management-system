@@ -62,6 +62,7 @@ public class ActivityLogService {
     public static final String RESTORE_FAILED = "RESTORE_FAILED";
     public static final String BACKUP_SETTINGS_UPDATED = "BACKUP_SETTINGS_UPDATED";
     public static final String BACKUP_RETENTION_CLEANUP = "BACKUP_RETENTION_CLEANUP";
+    public static final String AUTO_BACKUP_SCRIPT_GENERATED = "AUTO_BACKUP_SCRIPT_GENERATED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -271,14 +272,17 @@ public class ActivityLogService {
                 + ", reason: " + nullToBlank(reason));
     }
 
-    public void logBackupSettingsUpdated(Long userId, String backupFolder, boolean autoBackupEnabled) {
-        log(userId, BACKUP_SETTINGS_UPDATED, "backup_folder: " + nullToBlank(backupFolder)
-                + ", auto_backup_enabled: " + autoBackupEnabled);
+    public void logBackupSettingsUpdated(Long userId, String backupFolder) {
+        log(userId, BACKUP_SETTINGS_UPDATED, "backup_folder: " + nullToBlank(backupFolder));
     }
 
     public void logBackupRetentionCleanup(Long userId, String backupFolder, int deletedCount) {
         log(userId, BACKUP_RETENTION_CLEANUP, "backup_folder: " + nullToBlank(backupFolder)
                 + ", deleted_count: " + deletedCount);
+    }
+
+    public void logAutoBackupScriptGenerated(Long userId, String scriptPath) {
+        log(userId, AUTO_BACKUP_SCRIPT_GENERATED, "script_path: " + nullToBlank(scriptPath));
     }
 
     private void log(Long userId, String action, String details) {

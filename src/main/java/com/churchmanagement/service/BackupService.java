@@ -49,12 +49,12 @@ public class BackupService {
     }
 
     public BackupLogDto createAutoBackup() {
-        AuthenticatedUser currentUser = requireUser();
+        AuthenticatedUser currentUser = AuthContext.getCurrentUser().orElse(null);
         BackupSettingsDto settings = backupSettingsRepository.getSettings();
         BackupLogDto log = createBackup(BackupType.AUTO, settings.getBackupFolder(), currentUser);
         if (log.getStatus() == BackupStatus.SUCCESS) {
             int deleted = backupFileService.deleteOldBackups(settings.getRetentionDays(), settings.getBackupFolder());
-            activityLogService.logBackupRetentionCleanup(currentUser.getUserId(), settings.getBackupFolder(), deleted);
+            activityLogService.logBackupRetentionCleanup(userId(currentUser), settings.getBackupFolder(), deleted);
         }
         return log;
     }
@@ -82,8 +82,8 @@ public class BackupService {
             }
             long fileSize = backupFileService.fileSize(backupFile);
             BackupLogDto log = backupRepository.insertBackupLog(backupType, fileName, backupFile.toAbsolutePath().toString(),
-                    fileSize, BackupStatus.SUCCESS, null, currentUser.getUserId(), LocalDateTime.now());
-            activityLogService.logBackupCreated(currentUser.getUserId(), successAction(backupType),
+                    fileSize, BackupStatus.SUCCESS, null, userId(currentUser), LocalDateTime.now());
+            activityLogService.logBackupCreated(userId(currentUser), successAction(backupType),
                     log.getFilePath(), log.getFileSizeBytes());
             return log;
         } catch (IOException exception) {
@@ -99,10 +99,14 @@ public class BackupService {
     private BackupLogDto failedBackup(BackupType backupType, String fileName, Path backupFile,
                                       AuthenticatedUser currentUser, String message) {
         BackupLogDto log = backupRepository.insertBackupLog(backupType, fileName, backupFile.toAbsolutePath().toString(),
-                backupFileService.fileSize(backupFile), BackupStatus.FAILED, message, currentUser.getUserId(),
+                backupFileService.fileSize(backupFile), BackupStatus.FAILED, message, userId(currentUser),
                 LocalDateTime.now());
-        activityLogService.logBackupFailed(currentUser.getUserId(), failureAction(backupType), log.getFilePath(), message);
+        activityLogService.logBackupFailed(userId(currentUser), failureAction(backupType), log.getFilePath(), message);
         throw new BackupException(message);
+    }
+
+    private Long userId(AuthenticatedUser user) {
+        return user == null ? null : user.getUserId();
     }
 
     private AuthenticatedUser requireUser() {

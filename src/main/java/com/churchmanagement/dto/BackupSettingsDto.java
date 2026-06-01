@@ -1,11 +1,7 @@
 package com.churchmanagement.dto;
 
-import java.time.LocalTime;
-
 public class BackupSettingsDto {
     private String backupFolder;
-    private boolean autoBackupEnabled;
-    private LocalTime autoBackupTime;
     private int retentionDays = 30;
     private String mysqldumpPath;
     private String mysqlClientPath;
@@ -16,22 +12,6 @@ public class BackupSettingsDto {
 
     public void setBackupFolder(String backupFolder) {
         this.backupFolder = backupFolder;
-    }
-
-    public boolean isAutoBackupEnabled() {
-        return autoBackupEnabled;
-    }
-
-    public void setAutoBackupEnabled(boolean autoBackupEnabled) {
-        this.autoBackupEnabled = autoBackupEnabled;
-    }
-
-    public LocalTime getAutoBackupTime() {
-        return autoBackupTime;
-    }
-
-    public void setAutoBackupTime(LocalTime autoBackupTime) {
-        this.autoBackupTime = autoBackupTime;
     }
 
     public int getRetentionDays() {
