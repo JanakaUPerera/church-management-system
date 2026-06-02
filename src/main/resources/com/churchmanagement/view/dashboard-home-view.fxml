@@ -1,13 +1,236 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="10" styleClass="placeholder-page" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
-    <padding>
-        <Insets bottom="28" left="28" right="28" top="28"/>
-    </padding>
-    <Label styleClass="placeholder-title" text="Dashboard"/>
-    <Label styleClass="placeholder-text" text="Overview widgets and collection summaries will appear here."/>
-</VBox>
+<TabPane styleClass="dashboard-tab-pane"
+         xmlns="http://javafx.com/javafx/21"
+         xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="com.churchmanagement.controller.DashboardHomeController">
+    <tabs>
+        <Tab closable="false" text="Weekly Data">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+                    <VBox spacing="14" styleClass="dashboard-home-page">
+                        <padding>
+                            <Insets bottom="8" left="2" right="2" top="12"/>
+                        </padding>
+
+                        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="dashboard-filter-bar">
+                            <Label styleClass="field-label" text="Week"/>
+                            <Button onAction="#previousWeek" styleClass="secondary-button" text="Previous Week"/>
+                            <DatePicker fx:id="weeklyWeekDatePicker" onAction="#weeklyFiltersChanged" prefWidth="160"/>
+                            <Button onAction="#nextWeek" styleClass="secondary-button" text="Next Week"/>
+                            <Label styleClass="field-label" text="Region"/>
+                            <ComboBox fx:id="weeklyRegionComboBox" onAction="#weeklyFiltersChanged" prefWidth="240" promptText="All Regions"/>
+                            <Button onAction="#clearWeeklyRegionFilter" styleClass="secondary-button" text="All"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button onAction="#refreshWeekly" styleClass="primary-button" text="Refresh"/>
+                        </HBox>
+
+                        <HBox spacing="10">
+                            <VBox fx:id="weeklyReceiptCards" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Completed Regions"/>
+                                <Label fx:id="completedRegionsLabel" styleClass="dashboard-card-value" text="0 / 0"/>
+                            </VBox>
+                            <VBox fx:id="submittedChurchesBox" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Submitted Churches"/>
+                                <Label fx:id="submittedChurchesLabel" styleClass="dashboard-card-value" text="0 / 0"/>
+                            </VBox>
+                            <VBox fx:id="pendingChurchesBox" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Pending Churches"/>
+                                <Label fx:id="pendingChurchesLabel" styleClass="dashboard-card-value" text="0"/>
+                            </VBox>
+                            <VBox fx:id="lateSubmissionsBox" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Late Submissions"/>
+                                <Label fx:id="lateSubmissionsLabel" styleClass="dashboard-card-value" text="0"/>
+                            </VBox>
+                            <VBox fx:id="todaysReceiptsSummaryBox" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Today's Receipts Total"/>
+                                <Label fx:id="todaysReceiptsTotalLabel" styleClass="dashboard-card-value-small" text="Rs. 0.00"/>
+                            </VBox>
+                            <VBox fx:id="weeklySmsCard" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="SMS Failed Count"/>
+                                <Label fx:id="smsFailedCountLabel" styleClass="dashboard-card-value" text="0"/>
+                            </VBox>
+                            <VBox fx:id="weeklyBackupCard" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Last Backup Status"/>
+                                <Label fx:id="lastBackupStatusLabel" styleClass="dashboard-card-value-small" text="No backups"/>
+                                <Label fx:id="lastBackupTimeLabel" styleClass="dashboard-card-time" text=""/>
+                            </VBox>
+                        </HBox>
+
+                        <GridPane hgap="12">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33"/>
+                                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33"/>
+                                <ColumnConstraints hgrow="ALWAYS" percentWidth="33.34"/>
+                            </columnConstraints>
+                            <VBox fx:id="weeklyCollectionAmountsBox"
+                                  spacing="10"
+                                  maxWidth="Infinity"
+                                  styleClass="dashboard-summary-card"
+                                  GridPane.columnIndex="0"/>
+                            <VBox fx:id="topWeeklyChurchesBox"
+                                  spacing="10"
+                                  maxWidth="Infinity"
+                                  styleClass="dashboard-summary-card"
+                                  GridPane.columnIndex="1"/>
+                            <VBox fx:id="topWeeklyRegionsBox"
+                                  spacing="10"
+                                  maxWidth="Infinity"
+                                  styleClass="dashboard-summary-card"
+                                  GridPane.columnIndex="2"/>
+                        </GridPane>
+
+                        <VBox fx:id="weeklyChartsSection" spacing="12" VBox.vgrow="ALWAYS">
+                            <GridPane hgap="12" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                </columnConstraints>
+                                <rowConstraints>
+                                    <RowConstraints vgrow="ALWAYS"/>
+                                    <RowConstraints vgrow="ALWAYS"/>
+                                </rowConstraints>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <PieChart fx:id="submittedPendingPieChart" prefHeight="300" VBox.vgrow="ALWAYS"/>
+                                </VBox>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <VBox spacing="8" styleClass="dashboard-progress-panel" VBox.vgrow="ALWAYS">
+                                        <Label styleClass="dashboard-progress-title" text="Region-wise Submitted Churches"/>
+                                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-progress-scroll-pane" VBox.vgrow="ALWAYS">
+                                            <content>
+                                                <VBox fx:id="regionSubmissionProgressRowsBox" spacing="8"/>
+                                            </content>
+                                        </ScrollPane>
+                                    </VBox>
+                                </VBox>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                                    <BarChart fx:id="regionWeeklyCollectionChart" prefHeight="300" VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis fx:id="regionWeeklyYAxis"/>
+                                        </yAxis>
+                                    </BarChart>
+                                </VBox>
+                            </GridPane>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+
+        <Tab closable="false" text="Trending Charts">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+                    <VBox spacing="14" styleClass="dashboard-home-page">
+                        <padding>
+                            <Insets bottom="8" left="2" right="2" top="12"/>
+                        </padding>
+
+                        <VBox spacing="10" styleClass="dashboard-filter-bar">
+                            <HBox alignment="CENTER_LEFT" spacing="12">
+                                <Label styleClass="field-label" text="Date From"/>
+                                <DatePicker fx:id="trendingDateFromPicker" onAction="#trendingFiltersChanged" prefWidth="150"/>
+                                <Label styleClass="field-label" text="Date To"/>
+                                <DatePicker fx:id="trendingDateToPicker" onAction="#trendingFiltersChanged" prefWidth="150"/>
+                                <Label styleClass="field-label" text="Region"/>
+                                <ComboBox fx:id="trendingRegionComboBox" onAction="#trendingFiltersChanged" prefWidth="230" promptText="All Regions"/>
+                                <Button onAction="#clearTrendingRegionFilter" styleClass="secondary-button" text="All"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="trendingMessageLabel" styleClass="value-label"/>
+                                <Button onAction="#refreshTrending" styleClass="primary-button" text="Refresh"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Button onAction="#applyMonthRange" styleClass="secondary-button" text="Month"/>
+                                <Button onAction="#applyQuarterRange" styleClass="secondary-button" text="Quarter"/>
+                                <Button onAction="#applyHalfYearRange" styleClass="secondary-button" text="Half Year"/>
+                                <Button onAction="#applyYearRange" styleClass="secondary-button" text="Year"/>
+                            </HBox>
+                        </VBox>
+
+                        <VBox fx:id="trendingChartsSection" spacing="12" VBox.vgrow="ALWAYS">
+                            <GridPane hgap="12" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                </columnConstraints>
+                                <rowConstraints>
+                                    <RowConstraints vgrow="ALWAYS"/>
+                                    <RowConstraints vgrow="ALWAYS"/>
+                                </rowConstraints>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <LineChart fx:id="totalCollectionTrendChart" prefHeight="310" VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis fx:id="totalCollectionTrendYAxis"/>
+                                        </yAxis>
+                                    </LineChart>
+                                </VBox>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <LineChart fx:id="collectionTypeTrendChart" prefHeight="310" VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis fx:id="collectionTypeTrendYAxis"/>
+                                        </yAxis>
+                                    </LineChart>
+                                </VBox>
+                                <VBox spacing="8" styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <HBox alignment="CENTER_LEFT" spacing="8">
+                                        <Label styleClass="field-label" text="Church Trends"/>
+                                        <MenuButton fx:id="trendingChurchMenuButton" text="Top churches" prefWidth="260" styleClass="dashboard-menu-button"/>
+                                        <Button onAction="#clearTrendingChurchSelection" styleClass="secondary-button" text="Clear"/>
+                                    </HBox>
+                                    <LineChart fx:id="churchCollectionTrendChart" prefHeight="276" VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis fx:id="churchCollectionTrendYAxis"/>
+                                        </yAxis>
+                                    </LineChart>
+                                </VBox>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <LineChart fx:id="regionCollectionTrendChart" prefHeight="310" VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <CategoryAxis/>
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis fx:id="regionCollectionTrendYAxis"/>
+                                        </yAxis>
+                                    </LineChart>
+                                </VBox>
+                            </GridPane>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+    </tabs>
+</TabPane>

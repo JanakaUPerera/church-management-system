@@ -70,6 +70,12 @@ public class ActivityLogService {
     public static final String ACTIVITY_LOGS_VIEWED = "ACTIVITY_LOGS_VIEWED";
     public static final String ACTIVITY_LOGS_SEARCHED = "ACTIVITY_LOGS_SEARCHED";
     public static final String ACTIVITY_LOG_DETAILS_VIEWED = "ACTIVITY_LOG_DETAILS_VIEWED";
+    public static final String DASHBOARD_VIEWED = "DASHBOARD_VIEWED";
+    public static final String DASHBOARD_FILTER_CHANGED = "DASHBOARD_FILTER_CHANGED";
+    public static final String DASHBOARD_WEEKLY_VIEWED = "DASHBOARD_WEEKLY_VIEWED";
+    public static final String DASHBOARD_TRENDING_VIEWED = "DASHBOARD_TRENDING_VIEWED";
+    public static final String DASHBOARD_WEEKLY_FILTER_CHANGED = "DASHBOARD_WEEKLY_FILTER_CHANGED";
+    public static final String DASHBOARD_TRENDING_FILTER_CHANGED = "DASHBOARD_TRENDING_FILTER_CHANGED";
     public static final String USER_CREATED = "USER_CREATED";
     public static final String USER_UPDATED = "USER_UPDATED";
     public static final String USER_ACTIVATED = "USER_ACTIVATED";
@@ -352,6 +358,39 @@ public class ActivityLogService {
     public void logActivityLogDetailsViewed(Long userId, long activityLogId) {
         log(userId, ACTIVITY_LOG_DETAILS_VIEWED, "Activity Logs", String.valueOf(activityLogId),
                 "activity_log_id: " + activityLogId);
+    }
+
+    public void logDashboardViewed(Long userId) {
+        log(userId, DASHBOARD_VIEWED, "Dashboard", null, "Dashboard viewed");
+    }
+
+    public void logDashboardFilterChanged(Long userId, String weekStartDate, String month, String region) {
+        log(userId, DASHBOARD_FILTER_CHANGED, "Dashboard", null,
+                "week_start_date: " + nullToBlank(weekStartDate)
+                        + ", month: " + nullToBlank(month)
+                        + ", region: " + nullToBlank(region));
+    }
+
+    public void logDashboardWeeklyViewed(Long userId) {
+        log(userId, DASHBOARD_WEEKLY_VIEWED, "Dashboard", null, "Weekly dashboard viewed");
+    }
+
+    public void logDashboardTrendingViewed(Long userId) {
+        log(userId, DASHBOARD_TRENDING_VIEWED, "Dashboard", null, "Trending dashboard viewed");
+    }
+
+    public void logDashboardWeeklyFilterChanged(Long userId, String weekStartDate, String weekEndDate, String region) {
+        log(userId, DASHBOARD_WEEKLY_FILTER_CHANGED, "Dashboard", null,
+                "week_start_date: " + nullToBlank(weekStartDate)
+                        + ", week_end_date: " + nullToBlank(weekEndDate)
+                        + ", region: " + nullToBlank(region));
+    }
+
+    public void logDashboardTrendingFilterChanged(Long userId, String dateFrom, String dateTo, String region) {
+        log(userId, DASHBOARD_TRENDING_FILTER_CHANGED, "Dashboard", null,
+                "date_from: " + nullToBlank(dateFrom)
+                        + ", date_to: " + nullToBlank(dateTo)
+                        + ", region: " + nullToBlank(region));
     }
 
     public void logUserAction(long userId, String action, String username) {
