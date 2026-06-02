@@ -21,7 +21,6 @@
     </padding>
 
     <HBox alignment="CENTER_RIGHT" spacing="10">
-        <Label fx:id="messageLabel" HBox.hgrow="ALWAYS" styleClass="form-message"/>
         <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="New User"/>
     </HBox>
 

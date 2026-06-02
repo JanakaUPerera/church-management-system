@@ -1231,3 +1231,87 @@
     -fx-alignment: CENTER;
     -fx-padding: 4 4;
 }
+
+.permission-scroll-pane,
+.permission-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.permission-scroll-pane {
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 0;
+}
+
+.permission-module-pane {
+    -fx-background-color: white;
+    -fx-background-radius: 7;
+    -fx-border-color: #fde68a;
+    -fx-border-radius: 7;
+    -fx-border-width: 1;
+}
+
+.permission-module-pane > .title {
+    -fx-background-color: #fef3c7;
+    -fx-background-radius: 7 7 0 0;
+    -fx-border-color: transparent transparent #fde68a transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 9 12;
+}
+
+.permission-module-pane > .title:hover {
+    -fx-background-color: #fde68a;
+}
+
+.permission-module-pane > .title > .text,
+.permission-module-pane > .title .label {
+    -fx-fill: #78350f;
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold;
+}
+
+.permission-module-pane > .title > .arrow-button .arrow {
+    -fx-background-color: #78350f;
+}
+
+.permission-module-pane > .content {
+    -fx-background-color: white;
+    -fx-background-radius: 0 0 7 7;
+    -fx-border-color: transparent;
+    -fx-padding: 12;
+}
+
+.permission-checklist {
+    -fx-background-color: white;
+}
+
+.permission-checklist .check-box {
+    -fx-text-fill: #451a03;
+    -fx-font-weight: normal;
+    -fx-padding: 3 0;
+}
+
+.permission-checklist .check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #fcd34d;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.permission-checklist .check-box:hover .box {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: #f59e0b;
+}
+
+.permission-checklist .check-box:selected .box {
+    -fx-background-color: #d97706;
+    -fx-border-color: #d97706;
+}
+
+.permission-checklist .check-box:selected .mark {
+    -fx-background-color: white;
+}

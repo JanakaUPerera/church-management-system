@@ -68,13 +68,11 @@ public class UserManagementController {
     @FXML private TableColumn<UserDto, String> forcePasswordChangeColumn;
     @FXML private TableColumn<UserDto, String> createdAtColumn;
     @FXML private TableColumn<UserDto, Void> actionColumn;
-    @FXML private Label messageLabel;
 
     @FXML
     private void initialize() {
         Optional<AuthenticatedUser> user = AuthContext.getCurrentUser();
         if (user.isEmpty()) {
-            setMessage("Please sign in to manage users.");
             setFormDisabled(true);
             return;
         }
@@ -82,7 +80,6 @@ public class UserManagementController {
         currentUser = user.get();
         permissionGuard = new PermissionGuard(currentUser);
         if (!permissionGuard.can("user.manage")) {
-            setMessage("You do not have permission to manage users.");
             setFormDisabled(true);
             return;
         }
@@ -162,12 +159,10 @@ public class UserManagementController {
                 .filter(user -> query.isBlank() || contains(user.getUsername(), query)
                         || contains(user.getFullName(), query) || contains(user.getRoleName(), query))
                 .toList());
-        setMessage("Showing " + users.size() + " user(s).");
     }
 
     private void loadSelectedUser(UserDto user) {
         selectedUser = user;
-        setMessage("Selected user " + user.getUsername() + ".");
     }
 
     private void toggleUserStatus(UserDto user) {
@@ -185,7 +180,6 @@ public class UserManagementController {
                     }
                 },
                 () -> {
-                    setMessage(user.isActive() ? "User deactivated successfully." : "User activated successfully.");
                     clearForm();
                     refreshUsers();
                 },
@@ -226,14 +220,7 @@ public class UserManagementController {
         userItemsPerPageComboBox.setDisable(disabled);
     }
 
-    private void setMessage(String message) {
-        if (messageLabel != null) {
-            messageLabel.setText(message);
-        }
-    }
-
     private void showFriendlyError(String message) {
-        setMessage(message);
         Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle("User Management");
         alert.setHeaderText("Unable to complete action");
@@ -283,7 +270,6 @@ public class UserManagementController {
                     () -> {
                         clearForm();
                         refreshUsers();
-                        setMessage(editing ? "User updated successfully." : "User created successfully.");
                         dialog.close();
                     },
                     throwable -> {
@@ -368,7 +354,6 @@ public class UserManagementController {
             ProcessingDialog.run("Reset Password", "Resetting password...",
                     () -> userManagementService.resetPassword(user.getId(), request),
                     () -> {
-                        setMessage("Password reset successfully.");
                         clearForm();
                         refreshUsers();
                         dialog.close();

@@ -83,6 +83,11 @@ public class ActivityLogService {
     public static final String PROFILE_PICTURE_UPDATED = "PROFILE_PICTURE_UPDATED";
     public static final String OWN_PASSWORD_CHANGED = "OWN_PASSWORD_CHANGED";
     public static final String OWN_PASSWORD_CHANGE_FAILED = "OWN_PASSWORD_CHANGE_FAILED";
+    public static final String ROLE_CREATED = "ROLE_CREATED";
+    public static final String ROLE_UPDATED = "ROLE_UPDATED";
+    public static final String ROLE_ACTIVATED = "ROLE_ACTIVATED";
+    public static final String ROLE_DEACTIVATED = "ROLE_DEACTIVATED";
+    public static final String ROLE_PERMISSIONS_UPDATED = "ROLE_PERMISSIONS_UPDATED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -351,6 +356,10 @@ public class ActivityLogService {
 
     public void logUserAction(long userId, String action, String username) {
         log(userId, action, "Users", username, "username: " + nullToBlank(username));
+    }
+
+    public void logRoleAction(long userId, String action, String roleName) {
+        log(userId, action, "Roles & Permissions", roleName, "role_name: " + nullToBlank(roleName));
     }
 
     public void logProfileUpdated(long userId, String username) {
