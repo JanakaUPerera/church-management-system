@@ -126,6 +126,9 @@ public class DashboardController {
     private Button receiptHistoryButton;
 
     @FXML
+    private Button submissionStatusButton;
+
+    @FXML
     private Button reportsButton;
 
     @FXML
@@ -344,6 +347,11 @@ public class DashboardController {
     }
 
     @FXML
+    private void showSubmissionStatus() {
+        loadMenu(findMenu(submissionStatusButton));
+    }
+
+    @FXML
     private void showReports() {
         loadMenu(findMenu(reportsButton));
     }
@@ -413,6 +421,8 @@ public class DashboardController {
                         weeklyReceiptsButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.create"),
                 new MenuDefinition("Receipt History", "/com/churchmanagement/view/receipt-history-view.fxml",
                         receiptHistoryButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.view"),
+                new MenuDefinition("Submission Status", "/com/churchmanagement/view/submission-status-view.fxml",
+                        submissionStatusButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.view"),
                 new MenuDefinition("Reports", "/com/churchmanagement/view/reports-view.fxml",
                         reportsButton, ActivityLogService.NAVIGATE_REPORTS, "report.view"),
                 new MenuDefinition("Users", "/com/churchmanagement/view/user-management-view.fxml",
@@ -445,6 +455,7 @@ public class DashboardController {
         setMenuIcon(churchesButton, "fas-church");
         setMenuIcon(weeklyReceiptsButton, "fas-receipt");
         setMenuIcon(receiptHistoryButton, "fas-history");
+        setMenuIcon(submissionStatusButton, "fas-tasks");
         setMenuIcon(reportsButton, "fas-chart-bar");
         setMenuIcon(usersButton, "fas-users");
         setMenuIcon(rolesButton, "fas-user-lock");

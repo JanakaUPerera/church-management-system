@@ -1620,6 +1620,116 @@
     -fx-padding: 4 4;
 }
 
+.status-warning {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
+}
+
+.late-submission-row {
+    -fx-background-color: #fff7ed;
+}
+
+.late-submission-row:selected {
+    -fx-background-color: -fx-selection-bar;
+}
+
+.submission-progress-band,
+.submission-totals-row {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 12 10 12;
+}
+
+.submission-progress-band {
+    -fx-border-color: #dfe7f0;
+    -fx-border-radius: 9;
+    -fx-background-radius: 9;
+    -fx-padding: 10 16 10 16;
+}
+
+.submission-progress-title {
+    -fx-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.submission-progress-value {
+    -fx-text-fill: #7c2d12;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.submission-totals-row {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: #fcd34d;
+    -fx-border-width: 1.2;
+    -fx-padding: 12 16 12 16;
+}
+
+.submission-totals-title {
+    -fx-background-color: #d97706;
+    -fx-background-radius: 6;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-padding: 7 13 7 13;
+}
+
+.submission-totals-label {
+    -fx-text-fill: #451a03;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.submission-totals-value,
+.submission-totals-value-grand {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.1;
+    -fx-border-radius: 6;
+    -fx-text-fill: #451a03;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-min-width: 112;
+    -fx-padding: 7 12 7 12;
+}
+
+.submission-totals-value-grand {
+    -fx-background-color: #dcfce7;
+    -fx-border-color: #86efac;
+    -fx-text-fill: #166534;
+    -fx-min-width: 132;
+}
+
+.submission-kpi-grid .dashboard-summary-card {
+    -fx-min-height: 74;
+}
+
+.submission-progress-bar {
+    -fx-pref-height: 14;
+    -fx-min-height: 14;
+    -fx-max-height: 14;
+    -fx-accent: #2563eb;
+}
+
+.submission-progress-bar .track {
+    -fx-background-color: #e1e6ed;
+    -fx-background-radius: 999;
+    -fx-background-insets: 3 0 3 0;
+}
+
+.submission-progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #2563eb, #16a34a);
+    -fx-background-radius: 999;
+    -fx-background-insets: 3 0 3 0;
+    -fx-padding: 0;
+}
+
 .permission-scroll-pane,
 .permission-scroll-pane > .viewport {
     -fx-background-color: transparent;

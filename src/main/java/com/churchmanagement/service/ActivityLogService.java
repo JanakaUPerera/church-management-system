@@ -76,6 +76,9 @@ public class ActivityLogService {
     public static final String DASHBOARD_TRENDING_VIEWED = "DASHBOARD_TRENDING_VIEWED";
     public static final String DASHBOARD_WEEKLY_FILTER_CHANGED = "DASHBOARD_WEEKLY_FILTER_CHANGED";
     public static final String DASHBOARD_TRENDING_FILTER_CHANGED = "DASHBOARD_TRENDING_FILTER_CHANGED";
+    public static final String SUBMISSION_STATUS_VIEWED = "SUBMISSION_STATUS_VIEWED";
+    public static final String SUBMISSION_STATUS_FILTER_CHANGED = "SUBMISSION_STATUS_FILTER_CHANGED";
+    public static final String SUBMISSION_DETAILS_VIEWED = "SUBMISSION_DETAILS_VIEWED";
     public static final String USER_CREATED = "USER_CREATED";
     public static final String USER_UPDATED = "USER_UPDATED";
     public static final String USER_ACTIVATED = "USER_ACTIVATED";
@@ -391,6 +394,30 @@ public class ActivityLogService {
                 "date_from: " + nullToBlank(dateFrom)
                         + ", date_to: " + nullToBlank(dateTo)
                         + ", region: " + nullToBlank(region));
+    }
+
+    public void logSubmissionStatusViewed(Long userId, String weekStartDate, Long regionId, Long churchId,
+                                          String status, int resultCount) {
+        log(userId, SUBMISSION_STATUS_VIEWED, "Submission Status", null,
+                "week_start_date: " + nullToBlank(weekStartDate)
+                        + ", region_id: " + nullToBlank(regionId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", status: " + nullToBlank(status)
+                        + ", result_count: " + resultCount);
+    }
+
+    public void logSubmissionStatusFilterChanged(Long userId, String weekStartDate, Long regionId, String regionName,
+                                                 String status) {
+        log(userId, SUBMISSION_STATUS_FILTER_CHANGED, "Submission Status", null,
+                "week_start_date: " + nullToBlank(weekStartDate)
+                        + ", region_id: " + nullToBlank(regionId)
+                        + ", region: " + nullToBlank(regionName)
+                        + ", status: " + nullToBlank(status));
+    }
+
+    public void logSubmissionDetailsViewed(Long userId, long receiptId, String receiptNo) {
+        log(userId, SUBMISSION_DETAILS_VIEWED, "Submission Status", String.valueOf(receiptId),
+                "receipt_id: " + receiptId + ", receipt_no: " + nullToBlank(receiptNo));
     }
 
     public void logUserAction(long userId, String action, String username) {

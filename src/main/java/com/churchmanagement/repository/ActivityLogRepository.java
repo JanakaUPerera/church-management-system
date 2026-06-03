@@ -13,11 +13,16 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ActivityLogRepository {
+    private static final DateTimeFormatter AUDIT_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final DataSource dataSource;
 
     public ActivityLogRepository() {
@@ -127,6 +132,174 @@ public class ActivityLogRepository {
         } catch (SQLException exception) {
             throw new DatabaseException("Unable to load activity log.", exception);
         }
+    }
+
+    public List<String> findReceiptAuditHistory(long receiptId, String receiptNo) {
+        String sql = """
+                SELECT al.action, COALESCE(al.description, al.details) AS audit_description,
+                       al.created_at, COALESCE(u.full_name, al.username) AS actor_name
+                FROM activity_logs al
+                LEFT JOIN users u ON u.id = al.user_id
+                WHERE al.action IN (
+                    'RECEIPT_CREATED',
+                    'CORRECTED_RECEIPT_CREATED',
+                    'RECEIPT_CANCELLED',
+                    'RECEIPT_PDF_GENERATED',
+                    'RECEIPT_ORIGINAL_PRINTED',
+                    'RECEIPT_PRINT_FAILED',
+                    'RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED',
+                    'RECEIPT_PRINT_BLOCKED_CANCELLED',
+                    'SMS_SENT',
+                    'SMS_FAILED',
+                    'SMS_SKIPPED',
+                    'SMS_RESENT_SUCCESS',
+                    'SMS_RESENT_FAILED'
+                )
+                  AND (
+                      al.record_id = ?
+                      OR COALESCE(al.description, al.details) LIKE ?
+                      OR COALESCE(al.description, al.details) LIKE ?
+                  )
+                ORDER BY al.created_at DESC
+                LIMIT 20
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, String.valueOf(receiptId));
+            statement.setString(2, "%" + receiptNo + "%");
+            statement.setString(3, "%receipt_id: " + receiptId + "%");
+            List<String> auditHistory = new ArrayList<>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    Timestamp createdAt = resultSet.getTimestamp("created_at");
+                    LocalDateTime auditDateTime = createdAt == null ? null : createdAt.toLocalDateTime();
+                    String actorName = resultSet.getString("actor_name");
+                    auditHistory.add(formatAuditDateTime(auditDateTime) + "\t" + formatReceiptAuditDescription(
+                            resultSet.getString("action"),
+                            resultSet.getString("audit_description")) + "\t" + nullToDash(actorName));
+                }
+            }
+            return auditHistory;
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load receipt audit history.", exception);
+        }
+    }
+
+    private String formatAuditDateTime(LocalDateTime createdAt) {
+        return createdAt == null ? "-" : createdAt.format(AUDIT_DATE_TIME_FORMAT);
+    }
+
+    private String formatReceiptAuditDescription(String action, String description) {
+        String actionText = switch (action == null ? "" : action) {
+            case "RECEIPT_CREATED" -> "Receipt created";
+            case "CORRECTED_RECEIPT_CREATED" -> "Corrected receipt created";
+            case "RECEIPT_CANCELLED" -> "Receipt cancelled";
+            case "RECEIPT_PDF_GENERATED" -> "Receipt PDF generated";
+            case "RECEIPT_ORIGINAL_PRINTED" -> "Original receipt printed";
+            case "RECEIPT_PRINT_FAILED" -> "Receipt print failed";
+            case "RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED" -> "Print blocked because original was already printed";
+            case "RECEIPT_PRINT_BLOCKED_CANCELLED" -> "Print blocked because receipt was cancelled";
+            case "SMS_SENT" -> "SMS sent";
+            case "SMS_FAILED" -> "SMS failed";
+            case "SMS_SKIPPED" -> "SMS skipped";
+            case "SMS_RESENT_SUCCESS" -> "SMS resent successfully";
+            case "SMS_RESENT_FAILED" -> "SMS resend failed";
+            default -> humanizeKey(action);
+        };
+        String details = humanizeDetails(description);
+        return actionText + (details.isBlank() ? "" : " (" + details + ")");
+    }
+
+    private String nullToDash(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private String humanizeDetails(String description) {
+        if (description == null || description.isBlank()) {
+            return "";
+        }
+        Map<String, String> values = parseDetails(description);
+        if (values.isEmpty()) {
+            return description;
+        }
+        return values.entrySet().stream()
+                .filter(entry -> shouldShowAuditDetail(entry.getKey(), values))
+                .filter(entry -> !entry.getValue().isBlank())
+                .map(entry -> humanizeKey(entry.getKey()) + ": " + humanizeValue(entry.getValue()))
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("");
+    }
+
+    private boolean shouldShowAuditDetail(String key, Map<String, String> values) {
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+        String normalized = key.strip().toLowerCase();
+        if ("receipt_id".equals(normalized) && hasValue(values, "receipt_no")) {
+            return false;
+        }
+        if ("church_id".equals(normalized) && hasValue(values, "church_code")) {
+            return false;
+        }
+        if ("corrected_from_receipt_id".equals(normalized) && hasValue(values, "corrected_from_receipt_no")) {
+            return false;
+        }
+        return !normalized.equals("id")
+                && !normalized.endsWith("_id")
+                && !normalized.endsWith(" id");
+    }
+
+    private boolean hasValue(Map<String, String> values, String key) {
+        String value = values.get(key);
+        return value != null && !value.isBlank();
+    }
+
+    private Map<String, String> parseDetails(String description) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (String part : description.split(",\\s*")) {
+            int separatorIndex = part.indexOf(':');
+            if (separatorIndex <= 0) {
+                continue;
+            }
+            String key = part.substring(0, separatorIndex).strip();
+            String value = part.substring(separatorIndex + 1).strip();
+            if (!key.isBlank()) {
+                values.put(key, value);
+            }
+        }
+        return values;
+    }
+
+    private String humanizeKey(String key) {
+        if (key == null || key.isBlank()) {
+            return "";
+        }
+        String normalized = key.strip().toLowerCase().replace('_', ' ');
+        StringBuilder builder = new StringBuilder();
+        for (String word : normalized.split("\\s+")) {
+            if (word.isBlank()) {
+                continue;
+            }
+            if (!builder.isEmpty()) {
+                builder.append(' ');
+            }
+            builder.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return builder.toString();
+    }
+
+    private String humanizeValue(String value) {
+        if ("true".equalsIgnoreCase(value)) {
+            return "Yes";
+        }
+        if ("false".equalsIgnoreCase(value)) {
+            return "No";
+        }
+        if ("<not generated>".equalsIgnoreCase(value)) {
+            return "Not generated";
+        }
+        return value;
     }
 
     public List<String> findDistinctActions() {

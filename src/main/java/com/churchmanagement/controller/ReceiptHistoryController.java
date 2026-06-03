@@ -7,6 +7,7 @@ import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.exception.DatabaseException;
+import com.churchmanagement.repository.ActivityLogRepository;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
@@ -57,13 +58,13 @@ import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
 import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 public class ReceiptHistoryController {
@@ -72,6 +73,7 @@ public class ReceiptHistoryController {
     private static final Duration CANCELLATION_WINDOW = Duration.ofDays(7);
 
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
+    private final ActivityLogRepository activityLogRepository = new ActivityLogRepository();
     private final ReceiptCancellationService receiptCancellationService = new ReceiptCancellationService();
     private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
     private final ReceiptSmsNotificationService receiptSmsNotificationService = new ReceiptSmsNotificationService();
@@ -235,12 +237,26 @@ public class ReceiptHistoryController {
         }
     }
 
-    private void showReceiptDetailsDialog(ReceiptResponseDto receipt) {
+    public void showReceiptDetailsDialog(long receiptId) {
+        showReceiptDetailsDialog(receiptId, true, true);
+    }
+
+    public void showReceiptDetailsDialog(long receiptId, boolean allowCancelReceipt, boolean allowRecreateButton) {
+        showReceiptDetailsDialog(receiptRepository.findReceiptDetailsById(receiptId)
+                .orElseThrow(() -> new DatabaseException("Receipt details not found.")), allowCancelReceipt, allowRecreateButton);
+    }
+
+    public void showReceiptDetailsDialog(ReceiptResponseDto receipt) {
+        showReceiptDetailsDialog(receipt, true, true);
+    }
+
+    public void showReceiptDetailsDialog(ReceiptResponseDto receipt, boolean allowCancelReceipt, boolean allowRecreateButton) {
         if (receipt == null) {
             return;
         }
 
         try {
+            ensurePermissionGuard();
             ReceiptResponseDto details = receiptRepository.findReceiptDetailsById(receipt.getId()).orElse(receipt);
             Dialog<ButtonType> dialog = DialogStyler.apply(new Dialog<>());
             dialog.setTitle("Receipt Details");
@@ -254,10 +270,10 @@ public class ReceiptHistoryController {
             if (canPrintOriginal(details)) {
                 dialog.getDialogPane().getButtonTypes().add(printOriginalButton);
             }
-            if (canCancelReceipt(details)) {
+            if (allowCancelReceipt && canCancelReceipt(details)) {
                 dialog.getDialogPane().getButtonTypes().add(cancelReceiptButton);
             }
-            if (canRecreateReceipt(details)) {
+            if (allowRecreateButton && canRecreateReceipt(details)) {
                 dialog.getDialogPane().getButtonTypes().add(recreateButton);
             }
             dialog.getDialogPane().getButtonTypes().add(closeButton);
@@ -290,11 +306,13 @@ public class ReceiptHistoryController {
         Tab receiptTab = new Tab("Receipt Details", receiptDetailsTabContent(receipt));
         Tab cancellationTab = new Tab("Cancellation Details", cancellationDetailsTabContent(receipt));
         Tab followUpTab = new Tab("Print & SMS Details", printSmsTabContent(receipt));
+        Tab auditTab = new Tab("Audit History", auditTabContent(receipt));
         receiptTab.setClosable(false);
         cancellationTab.setClosable(false);
         followUpTab.setClosable(false);
+        auditTab.setClosable(false);
 
-        TabPane tabPane = new TabPane(receiptTab, cancellationTab, followUpTab);
+        TabPane tabPane = new TabPane(receiptTab, cancellationTab, followUpTab, auditTab);
         tabPane.getStyleClass().add("receipt-detail-tabs");
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         tabPane.setPrefWidth(920);
@@ -323,6 +341,50 @@ public class ReceiptHistoryController {
                 detailCard("SMS Details", smsDetailsGrid(receipt)));
         detailsRow.setFillHeight(true);
         return tabContent(detailsRow);
+    }
+
+    private VBox auditTabContent(ReceiptResponseDto receipt) {
+        return tabContent(detailCard("Audit History", auditHistoryContent(receipt)));
+    }
+
+    private VBox auditHistoryContent(ReceiptResponseDto receipt) {
+        GridPane grid = new GridPane();
+        grid.setHgap(14);
+        grid.setVgap(8);
+        ColumnConstraints dateColumn = new ColumnConstraints();
+        dateColumn.setMinWidth(150);
+        ColumnConstraints descriptionColumn = new ColumnConstraints();
+        descriptionColumn.setHgrow(Priority.ALWAYS);
+        ColumnConstraints actorColumn = new ColumnConstraints();
+        actorColumn.setMinWidth(150);
+        grid.getColumnConstraints().addAll(dateColumn, descriptionColumn, actorColumn);
+
+        Label dateHeader = headerLabel("Date / Time");
+        Label descriptionHeader = headerLabel("Description");
+        Label actorHeader = headerLabel("Done By");
+        grid.add(dateHeader, 0, 0);
+        grid.add(descriptionHeader, 1, 0);
+        grid.add(actorHeader, 2, 0);
+
+        List<String> history = activityLogRepository.findReceiptAuditHistory(receipt.getId(), receipt.getReceiptNo());
+        if (history.isEmpty()) {
+            Label emptyLabel = detailValueLabel("-");
+            grid.add(emptyLabel, 1, 1);
+            return new VBox(grid);
+        }
+        int row = 1;
+        for (String entry : history) {
+            String[] columns = entry.split("\\t", 3);
+            Label dateLabel = detailValueLabel(columns.length > 0 ? columns[0] : "-");
+            Label descriptionLabel = detailValueLabel(columns.length > 1 ? columns[1] : entry);
+            Label actorLabel = detailValueLabel(columns.length > 2 ? columns[2] : "-");
+            descriptionLabel.setWrapText(true);
+            grid.add(dateLabel, 0, row);
+            grid.add(descriptionLabel, 1, row);
+            grid.add(actorLabel, 2, row);
+            row++;
+        }
+        return new VBox(grid);
     }
 
     private VBox detailCard(String title, Node content) {
@@ -542,11 +604,13 @@ public class ReceiptHistoryController {
         ProcessingDialog.run("Cancel Receipt", "Cancelling receipt...",
                 () -> receiptCancellationService.cancelReceipt(request),
                 cancelled -> {
-            handleSearch();
-            receiptTable.getSelectionModel().select(receipts.stream()
-                    .filter(item -> item.getId().equals(cancelled.getId()))
-                    .findFirst()
-                    .orElse(null));
+            if (receiptTable != null) {
+                handleSearch();
+                receiptTable.getSelectionModel().select(receipts.stream()
+                        .filter(item -> item.getId().equals(cancelled.getId()))
+                        .findFirst()
+                        .orElse(null));
+            }
             setMessage("Receipt " + cancelled.getReceiptNo() + " cancelled.");
                 },
                 throwable -> showProcessingError("Cancel Receipt", throwable));
@@ -577,7 +641,9 @@ public class ReceiptHistoryController {
         ProcessingDialog.run("Print Original", "Sending receipt to printer...",
                 () -> receiptPrintService.printOriginalReceipt(receipt.getId()),
                 () -> {
-            handleSearch();
+            if (receiptTable != null) {
+                handleSearch();
+            }
             setMessage("Original receipt " + receipt.getReceiptNo() + " was sent to the printer.");
                 },
                 throwable -> showProcessingError("Print Original", throwable));
@@ -587,7 +653,9 @@ public class ReceiptHistoryController {
         ProcessingDialog.run("Send SMS", "Sending SMS notification...",
                 () -> receiptSmsNotificationService.sendReceiptSubmissionSms(receipt.getId()),
                 () -> {
-            handleSearch();
+            if (receiptTable != null) {
+                handleSearch();
+            }
             setMessage("SMS notification processed for receipt " + receipt.getReceiptNo() + ".");
                 },
                 throwable -> showProcessingError("Send SMS", throwable));
@@ -599,6 +667,12 @@ public class ReceiptHistoryController {
                 && receipt != null
                 && receipt.getStatus() == ReceiptStatus.ACTIVE
                 && !receipt.isOriginalPrinted();
+    }
+
+    private void ensurePermissionGuard() {
+        if (permissionGuard == null) {
+            AuthContext.getCurrentUser().ifPresent(user -> permissionGuard = new PermissionGuard(user));
+        }
     }
 
     private boolean canRecreateReceipt(ReceiptResponseDto receipt) {
