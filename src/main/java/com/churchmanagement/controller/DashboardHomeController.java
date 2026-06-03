@@ -13,6 +13,7 @@ import com.churchmanagement.entity.Region;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.DashboardService;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -208,10 +209,8 @@ public class DashboardHomeController {
         weeklyWeekDatePicker.setValue(weeklyRange.dateFrom());
         trendingDateFromPicker.setValue(trendingRange.dateFrom());
         trendingDateToPicker.setValue(trendingRange.dateTo());
-        weeklyRegionComboBox.setCellFactory(listView -> new RegionListCell());
-        weeklyRegionComboBox.setButtonCell(new RegionListCell());
-        trendingRegionComboBox.setCellFactory(listView -> new RegionListCell());
-        trendingRegionComboBox.setButtonCell(new RegionListCell());
+        ComboBoxUtil.makeSearchable(weeklyRegionComboBox, this::regionDisplayText);
+        ComboBoxUtil.makeSearchable(trendingRegionComboBox, this::regionDisplayText);
     }
 
     private void configureCharts() {
@@ -229,9 +228,7 @@ public class DashboardHomeController {
 
     private void loadRegions() {
         try {
-            List<Region> regions = regionService.findAll().stream()
-                    .filter(region -> region.getStatus() == Region.Status.ACTIVE)
-                    .toList();
+            List<Region> regions = regionService.findAll();
             weeklyRegionComboBox.setItems(FXCollections.observableArrayList(regions));
             trendingRegionComboBox.setItems(FXCollections.observableArrayList(regions));
         } catch (RuntimeException exception) {
@@ -240,13 +237,19 @@ public class DashboardHomeController {
         }
     }
 
+    private String regionDisplayText(Region region) {
+        if (region == null) {
+            return "";
+        }
+        return region.getRegionCode() + " - " + region.getRegionName();
+    }
+
     private void loadTrendingChurches() {
         try {
             Region region = trendingRegionComboBox.getValue();
             Long regionId = region == null ? null : region.getId();
             trendingChurches.clear();
             trendingChurches.addAll(churchService.findAll().stream()
-                    .filter(church -> church.getStatus() == Church.Status.ACTIVE)
                     .filter(church -> regionId == null || regionId.equals(church.getRegionId()))
                     .toList());
             rebuildingTrendingChurchMenu = true;

@@ -6,6 +6,7 @@ import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Receipt;
 import com.churchmanagement.entity.ReceiptItem;
+import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.repository.ChurchRepository;
@@ -196,6 +197,17 @@ class ReceiptServiceTest {
                 () -> receiptService.createReceipt(request));
 
         assertTrue(exception.getMessage().contains("At least one collection item is required."));
+    }
+
+    @Test
+    void rejectReceiptForChurchInInactiveRegion() {
+        churchRepository.regionStatus = Region.Status.INACTIVE;
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(validRequest()));
+
+        assertTrue(exception.getMessage().contains("inactive region"));
+        assertEquals(0, receiptRepository.insertedReceipts.size());
     }
 
     @Test
@@ -466,6 +478,8 @@ class ReceiptServiceTest {
     }
 
     private static class FakeChurchRepository extends ChurchRepository {
+        private Region.Status regionStatus = Region.Status.ACTIVE;
+
         private FakeChurchRepository() {
             super((DataSource) null);
         }
@@ -474,6 +488,7 @@ class ReceiptServiceTest {
         public Optional<Church> findById(long id) {
             Church church = new Church(id, "CH010", "Central Church", 2L, "REG001", "North",
                     Church.Status.ACTIVE, LocalDateTime.now(), null);
+            church.setRegionStatus(regionStatus);
             return Optional.of(church);
         }
     }

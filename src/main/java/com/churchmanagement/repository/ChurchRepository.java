@@ -2,6 +2,7 @@ package com.churchmanagement.repository;
 
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
 import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
@@ -32,6 +33,15 @@ public class ChurchRepository {
 
     public List<Church> findAll() {
         String sql = baseSelect() + " ORDER BY c.church_code";
+        return queryChurches(sql);
+    }
+
+    public List<Church> findOperationalChurches() {
+        String sql = baseSelect() + """
+                WHERE c.status = 'ACTIVE'
+                  AND r.status = 'ACTIVE'
+                ORDER BY c.church_code
+                """;
         return queryChurches(sql);
     }
 
@@ -213,6 +223,7 @@ public class ChurchRepository {
         church.setAuthorizedPersonPositionOther(resultSet.getString("authorized_person_position_other"));
         church.setSmsMobileNumber(resultSet.getString("sms_mobile_number"));
         church.setReceiptLanguage(ReceiptLanguage.valueOf(resultSet.getString("receipt_language")));
+        church.setRegionStatus(Region.Status.valueOf(resultSet.getString("region_status")));
         return church;
     }
 
@@ -222,7 +233,7 @@ public class ChurchRepository {
                        c.authorized_person_name, c.authorized_person_position,
                        c.authorized_person_position_other, c.sms_mobile_number,
                        c.receipt_language, c.created_at, c.updated_at,
-                       r.region_code, r.region_name
+                       r.region_code, r.region_name, r.status AS region_status
                 FROM churches c
                 JOIN regions r ON r.id = c.region_id
                 """;

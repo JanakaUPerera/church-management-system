@@ -41,7 +41,9 @@ public final class ChurchValidator {
             errors.add("Other position is required when position is Other.");
         }
 
-        if (smsMobileNumber != null && !smsMobileNumber.isBlank() && !isValidSriLankanMobile(smsMobileNumber)) {
+        if (smsMobileNumber == null || smsMobileNumber.isBlank()) {
+            errors.add("SMS mobile number is required.");
+        } else if (!isValidSriLankanMobile(smsMobileNumber)) {
             errors.add("SMS mobile number must be 07XXXXXXXX, 947XXXXXXXX, or +947XXXXXXXX.");
         }
 

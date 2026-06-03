@@ -40,6 +40,14 @@ public class ChurchService {
         }
     }
 
+    public List<Church> findOperationalChurches() {
+        try {
+            return churchRepository.findOperationalChurches();
+        } catch (DatabaseException exception) {
+            throw new ChurchException("Unable to load churches right now. Please try again later.", exception);
+        }
+    }
+
     public List<Church> search(String searchText) {
         if (searchText == null || searchText.isBlank()) {
             return findAll();
@@ -181,6 +189,7 @@ public class ChurchService {
         Church copy = new Church(church.getId(), church.getChurchCode(), church.getChurchName(), church.getRegionId(),
                 church.getRegionCode(), church.getRegionName(), church.getStatus(), church.getCreatedAt(),
                 church.getUpdatedAt());
+        copy.setRegionStatus(church.getRegionStatus());
         copy.setAuthorizedPersonName(church.getAuthorizedPersonName());
         copy.setAuthorizedPersonPosition(church.getAuthorizedPersonPosition());
         copy.setAuthorizedPersonPositionOther(church.getAuthorizedPersonPositionOther());

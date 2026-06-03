@@ -67,12 +67,12 @@ public class DashboardRepository {
                        COUNT(DISTINCT c.id) AS total_churches,
                        COUNT(DISTINCT r.church_id) AS submitted_churches
                 FROM regions rg
-                JOIN churches c ON c.region_id = rg.id AND c.status = 'ACTIVE'
+                JOIN churches c ON c.region_id = rg.id
                 LEFT JOIN receipts r ON r.church_id = c.id
                     AND r.week_start_date >= ?
                     AND r.week_start_date <= ?
                     AND r.status = 'ACTIVE'
-                WHERE rg.status = 'ACTIVE'
+                WHERE 1 = 1
                 """);
         List<Object> parameters = baseDateParameters(weekStartDate, weekEndDate);
         if (regionId != null) {
@@ -112,8 +112,7 @@ public class DashboardRepository {
                 FROM receipts r
                 JOIN regions rg ON rg.id = r.region_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
-                WHERE rg.status = 'ACTIVE'
-                    AND r.status = 'ACTIVE'
+                WHERE r.status = 'ACTIVE'
                     AND r.week_start_date >= ?
                     AND r.week_start_date <= ?
                 """);
@@ -188,7 +187,7 @@ public class DashboardRepository {
         StringBuilder sql = new StringBuilder("""
                 SELECT c.church_name AS label, COALESCE(SUM(ri.amount), 0) AS value
                 FROM receipts r
-                JOIN churches c ON c.id = r.church_id AND c.status = 'ACTIVE'
+                JOIN churches c ON c.id = r.church_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
                 WHERE r.status = 'ACTIVE'
                   AND r.week_start_date >= ?
@@ -210,7 +209,7 @@ public class DashboardRepository {
         StringBuilder sql = new StringBuilder("""
                 SELECT rg.region_name AS label, COALESCE(SUM(ri.amount), 0) AS value
                 FROM receipts r
-                JOIN regions rg ON rg.id = r.region_id AND rg.status = 'ACTIVE'
+                JOIN regions rg ON rg.id = r.region_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
                 WHERE r.status = 'ACTIVE'
                   AND r.week_start_date >= ?
@@ -306,7 +305,7 @@ public class DashboardRepository {
                        c.church_name,
                        COALESCE(SUM(ri.amount), 0) AS amount
                 FROM receipts r
-                JOIN churches c ON c.id = r.church_id AND c.status = 'ACTIVE'
+                JOIN churches c ON c.id = r.church_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
                 WHERE r.status = 'ACTIVE'
                   AND r.week_start_date >= ?
@@ -344,7 +343,7 @@ public class DashboardRepository {
                        rg.region_name,
                        COALESCE(SUM(ri.amount), 0) AS amount
                 FROM receipts r
-                JOIN regions rg ON rg.id = r.region_id AND rg.status = 'ACTIVE'
+                JOIN regions rg ON rg.id = r.region_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
                 WHERE r.status = 'ACTIVE'
                   AND r.week_start_date >= ?
@@ -374,7 +373,7 @@ public class DashboardRepository {
     }
 
     private long countActiveRegions(Long regionId) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM regions rg WHERE rg.status = 'ACTIVE' ");
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM regions rg WHERE 1 = 1 ");
         List<Object> parameters = new ArrayList<>();
         if (regionId != null) {
             sql.append("AND rg.id = ? ");
@@ -391,12 +390,12 @@ public class DashboardRepository {
                            COUNT(DISTINCT c.id) AS active_church_count,
                            COUNT(DISTINCT r.church_id) AS submitted_church_count
                     FROM regions rg
-                    JOIN churches c ON c.region_id = rg.id AND c.status = 'ACTIVE'
+                    JOIN churches c ON c.region_id = rg.id
                     LEFT JOIN receipts r ON r.church_id = c.id
                         AND r.week_start_date >= ?
                         AND r.week_start_date <= ?
                         AND r.status = 'ACTIVE'
-                    WHERE rg.status = 'ACTIVE'
+                    WHERE 1 = 1
                 """);
         List<Object> parameters = baseDateParameters(weekStartDate, weekEndDate);
         if (regionId != null) {
@@ -413,7 +412,7 @@ public class DashboardRepository {
     }
 
     private long countActiveChurches(Long regionId) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM churches c WHERE c.status = 'ACTIVE' ");
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM churches c WHERE 1 = 1 ");
         List<Object> parameters = new ArrayList<>();
         appendRegionFilter(sql, parameters, regionId, "c");
         return queryLong(sql.toString(), statement -> setParameters(statement, parameters));
@@ -427,7 +426,6 @@ public class DashboardRepository {
                 WHERE r.week_start_date >= ?
                   AND r.week_start_date <= ?
                   AND r.status = 'ACTIVE'
-                  AND c.status = 'ACTIVE'
                 """);
         List<Object> parameters = baseDateParameters(weekStartDate, weekEndDate);
         appendRegionFilter(sql, parameters, regionId, "c");
@@ -438,8 +436,7 @@ public class DashboardRepository {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
                 FROM churches c
-                WHERE c.status = 'ACTIVE'
-                  AND NOT EXISTS (
+                WHERE NOT EXISTS (
                       SELECT 1
                       FROM receipts r
                       WHERE r.church_id = c.id
@@ -474,7 +471,6 @@ public class DashboardRepository {
                 JOIN churches c ON c.id = r.church_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
                 WHERE r.status = 'ACTIVE'
-                  AND c.status = 'ACTIVE'
                   AND DATE(r.receipt_datetime) = CURRENT_DATE
                 """);
         List<Object> parameters = new ArrayList<>();
@@ -551,7 +547,7 @@ public class DashboardRepository {
         StringBuilder sql = new StringBuilder("""
                 SELECT r.church_id
                 FROM receipts r
-                JOIN churches c ON c.id = r.church_id AND c.status = 'ACTIVE'
+                JOIN churches c ON c.id = r.church_id
                 JOIN receipt_items ri ON ri.receipt_id = r.id
                 WHERE r.status = 'ACTIVE'
                   AND r.week_start_date >= ?

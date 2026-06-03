@@ -181,9 +181,7 @@ public class SmsLogController {
 
     private void loadChurches() {
         try {
-            churches.setAll(churchService.findAll().stream()
-                    .filter(church -> church.getStatus() == Church.Status.ACTIVE)
-                    .toList());
+            churches.setAll(churchService.findAll());
         } catch (RuntimeException exception) {
             showError("SMS Logs", "Unable to load churches right now. Please try again later.");
         }

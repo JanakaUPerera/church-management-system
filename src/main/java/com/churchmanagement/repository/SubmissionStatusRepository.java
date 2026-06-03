@@ -213,9 +213,7 @@ public class SubmissionStatusRepository {
                           )
                     )
                 LEFT JOIN receipt_items ri ON ri.receipt_id = latest.id
-                WHERE c.status = 'ACTIVE'
-                  AND rg.status = 'ACTIVE'
-                  AND (? IS NULL OR c.region_id = ?)
+                WHERE (? IS NULL OR c.region_id = ?)
                   AND (? IS NULL OR c.id = ?)
                 GROUP BY c.id, c.church_code, c.church_name, rg.region_name,
                          latest.id, latest.receipt_no, latest.receipt_datetime,

@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChurchServiceTest {
+    private static final String VALID_SMS_MOBILE = "0771234567";
+
     private final FakeChurchRepository churchRepository = new FakeChurchRepository();
     private final FakeRegionRepository regionRepository = new FakeRegionRepository();
     private final FakeActivityLogService activityLogService = new FakeActivityLogService();
@@ -34,7 +36,8 @@ class ChurchServiceTest {
 
     @Test
     void createValidChurch() {
-        Church church = churchService.create(" ch001 ", " Main Church ", 1L, Church.Status.ACTIVE, 1L);
+        Church church = churchService.create(" ch001 ", " Main Church ", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
 
         assertEquals("CH001", church.getChurchCode());
         assertEquals("Main Church", church.getChurchName());
@@ -46,7 +49,7 @@ class ChurchServiceTest {
     @Test
     void createChurchWithEnglishReceiptLanguage() {
         Church church = churchService.create("CH101", "Main Church", 1L, Church.Status.ACTIVE,
-                null, null, null, null, ReceiptLanguage.ENGLISH, 1L);
+                null, null, null, VALID_SMS_MOBILE, ReceiptLanguage.ENGLISH, 1L);
 
         assertEquals(ReceiptLanguage.ENGLISH, church.getReceiptLanguage());
     }
@@ -54,7 +57,7 @@ class ChurchServiceTest {
     @Test
     void createChurchWithSinhalaReceiptLanguage() {
         Church church = churchService.create("CH102", "Main Church", 1L, Church.Status.ACTIVE,
-                null, null, null, null, ReceiptLanguage.SINHALA, 1L);
+                null, null, null, VALID_SMS_MOBILE, ReceiptLanguage.SINHALA, 1L);
 
         assertEquals(ReceiptLanguage.SINHALA, church.getReceiptLanguage());
     }
@@ -62,7 +65,7 @@ class ChurchServiceTest {
     @Test
     void createChurchWithTamilReceiptLanguage() {
         Church church = churchService.create("CH103", "Main Church", 1L, Church.Status.ACTIVE,
-                null, null, null, null, ReceiptLanguage.TAMIL, 1L);
+                null, null, null, VALID_SMS_MOBILE, ReceiptLanguage.TAMIL, 1L);
 
         assertEquals(ReceiptLanguage.TAMIL, church.getReceiptLanguage());
     }
@@ -72,7 +75,7 @@ class ChurchServiceTest {
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
                 () -> churchService.create("CH104", "Main Church", 1L, Church.Status.ACTIVE,
-                        null, null, null, null, null, 1L)
+                        null, null, null, VALID_SMS_MOBILE, null, 1L)
         );
 
         assertTrue(exception.getMessage().contains("Receipt language is required."));
@@ -81,11 +84,11 @@ class ChurchServiceTest {
     @Test
     void createChurchWithoutAuthorizedPersonDetails() {
         Church church = churchService.create("CH010", "Main Church", 1L, Church.Status.ACTIVE,
-                null, null, null, null, 1L);
+                null, null, null, VALID_SMS_MOBILE, 1L);
 
         assertEquals(null, church.getAuthorizedPersonName());
         assertEquals(null, church.getAuthorizedPersonPosition());
-        assertEquals(null, church.getSmsMobileNumber());
+        assertEquals("+94771234567", church.getSmsMobileNumber());
     }
 
     @Test
@@ -103,7 +106,7 @@ class ChurchServiceTest {
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
                 () -> churchService.create("CH012", "Main Church", 1L, Church.Status.ACTIVE,
-                        "Nimal", AuthorizedPersonPosition.OTHER, " ", null, 1L)
+                        "Nimal", AuthorizedPersonPosition.OTHER, " ", VALID_SMS_MOBILE, 1L)
         );
 
         assertTrue(exception.getMessage().contains("Other position is required"));
@@ -112,7 +115,7 @@ class ChurchServiceTest {
     @Test
     void saveOtherPositionAsNullWhenPositionIsNotOther() {
         Church church = churchService.create("CH013", "Main Church", 1L, Church.Status.ACTIVE,
-                "Nimal", AuthorizedPersonPosition.PASTOR, "Ignored", null, 1L);
+                "Nimal", AuthorizedPersonPosition.PASTOR, "Ignored", VALID_SMS_MOBILE, 1L);
 
         assertEquals(null, church.getAuthorizedPersonPositionOther());
     }
@@ -153,8 +156,20 @@ class ChurchServiceTest {
     }
 
     @Test
+    void rejectMissingSmsNumber() {
+        ChurchService.ChurchException exception = assertThrows(
+                ChurchService.ChurchException.class,
+                () -> churchService.create("CH019", "Main Church", 1L, Church.Status.ACTIVE,
+                        null, null, null, " ", 1L)
+        );
+
+        assertTrue(exception.getMessage().contains("SMS mobile number is required."));
+    }
+
+    @Test
     void updateChurchContactSmsDetails() {
-        Church church = churchService.create("CH018", "Main Church", 1L, Church.Status.ACTIVE, 1L);
+        Church church = churchService.create("CH018", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
 
         Church updated = churchService.update(church.getId(), "CH018", "Main Church", 1L, Church.Status.ACTIVE,
                 "Kamal", AuthorizedPersonPosition.OTHER, "Coordinator", "94771234567", 1L);
@@ -169,7 +184,8 @@ class ChurchServiceTest {
     void rejectEmptyCode() {
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
-                () -> churchService.create(" ", "Main Church", 1L, Church.Status.ACTIVE, 1L)
+                () -> churchService.create(" ", "Main Church", 1L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
         );
 
         assertTrue(exception.getMessage().contains("Church code is required."));
@@ -179,7 +195,8 @@ class ChurchServiceTest {
     void rejectEmptyName() {
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
-                () -> churchService.create("CH001", " ", 1L, Church.Status.ACTIVE, 1L)
+                () -> churchService.create("CH001", " ", 1L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
         );
 
         assertTrue(exception.getMessage().contains("Church name is required."));
@@ -189,7 +206,8 @@ class ChurchServiceTest {
     void rejectMissingRegion() {
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
-                () -> churchService.create("CH001", "Main Church", null, Church.Status.ACTIVE, 1L)
+                () -> churchService.create("CH001", "Main Church", null, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
         );
 
         assertTrue(exception.getMessage().contains("Region is required."));
@@ -199,7 +217,8 @@ class ChurchServiceTest {
     void rejectInactiveRegion() {
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
-                () -> churchService.create("CH001", "Main Church", 2L, Church.Status.ACTIVE, 1L)
+                () -> churchService.create("CH001", "Main Church", 2L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
         );
 
         assertEquals("Selected region is inactive. Choose an active region.", exception.getMessage());
@@ -207,11 +226,13 @@ class ChurchServiceTest {
 
     @Test
     void rejectDuplicateCode() {
-        churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE, 1L);
+        churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
 
         ChurchService.ChurchException exception = assertThrows(
                 ChurchService.ChurchException.class,
-                () -> churchService.create("ch001", "Branch Church", 1L, Church.Status.ACTIVE, 1L)
+                () -> churchService.create("ch001", "Branch Church", 1L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
         );
 
         assertEquals("A church with this code already exists.", exception.getMessage());
@@ -219,10 +240,11 @@ class ChurchServiceTest {
 
     @Test
     void updateChurch() {
-        Church church = churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE, 1L);
+        Church church = churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
 
         Church updated = churchService.update(church.getId(), " ch002 ", " Branch Church ", 1L,
-                Church.Status.INACTIVE, 1L);
+                Church.Status.INACTIVE, null, null, null, VALID_SMS_MOBILE, 1L);
 
         assertEquals("CH002", updated.getChurchCode());
         assertEquals("Branch Church", updated.getChurchName());
@@ -233,10 +255,10 @@ class ChurchServiceTest {
     @Test
     void updateReceiptLanguageLogsChange() {
         Church church = churchService.create("CH105", "Main Church", 1L, Church.Status.ACTIVE,
-                null, null, null, null, ReceiptLanguage.ENGLISH, 1L);
+                null, null, null, VALID_SMS_MOBILE, ReceiptLanguage.ENGLISH, 1L);
 
         churchService.update(church.getId(), "CH105", "Main Church", 1L, Church.Status.ACTIVE,
-                null, null, null, null, ReceiptLanguage.SINHALA, 1L);
+                null, null, null, VALID_SMS_MOBILE, ReceiptLanguage.SINHALA, 1L);
 
         assertTrue(activityLogService.loggedActions.contains("ENGLISH -> SINHALA"));
     }
@@ -244,7 +266,8 @@ class ChurchServiceTest {
 
     @Test
     void deactivateChurch() {
-        Church church = churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE, 1L);
+        Church church = churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
 
         churchService.deactivate(church.getId(), 1L);
 

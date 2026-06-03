@@ -9,6 +9,7 @@ import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.service.SubmissionStatusService;
 import com.churchmanagement.util.ButtonIconUtil;
+import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.TablePaginationUtil;
@@ -125,11 +126,9 @@ public class SubmissionStatusController {
     private void configureFilters() {
         DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
         regionComboBox.setItems(regions);
-        regionComboBox.setCellFactory(listView -> new RegionListCell());
-        regionComboBox.setButtonCell(new RegionListCell());
+        ComboBoxUtil.makeSearchable(regionComboBox, this::regionDisplayText);
         churchComboBox.setItems(filteredChurches);
-        churchComboBox.setCellFactory(listView -> new ChurchListCell());
-        churchComboBox.setButtonCell(new ChurchListCell());
+        ComboBoxUtil.makeSearchable(churchComboBox, this::churchDisplayText);
         statusComboBox.setItems(FXCollections.observableArrayList(
                 SubmissionStatusService.STATUS_ALL,
                 SubmissionStatusService.STATUS_SUBMITTED,
@@ -199,9 +198,7 @@ public class SubmissionStatusController {
 
     private void loadChurches() {
         try {
-            churches.setAll(churchService.findAll().stream()
-                    .filter(church -> church.getStatus() == Church.Status.ACTIVE)
-                    .toList());
+            churches.setAll(churchService.findAll());
             updateChurchFilter();
             churchComboBox.getSelectionModel().selectFirst();
         } catch (RuntimeException exception) {
@@ -277,6 +274,26 @@ public class SubmissionStatusController {
 
     private Long selectedChurchId(Church church) {
         return church == null ? null : church.getId();
+    }
+
+    private String regionDisplayText(Region region) {
+        if (region == null) {
+            return "";
+        }
+        if (region.getId() == null) {
+            return ALL_OPTION_TEXT;
+        }
+        return region.getRegionCode() + " - " + region.getRegionName();
+    }
+
+    private String churchDisplayText(Church church) {
+        if (church == null) {
+            return "";
+        }
+        if (church.getId() == null) {
+            return ALL_OPTION_TEXT;
+        }
+        return church.getChurchCode() + " - " + church.getChurchName();
     }
 
     private void updateSummary(SubmissionSummaryDto summary) {

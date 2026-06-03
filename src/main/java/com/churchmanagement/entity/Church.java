@@ -12,6 +12,7 @@ public class Church {
     private Long regionId;
     private String regionCode;
     private String regionName;
+    private Region.Status regionStatus;
     private Status status;
     private String authorizedPersonName;
     private AuthorizedPersonPosition authorizedPersonPosition;
@@ -88,6 +89,14 @@ public class Church {
 
     public void setRegionName(String regionName) {
         this.regionName = regionName;
+    }
+
+    public Region.Status getRegionStatus() {
+        return regionStatus;
+    }
+
+    public void setRegionStatus(Region.Status regionStatus) {
+        this.regionStatus = regionStatus;
     }
 
     public Status getStatus() {

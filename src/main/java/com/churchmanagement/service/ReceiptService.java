@@ -7,6 +7,7 @@ import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Receipt;
 import com.churchmanagement.entity.ReceiptItem;
+import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ChurchRepository;
@@ -193,6 +194,9 @@ public class ReceiptService {
                 .orElseThrow(() -> new ReceiptException("Selected church could not be found."));
         if (church.getStatus() != Church.Status.ACTIVE) {
             throw new ReceiptException("Selected church is inactive. Choose an active church.");
+        }
+        if (church.getRegionStatus() == Region.Status.INACTIVE) {
+            throw new ReceiptException("Selected church belongs to an inactive region. Choose a church from an active region.");
         }
         return church;
     }

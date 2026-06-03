@@ -71,6 +71,7 @@ public class ReceiptHistoryController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final Duration CANCELLATION_WINDOW = Duration.ofDays(7);
+    private static final String ALL_OPTION_TEXT = "ALL";
 
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final ActivityLogRepository activityLogRepository = new ActivityLogRepository();
@@ -80,6 +81,7 @@ public class ReceiptHistoryController {
     private final ChurchService churchService = new ChurchService();
     private final RegionService regionService = new RegionService();
     private final ObservableList<ReceiptResponseDto> receipts = FXCollections.observableArrayList();
+    private final ObservableList<Church> allChurches = FXCollections.observableArrayList();
     private final ObservableList<Church> churches = FXCollections.observableArrayList();
     private final ObservableList<Region> regions = FXCollections.observableArrayList();
 
@@ -134,8 +136,8 @@ public class ReceiptHistoryController {
             Church church = churchComboBox.getValue();
             Region region = regionComboBox.getValue();
             receipts.setAll(receiptRepository.searchReceipts(
-                    church == null ? null : church.getId(),
-                    region == null ? null : region.getId(),
+                    selectedChurchId(church),
+                    selectedRegionId(region),
                     weekStartDatePicker.getValue(),
                     receiptNoField.getText(),
                     statusComboBox.getValue()));
@@ -147,8 +149,9 @@ public class ReceiptHistoryController {
 
     @FXML
     private void handleClear() {
-        churchComboBox.getSelectionModel().clearSelection();
-        regionComboBox.getSelectionModel().clearSelection();
+        regionComboBox.getSelectionModel().selectFirst();
+        updateChurchFilter();
+        churchComboBox.getSelectionModel().selectFirst();
         weekStartDatePicker.setValue(null);
         receiptNoField.clear();
         statusComboBox.getSelectionModel().clearSelection();
@@ -161,13 +164,14 @@ public class ReceiptHistoryController {
     }
 
     private void configureFilters() {
-        ComboBoxUtil.makeChurchSearchable(churchComboBox, churches);
+        churchComboBox.setItems(churches);
+        ComboBoxUtil.makeSearchable(churchComboBox, this::churchDisplayText);
         regionComboBox.setItems(regions);
-        regionComboBox.setCellFactory(listView -> new RegionListCell());
-        regionComboBox.setButtonCell(new RegionListCell());
+        ComboBoxUtil.makeSearchable(regionComboBox, this::regionDisplayText);
         statusComboBox.setItems(FXCollections.observableArrayList(ReceiptStatus.ACTIVE, ReceiptStatus.CANCELLED));
         DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
         weekStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> updateWeekEndDate());
+        regionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateChurchFilter());
         updateWeekEndDate();
     }
 
@@ -230,11 +234,63 @@ public class ReceiptHistoryController {
 
     private void loadFilters() {
         try {
-            churches.setAll(churchService.findAll());
-            regions.setAll(regionService.findAll());
+            allChurches.setAll(churchService.findAll());
+            Region allRegions = new Region();
+            allRegions.setRegionName(ALL_OPTION_TEXT);
+            regions.setAll(allRegions);
+            regions.addAll(regionService.findAll());
+            regionComboBox.getSelectionModel().selectFirst();
+            updateChurchFilter();
+            churchComboBox.getSelectionModel().selectFirst();
         } catch (RuntimeException exception) {
             showError("Receipt History", "Unable to load filters right now. Please try again later.");
         }
+    }
+
+    private void updateChurchFilter() {
+        Region selectedRegion = regionComboBox.getValue();
+        Church selectedChurch = churchComboBox.getValue();
+        Long regionId = selectedRegionId(selectedRegion);
+
+        Church allChurchesOption = new Church();
+        allChurchesOption.setChurchName(ALL_OPTION_TEXT);
+        churches.setAll(allChurchesOption);
+        churches.addAll(allChurches.stream()
+                .filter(church -> regionId == null || regionId.equals(church.getRegionId()))
+                .toList());
+
+        if (selectedChurchId(selectedChurch) == null
+                || churches.stream().noneMatch(church -> selectedChurchId(selectedChurch).equals(church.getId()))) {
+            churchComboBox.getSelectionModel().selectFirst();
+        }
+    }
+
+    private Long selectedRegionId(Region region) {
+        return region == null ? null : region.getId();
+    }
+
+    private Long selectedChurchId(Church church) {
+        return church == null ? null : church.getId();
+    }
+
+    private String churchDisplayText(Church church) {
+        if (church == null) {
+            return "";
+        }
+        if (church.getId() == null) {
+            return ALL_OPTION_TEXT;
+        }
+        return church.getChurchCode() + " - " + church.getChurchName();
+    }
+
+    private String regionDisplayText(Region region) {
+        if (region == null) {
+            return "";
+        }
+        if (region.getId() == null) {
+            return ALL_OPTION_TEXT;
+        }
+        return region.getRegionCode() + " - " + region.getRegionName();
     }
 
     public void showReceiptDetailsDialog(long receiptId) {

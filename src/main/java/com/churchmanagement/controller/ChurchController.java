@@ -10,6 +10,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.util.ButtonIconUtil;
+import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.TablePaginationUtil;
@@ -166,8 +167,7 @@ public class ChurchController {
         statusColumn.setCellFactory(column -> new StatusBadgeCell());
         actionColumn.setCellFactory(column -> new ActionButtonCell());
         regionFilterComboBox.setItems(regionFilterOptions);
-        regionFilterComboBox.setCellFactory(listView -> new RegionListCell());
-        regionFilterComboBox.setButtonCell(new RegionListCell());
+        ComboBoxUtil.makeSearchable(regionFilterComboBox, this::regionDisplayText);
         regionFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> applyChurchFilters());
 
         TablePaginationUtil.configure(churchTable, churches, churchPagination, churchItemsPerPageComboBox,
@@ -208,6 +208,7 @@ public class ChurchController {
     private void refreshChurches() {
         try {
             allChurches.setAll(churchService.findAll().stream()
+                    .filter(church -> church.getRegionStatus() == Region.Status.ACTIVE)
                     .map(ChurchDto::fromChurch)
                     .toList());
             applyChurchFilters();
@@ -383,8 +384,7 @@ public class ChurchController {
         TextField churchNameField = new TextField();
         churchNameField.setPromptText("Main Church");
         ComboBox<Region> regionComboBox = new ComboBox<>(activeRegions);
-        regionComboBox.setCellFactory(listView -> new RegionListCell());
-        regionComboBox.setButtonCell(new RegionListCell());
+        ComboBoxUtil.makeSearchable(regionComboBox, this::regionDisplayText);
         regionComboBox.setMaxWidth(Double.MAX_VALUE);
         ComboBox<Church.Status> statusComboBox = new ComboBox<>(
                 FXCollections.observableArrayList(Church.Status.ACTIVE, Church.Status.INACTIVE));
@@ -459,7 +459,7 @@ public class ChurchController {
         grid.add(authorizedPersonPositionComboBox, 1, 5);
         grid.add(otherPositionLabel, 0, 6);
         grid.add(authorizedPersonPositionOtherField, 1, 6);
-        grid.add(DialogStyler.fieldLabel("SMS Mobile Number"), 0, 7);
+        grid.add(DialogStyler.fieldLabel("SMS Mobile Number *"), 0, 7);
         grid.add(smsMobileNumberField, 1, 7);
         grid.add(DialogStyler.fieldLabel("Receipt Language"), 0, 8);
         grid.add(receiptLanguageComboBox, 1, 8);
@@ -472,6 +472,16 @@ public class ChurchController {
 
     private String nullToBlank(String value) {
         return value == null ? "" : value;
+    }
+
+    private String regionDisplayText(Region region) {
+        if (region == null) {
+            return "";
+        }
+        if (region.getId() == null) {
+            return region.getRegionName();
+        }
+        return region.getRegionCode() + " - " + region.getRegionName();
     }
 
     private record ChurchDialogFields(TextField churchCodeField, TextField churchNameField,

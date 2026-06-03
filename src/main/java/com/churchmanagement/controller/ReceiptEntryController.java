@@ -160,9 +160,7 @@ public class ReceiptEntryController {
 
     private void loadActiveChurches() {
         try {
-            activeChurches.setAll(churchService.findAll().stream()
-                    .filter(church -> church.getStatus() == Church.Status.ACTIVE)
-                    .toList());
+            activeChurches.setAll(churchService.findOperationalChurches());
         } catch (ChurchService.ChurchException exception) {
             showFriendlyError(exception.getMessage());
         }
