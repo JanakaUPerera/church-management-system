@@ -1,13 +1,17 @@
 package com.churchmanagement.controller;
 
+import com.churchmanagement.dto.AtCommandResult;
+import com.churchmanagement.dto.ComPortDto;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.MockSmsService;
+import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import javafx.fxml.FXML;
@@ -17,15 +21,33 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TextField;
+import javafx.util.StringConverter;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class SettingsController {
+    private static final int MODEM_DETECTION_TIMEOUT_MILLIS = 10_000;
+    private static final int MODEM_PORT_PROBE_TIMEOUT_MILLIS = 1_500;
+    private static final int MODEM_TEST_TIMEOUT_MILLIS = 10_000;
+
     private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
     private final MockSmsService mockSmsService = new MockSmsService();
+    private final SerialPortService serialPortService = new SerialPortService();
+    private final AtCommandService atCommandService = new AtCommandService(serialPortService);
     private final ActivityLogService activityLogService = new ActivityLogService();
 
     private AuthenticatedUser currentUser;
@@ -37,10 +59,13 @@ public class SettingsController {
     private ComboBox<SmsSettings.GatewayType> gatewayTypeComboBox;
 
     @FXML
-    private TextField comPortField;
+    private ComboBox<ComPortDto> comPortComboBox;
 
     @FXML
-    private TextField baudRateField;
+    private ComboBox<Integer> baudRateComboBox;
+
+    @FXML
+    private TextArea modemResponseTextArea;
 
     @FXML
     private Button saveSmsSettingsButton;
@@ -49,12 +74,30 @@ public class SettingsController {
     private Button testSmsButton;
 
     @FXML
+    private Button detectComPortsButton;
+
+    @FXML
+    private Button testModemButton;
+
+    @FXML
     private void initialize() {
         currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new IllegalStateException("Please sign in to manage settings."));
         new PermissionGuard(currentUser).require("sms.settings.manage");
 
         gatewayTypeComboBox.getItems().setAll(SmsSettings.GatewayType.values());
+        baudRateComboBox.getItems().setAll(9600, 19200, 38400, 115200);
+        comPortComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ComPortDto port) {
+                return port == null ? "" : port.displayName();
+            }
+
+            @Override
+            public ComPortDto fromString(String value) {
+                return null;
+            }
+        });
         loadSmsSettings();
     }
 
@@ -70,7 +113,7 @@ public class SettingsController {
                     SmsSettings settings = smsSettingsRepository.saveSettings(
                             smsEnabledCheckBox.isSelected(),
                             gatewayTypeComboBox.getValue(),
-                            comPortField.getText(),
+                            selectedComPortName(),
                             baudRate
                     );
                     activityLogService.logSmsSettingsUpdated(currentUser.getUserId(), settings.isSmsEnabled(),
@@ -79,6 +122,74 @@ public class SettingsController {
                 },
                 settings -> showInfo("SMS settings saved", "SMS gateway settings were saved."),
                 throwable -> showError("SMS settings failed", processingMessage(throwable)));
+    }
+
+    @FXML
+    private void detectComPorts() {
+        Integer baudRate = parseBaudRate();
+        if (baudRate == null) {
+            return;
+        }
+
+        ProcessingDialog.run("Detect COM Ports", "Detecting SIM dongle modem ports...",
+                () -> {
+                    List<ComPortDto> availablePorts = serialPortService.listAvailablePorts();
+                    ComPortDetectionResult detectionResult = detectModemPorts(availablePorts, baudRate);
+                    activityLogService.logSmsComPortsDetected(currentUser.getUserId(),
+                            detectionResult.modemPorts().size());
+                    return detectionResult;
+                },
+                result -> {
+                    comPortComboBox.getItems().setAll(result.modemPorts());
+                    if (result.availablePortCount() == 0) {
+                        modemResponseTextArea.setText("No COM ports found.");
+                        showError("No COM ports found", "Plug in the SIM dongle and try detecting COM ports again.");
+                        return;
+                    }
+                    if (result.modemPorts().isEmpty()) {
+                        modemResponseTextArea.setText("Modem not responding.");
+                        showError("Modem not responding", "No detected COM port responded to the AT command.");
+                        return;
+                    }
+                    comPortComboBox.getSelectionModel().selectFirst();
+                    String timeoutNote = result.timedOut()
+                            ? "Detection stopped after 10 seconds." + System.lineSeparator()
+                            : "";
+                    modemResponseTextArea.setText(timeoutNote + formatPorts(result.modemPorts()));
+                },
+                throwable -> showError("COM port detection failed", processingMessage(throwable)));
+    }
+
+    @FXML
+    private void testModem() {
+        String comPort = selectedComPortName();
+        Integer baudRate = parseBaudRate();
+        if (baudRate == null) {
+            return;
+        }
+
+        ProcessingDialog.run("Test Modem", "Testing SIM dongle with AT commands...",
+                () -> {
+                    AtCommandResult result = testModemWithTimeout(comPort, baudRate);
+                    if (result.isModemDetected()) {
+                        activityLogService.logSmsModemTestSuccess(currentUser.getUserId(), comPort, baudRate);
+                    } else {
+                        activityLogService.logSmsModemTestFailed(currentUser.getUserId(), comPort, baudRate,
+                                result.getMessage());
+                    }
+                    return result;
+                },
+                result -> {
+                    modemResponseTextArea.setText(result.getResponse() == null || result.getResponse().isBlank()
+                            ? result.getMessage()
+                            : result.getResponse());
+                    if (result.isModemDetected()) {
+                        showInfo("Modem detected", result.getMessage());
+                    } else {
+                        showError("Modem test failed", result.getMessage());
+                    }
+                },
+                throwable -> showError("Modem test failed", processingMessage(throwable)));
     }
 
     @FXML
@@ -126,26 +237,41 @@ public class SettingsController {
         SmsSettings settings = smsSettingsRepository.getSettings();
         smsEnabledCheckBox.setSelected(settings.isSmsEnabled());
         gatewayTypeComboBox.setValue(settings.getGatewayType());
-        comPortField.setText(settings.getComPort() == null ? "" : settings.getComPort());
-        baudRateField.setText(settings.getBaudRate() == null ? "9600" : settings.getBaudRate().toString());
+        if (settings.getComPort() != null && !settings.getComPort().isBlank()) {
+            comPortComboBox.getItems().setAll(new ComPortDto(settings.getComPort(), "Saved COM port",
+                    settings.getComPort()));
+            comPortComboBox.getSelectionModel().selectFirst();
+        }
+        baudRateComboBox.setValue(settings.getBaudRate() == null ? 9600 : settings.getBaudRate());
     }
 
     private Integer parseBaudRate() {
-        String value = baudRateField.getText();
-        if (value == null || value.isBlank()) {
-            return 9600;
-        }
-        try {
-            int baudRate = Integer.parseInt(value.strip());
-            if (baudRate <= 0) {
-                showError("Invalid baud rate", "Baud rate must be greater than zero.");
-                return null;
-            }
-            return baudRate;
-        } catch (NumberFormatException exception) {
-            showError("Invalid baud rate", "Baud rate must be a number.");
+        Integer baudRate = baudRateComboBox.getValue();
+        if (baudRate == null) {
+            showError("Invalid baud rate", "Select a baud rate.");
             return null;
         }
+        return baudRate;
+    }
+
+    private String selectedComPortName() {
+        ComPortDto selected = comPortComboBox.getValue();
+        return selected == null ? null : selected.getSystemPortName();
+    }
+
+    private String formatPorts(List<ComPortDto> ports) {
+        StringBuilder builder = new StringBuilder("Detected COM ports:");
+        for (ComPortDto port : ports) {
+            builder.append(System.lineSeparator())
+                    .append("- Port name: ").append(blankToDash(port.getPortName()))
+                    .append(", Description: ").append(blankToDash(port.getDescription()))
+                    .append(", System port: ").append(blankToDash(port.getSystemPortName()));
+        }
+        return builder.toString();
+    }
+
+    private String blankToDash(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 
     private void showInfo(String title, String message) {
@@ -166,5 +292,76 @@ public class SettingsController {
 
     private String processingMessage(Throwable throwable) {
         return throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+    }
+
+    private ComPortDetectionResult detectModemPorts(List<ComPortDto> availablePorts, int baudRate) {
+        long deadline = System.currentTimeMillis() + MODEM_DETECTION_TIMEOUT_MILLIS;
+        List<ComPortDto> modemPorts = new ArrayList<>();
+        ExecutorService probeExecutor = Executors.newCachedThreadPool(daemonThreadFactory("sms-modem-probe"));
+        boolean timedOut = false;
+        try {
+            for (ComPortDto port : availablePorts) {
+                if (System.currentTimeMillis() >= deadline) {
+                    timedOut = true;
+                    break;
+                }
+                if (probePort(probeExecutor, port, baudRate, deadline)) {
+                    modemPorts.add(port);
+                }
+            }
+        } finally {
+            probeExecutor.shutdownNow();
+        }
+        return new ComPortDetectionResult(availablePorts.size(), modemPorts, timedOut);
+    }
+
+    private AtCommandResult testModemWithTimeout(String comPort, int baudRate) {
+        ExecutorService testExecutor = Executors.newSingleThreadExecutor(daemonThreadFactory("sms-modem-test"));
+        Future<AtCommandResult> test = testExecutor.submit((Callable<AtCommandResult>) () ->
+                atCommandService.testModem(comPort, baudRate));
+        try {
+            return test.get(MODEM_TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return new AtCommandResult(false, "AT command timeout.", "", AtCommandService.TEST_COMMANDS);
+        } catch (ExecutionException exception) {
+            return new AtCommandResult(false, processingMessage(exception), "", AtCommandService.TEST_COMMANDS);
+        } catch (TimeoutException exception) {
+            test.cancel(true);
+            return new AtCommandResult(false, "AT command timeout.", "", AtCommandService.TEST_COMMANDS);
+        } finally {
+            testExecutor.shutdownNow();
+        }
+    }
+
+    private boolean probePort(ExecutorService probeExecutor, ComPortDto port, int baudRate, long deadline) {
+        int timeoutMillis = probeTimeout(deadline);
+        Future<Boolean> probe = probeExecutor.submit((Callable<Boolean>) () ->
+                atCommandService.isModemPort(port.getSystemPortName(), baudRate, timeoutMillis));
+        try {
+            return probe.get(timeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (ExecutionException | TimeoutException exception) {
+            probe.cancel(true);
+            return false;
+        }
+    }
+
+    private ThreadFactory daemonThreadFactory(String namePrefix) {
+        return runnable -> {
+            Thread thread = new Thread(runnable, namePrefix + "-" + System.nanoTime());
+            thread.setDaemon(true);
+            return thread;
+        };
+    }
+
+    private int probeTimeout(long deadline) {
+        long remaining = deadline - System.currentTimeMillis();
+        return (int) Math.min(MODEM_PORT_PROBE_TIMEOUT_MILLIS, Math.max(250, remaining));
+    }
+
+    private record ComPortDetectionResult(int availablePortCount, List<ComPortDto> modemPorts, boolean timedOut) {
     }
 }

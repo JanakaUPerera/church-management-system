@@ -5,7 +5,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -24,13 +24,18 @@
         <ComboBox fx:id="gatewayTypeComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
         <Label text="COM port" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-        <TextField fx:id="comPortField" promptText="Example: COM3" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <ComboBox fx:id="comPortComboBox" prefWidth="360" promptText="Detect and select COM port"
+                  GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
         <Label text="Baud rate" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-        <TextField fx:id="baudRateField" promptText="9600" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        <ComboBox fx:id="baudRateComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
     </GridPane>
     <HBox spacing="10">
+        <Button fx:id="detectComPortsButton" onAction="#detectComPorts" text="Detect COM Ports"/>
+        <Button fx:id="testModemButton" onAction="#testModem" text="Test Modem"/>
         <Button fx:id="saveSmsSettingsButton" onAction="#saveSmsSettings" styleClass="primary-button" text="Save settings"/>
         <Button fx:id="testSmsButton" onAction="#testSms" text="Test SMS"/>
     </HBox>
+    <TextArea fx:id="modemResponseTextArea" editable="false" prefRowCount="10" promptText="AT command response"
+              wrapText="true"/>
 </VBox>

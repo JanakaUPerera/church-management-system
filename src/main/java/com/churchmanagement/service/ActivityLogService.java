@@ -49,6 +49,9 @@ public class ActivityLogService {
     public static final String SMS_SETTINGS_UPDATED = "SMS_SETTINGS_UPDATED";
     public static final String SMS_TEST_SENT = "SMS_TEST_SENT";
     public static final String SMS_TEST_FAILED = "SMS_TEST_FAILED";
+    public static final String SMS_COM_PORT_DETECTED = "SMS_COM_PORT_DETECTED";
+    public static final String SMS_MODEM_TEST_SUCCESS = "SMS_MODEM_TEST_SUCCESS";
+    public static final String SMS_MODEM_TEST_FAILED = "SMS_MODEM_TEST_FAILED";
     public static final String SMS_LOGS_VIEWED = "SMS_LOGS_VIEWED";
     public static final String SMS_LOGS_SEARCHED = "SMS_LOGS_SEARCHED";
     public static final String SMS_RESENT_SUCCESS = "SMS_RESENT_SUCCESS";
@@ -270,6 +273,22 @@ public class ActivityLogService {
     public void logSmsTestFailed(Long userId, String mobileNumber, String reason) {
         log(userId, SMS_TEST_FAILED,
                 "mobile_number: " + nullToBlank(mobileNumber) + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logSmsComPortsDetected(Long userId, int portCount) {
+        log(userId, SMS_COM_PORT_DETECTED, "port_count: " + portCount);
+    }
+
+    public void logSmsModemTestSuccess(Long userId, String comPort, int baudRate) {
+        log(userId, SMS_MODEM_TEST_SUCCESS,
+                "com_port: " + nullToBlank(comPort) + ", baud_rate: " + baudRate);
+    }
+
+    public void logSmsModemTestFailed(Long userId, String comPort, int baudRate, String reason) {
+        log(userId, SMS_MODEM_TEST_FAILED,
+                "com_port: " + nullToBlank(comPort)
+                        + ", baud_rate: " + baudRate
+                        + ", reason: " + nullToBlank(reason));
     }
 
     public void logSmsLogsViewed(Long userId, int resultCount) {
