@@ -21,7 +21,8 @@ public class SmsResendService {
     private final Clock clock;
 
     public SmsResendService() {
-        this(new SmsLogRepository(), new MockSmsService(), new ActivityLogService(), Clock.systemDefaultZone());
+        this(new SmsLogRepository(), new SmsServiceFactory().createRoutingSmsService(), new ActivityLogService(),
+                Clock.systemDefaultZone());
     }
 
     public SmsResendService(SmsLogRepository smsLogRepository, SmsService smsService,

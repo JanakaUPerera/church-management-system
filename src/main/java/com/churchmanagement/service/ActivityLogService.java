@@ -242,7 +242,7 @@ public class ActivityLogService {
         log(userId, SMS_SENT,
                 "receipt_id: " + receiptId
                         + ", church_id: " + nullToBlank(churchId)
-                        + ", mobile_number: " + nullToBlank(mobileNumber)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
                         + ", provider: " + nullToBlank(provider));
     }
 
@@ -250,7 +250,7 @@ public class ActivityLogService {
         log(userId, SMS_FAILED,
                 "receipt_id: " + nullToBlank(receiptId)
                         + ", church_id: " + nullToBlank(churchId)
-                        + ", mobile_number: " + nullToBlank(mobileNumber)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
                         + ", reason: " + nullToBlank(reason));
     }
 
@@ -267,12 +267,12 @@ public class ActivityLogService {
 
     public void logSmsTestSent(Long userId, String mobileNumber, String provider) {
         log(userId, SMS_TEST_SENT,
-                "mobile_number: " + nullToBlank(mobileNumber) + ", provider: " + nullToBlank(provider));
+                "mobile_number: " + maskMobileNumber(mobileNumber) + ", provider: " + nullToBlank(provider));
     }
 
     public void logSmsTestFailed(Long userId, String mobileNumber, String reason) {
         log(userId, SMS_TEST_FAILED,
-                "mobile_number: " + nullToBlank(mobileNumber) + ", reason: " + nullToBlank(reason));
+                "mobile_number: " + maskMobileNumber(mobileNumber) + ", reason: " + nullToBlank(reason));
     }
 
     public void logSmsComPortsDetected(Long userId, int portCount) {
@@ -326,7 +326,7 @@ public class ActivityLogService {
                         + ", new_sms_log_id: " + nullToBlank(newSmsLogId)
                         + ", receipt_id: " + nullToBlank(receiptId)
                         + ", church_id: " + nullToBlank(churchId)
-                        + ", mobile_number: " + nullToBlank(mobileNumber)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
                         + ", resent_by_user_id: " + nullToBlank(userId)
                         + ", resend_status: " + resendStatus);
     }
@@ -496,6 +496,19 @@ public class ActivityLogService {
 
     private String nullToBlank(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private String maskMobileNumber(String mobileNumber) {
+        if (mobileNumber == null || mobileNumber.isBlank()) {
+            return "";
+        }
+        String value = mobileNumber.strip();
+        if (value.length() <= 6) {
+            return "******";
+        }
+        return value.substring(0, Math.min(5, value.length()))
+                + "*****"
+                + value.substring(Math.max(0, value.length() - 2));
     }
 
     private String receiptLanguageName(ReceiptLanguage language) {

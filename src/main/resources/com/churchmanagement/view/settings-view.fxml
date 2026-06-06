@@ -6,6 +6,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -34,8 +35,20 @@
         <Button fx:id="detectComPortsButton" onAction="#detectComPorts" text="Detect COM Ports"/>
         <Button fx:id="testModemButton" onAction="#testModem" text="Test Modem"/>
         <Button fx:id="saveSmsSettingsButton" onAction="#saveSmsSettings" styleClass="primary-button" text="Save settings"/>
-        <Button fx:id="testSmsButton" onAction="#testSms" text="Test SMS"/>
     </HBox>
     <TextArea fx:id="modemResponseTextArea" editable="false" prefRowCount="10" promptText="AT command response"
               wrapText="true"/>
+    <Label styleClass="section-title" text="Test Real SMS"/>
+    <GridPane hgap="14" vgap="12">
+        <Label text="Mobile number" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="testSmsMobileNumberField" prefWidth="260" promptText="0771234567 or +94771234567"
+                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+        <Label text="Message" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextArea fx:id="testSmsMessageTextArea" prefColumnCount="36" prefRowCount="3" wrapText="true"
+                  GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    </GridPane>
+    <HBox spacing="10">
+        <Button fx:id="sendTestSmsButton" onAction="#testSms" styleClass="primary-button" text="Send Test SMS"/>
+    </HBox>
 </VBox>

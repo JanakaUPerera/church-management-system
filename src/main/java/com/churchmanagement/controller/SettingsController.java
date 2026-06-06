@@ -4,32 +4,29 @@ import com.churchmanagement.dto.AtCommandResult;
 import com.churchmanagement.dto.ComPortDto;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.ActivityLogService;
-import com.churchmanagement.service.MockSmsService;
 import com.churchmanagement.service.SerialPortService;
+import com.churchmanagement.service.SmsServiceFactory;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.TextField;
 import javafx.util.StringConverter;
-import javafx.scene.layout.VBox;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -45,10 +42,11 @@ public class SettingsController {
     private static final int MODEM_TEST_TIMEOUT_MILLIS = 10_000;
 
     private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
-    private final MockSmsService mockSmsService = new MockSmsService();
     private final SerialPortService serialPortService = new SerialPortService();
     private final AtCommandService atCommandService = new AtCommandService(serialPortService);
     private final ActivityLogService activityLogService = new ActivityLogService();
+    private final SmsLogRepository smsLogRepository = new SmsLogRepository();
+    private final SmsServiceFactory smsServiceFactory = new SmsServiceFactory();
 
     private AuthenticatedUser currentUser;
 
@@ -71,13 +69,19 @@ public class SettingsController {
     private Button saveSmsSettingsButton;
 
     @FXML
-    private Button testSmsButton;
-
-    @FXML
     private Button detectComPortsButton;
 
     @FXML
     private Button testModemButton;
+
+    @FXML
+    private TextField testSmsMobileNumberField;
+
+    @FXML
+    private TextArea testSmsMessageTextArea;
+
+    @FXML
+    private Button sendTestSmsButton;
 
     @FXML
     private void initialize() {
@@ -99,6 +103,7 @@ public class SettingsController {
             }
         });
         loadSmsSettings();
+        testSmsMessageTextArea.setText("Test SMS from Church Management System.");
     }
 
     @FXML
@@ -194,32 +199,30 @@ public class SettingsController {
 
     @FXML
     private void testSms() {
-        Dialog<String> dialog = DialogStyler.apply(new Dialog<>());
-        dialog.setTitle("Test SMS");
-        dialog.setHeaderText("Send test SMS");
-        ButtonType sendButton = new ButtonType("Send", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(sendButton, ButtonType.CANCEL);
-
-        TextField mobileNumberField = new TextField();
-        mobileNumberField.setPromptText("0771234567 or +94771234567");
-        VBox content = new VBox(8, DialogStyler.fieldLabel("Mobile number"), mobileNumberField);
-        content.setPrefWidth(360);
-        dialog.getDialogPane().setContent(content);
-        dialog.setResultConverter(buttonType -> buttonType == sendButton ? mobileNumberField.getText() : null);
-
-        Optional<String> mobileNumber = dialog.showAndWait();
-        if (mobileNumber.isEmpty()) {
+        String mobileNumber = testSmsMobileNumberField.getText();
+        String message = testSmsMessageTextArea.getText();
+        Integer baudRate = parseBaudRate();
+        if (baudRate == null) {
             return;
         }
 
         ProcessingDialog.run("Test SMS", "Sending test SMS...",
                 () -> {
-                    SmsResult result = mockSmsService.sendSms(mobileNumber.get(),
-                            "Test SMS from Church Management System.");
+                    smsSettingsRepository.saveSettings(
+                            smsEnabledCheckBox.isSelected(),
+                            gatewayTypeComboBox.getValue(),
+                            selectedComPortName(),
+                            baudRate
+                    );
+                    SmsResult result = smsServiceFactory.createSmsService().sendSms(mobileNumber, message);
+                    smsLogRepository.insertSmsLog(null, null, mobileNumber, message, result.getProvider(),
+                            result.isSuccess() ? SmsLogRepository.SmsStatus.SUCCESS : SmsLogRepository.SmsStatus.FAILED,
+                            result.isSuccess() ? null : result.getMessage(), result.getSentAt(),
+                            LocalDateTime.now());
                     if (result.isSuccess()) {
-                        activityLogService.logSmsTestSent(currentUser.getUserId(), mobileNumber.get(), result.getProvider());
+                        activityLogService.logSmsTestSent(currentUser.getUserId(), mobileNumber, result.getProvider());
                     } else {
-                        activityLogService.logSmsTestFailed(currentUser.getUserId(), mobileNumber.get(), result.getMessage());
+                        activityLogService.logSmsTestFailed(currentUser.getUserId(), mobileNumber, result.getMessage());
                     }
                     return result;
                 },

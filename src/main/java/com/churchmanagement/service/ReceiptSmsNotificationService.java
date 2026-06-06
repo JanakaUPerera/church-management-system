@@ -29,7 +29,7 @@ public class ReceiptSmsNotificationService {
 
     public ReceiptSmsNotificationService() {
         this(new ReceiptRepository(), new ChurchRepository(), new SmsSettingsRepository(), new SmsLogRepository(),
-                new MockSmsService(), new ActivityLogService(), Clock.systemDefaultZone());
+                new SmsServiceFactory().createRoutingSmsService(), new ActivityLogService(), Clock.systemDefaultZone());
     }
 
     public ReceiptSmsNotificationService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
@@ -85,7 +85,6 @@ public class ReceiptSmsNotificationService {
                 System.err.println("SMS failure log insert failed: " + logException.getMessage());
             }
             activityLogService.logSmsFailed(userId, receiptId, church.getId(), mobileNumber, exception.getMessage());
-            throw new SmsNotificationException("Unable to send receipt SMS.", exception);
         }
     }
 
