@@ -1,8 +1,12 @@
 package com.churchmanagement.service;
 
+import com.churchmanagement.dto.SmsParsedResponse;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.enums.SmsDeliveryStatus;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsSettingsRepository;
+import com.churchmanagement.util.SmsModemResponseParser;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +14,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.Locale;
 
 public class SimDongleSmsService implements SmsService {
     public static final String PROVIDER = "SIM Dongle";
@@ -22,6 +25,7 @@ public class SimDongleSmsService implements SmsService {
     private final SmsSettingsRepository smsSettingsRepository;
     private final SerialPortService serialPortService;
     private final Clock clock;
+    private final SmsModemResponseParser responseParser = new SmsModemResponseParser();
 
     public SimDongleSmsService() {
         this(new SmsSettingsRepository(), new SerialPortService(), Clock.systemDefaultZone());
@@ -80,6 +84,7 @@ public class SimDongleSmsService implements SmsService {
             if (!containsOk(characterSetResponse)) {
                 return modemFailure("Unable to set SMS text mode.", characterSetResponse);
             }
+            boolean deliveryReportsEnabled = enableDeliveryReports(connection);
             String recipientResponse = sendCommand(connection, "AT+CMGS=\"" + normalizedNumber + "\"",
                     COMMAND_TIMEOUT_MILLIS, ">");
             if (!recipientResponse.contains(">")) {
@@ -90,17 +95,38 @@ public class SimDongleSmsService implements SmsService {
             if (sendResponse == null || sendResponse.isBlank()) {
                 return failed("SMS sending timed out.");
             }
-            if (containsError(sendResponse)) {
-                return modemFailure(specificFailureMessage(sendResponse), sendResponse);
+            SmsParsedResponse parsedResponse = responseParser.parseSendResponse(sendResponse);
+            if (parsedResponse.isSuccess()) {
+                SmsDeliveryStatus deliveryStatus = deliveryReportsEnabled
+                        ? SmsDeliveryStatus.UNKNOWN
+                        : SmsDeliveryStatus.NOT_SUPPORTED;
+                String messageText = "SMS accepted by modem. Final delivery report is not confirmed.";
+                return new SmsResult(true, messageText, PROVIDER, LocalDateTime.now(clock),
+                        SmsSendStatus.SENT, deliveryStatus, parsedResponse.getModemMessageReference(),
+                        parsedResponse.getModemRawResponse(), null, null);
             }
-            if (sendResponse.contains("+CMGS:") && containsOk(sendResponse)) {
-                return new SmsResult(true, "SMS sent successfully.", PROVIDER, LocalDateTime.now(clock));
-            }
-            return modemFailure("SMS sending failed.", sendResponse);
+            return new SmsResult(false, parsedResponse.getErrorMessage(), PROVIDER, null,
+                    SmsSendStatus.FAILED, SmsDeliveryStatus.FAILED, null,
+                    parsedResponse.getModemRawResponse(), parsedResponse.getErrorCode(),
+                    parsedResponse.getErrorMessage());
         } catch (SmsTimeoutException exception) {
             return failed("SMS sending timed out.");
         } catch (IOException exception) {
             return failed("SMS sending failed.");
+        }
+    }
+
+    public boolean enableDeliveryReports() {
+        SmsSettings settings = smsSettingsRepository.getSettings();
+        if (settings.getComPort() == null || settings.getComPort().isBlank()) {
+            return false;
+        }
+        int baudRate = settings.getBaudRate() == null ? 9600 : settings.getBaudRate();
+        try (SerialPortService.SerialConnection connection = serialPortService.openConnection(
+                settings.getComPort().strip(), baudRate, COMMAND_TIMEOUT_MILLIS)) {
+            return connection != null && enableDeliveryReports(connection);
+        } catch (IOException exception) {
+            return false;
         }
     }
 
@@ -174,41 +200,43 @@ public class SimDongleSmsService implements SmsService {
     }
 
     private SmsResult failed(String message) {
-        return new SmsResult(false, message, PROVIDER, null);
+        return new SmsResult(false, message, PROVIDER, null, SmsSendStatus.FAILED, SmsDeliveryStatus.FAILED,
+                null, null, null, message);
     }
 
     private SmsResult modemFailure(String friendlyMessage, String rawResponse) {
         if (rawResponse != null && !rawResponse.isBlank()) {
             System.err.println("SIM dongle SMS failed. Response: " + rawResponse.strip());
         }
-        return failed(friendlyMessage);
-    }
-
-    private String specificFailureMessage(String response) {
-        String upper = response == null ? "" : response.toUpperCase(Locale.ROOT);
-        if (upper.contains("+CMS ERROR") || upper.contains("+CME ERROR")) {
-            return "SIM card may not be inserted.";
-        }
-        if (upper.contains("NO CARRIER") || upper.contains("NO DIALTONE")) {
-            return "Network signal may be weak.";
-        }
-        return "SMS sending failed.";
+        SmsParsedResponse parsedResponse = responseParser.parseSendResponse(rawResponse);
+        return new SmsResult(false, friendlyMessage, PROVIDER, null, SmsSendStatus.FAILED,
+                SmsDeliveryStatus.FAILED, null, parsedResponse.getModemRawResponse(),
+                parsedResponse.getErrorCode(), friendlyMessage);
     }
 
     private boolean containsOk(String response) {
-        return response != null && response.toUpperCase(Locale.ROOT).contains("OK");
+        return response != null && response.toUpperCase(java.util.Locale.ROOT).contains("OK");
     }
 
     private boolean containsError(String response) {
         if (response == null) {
             return false;
         }
-        String upper = response.toUpperCase(Locale.ROOT);
+        String upper = response.toUpperCase(java.util.Locale.ROOT);
         return upper.contains("ERROR")
                 || upper.contains("+CMS ERROR")
                 || upper.contains("+CME ERROR")
                 || upper.contains("NO CARRIER")
                 || upper.contains("NO DIALTONE");
+    }
+
+    private boolean enableDeliveryReports(SerialPortService.SerialConnection connection) throws IOException {
+        String csmpResponse = sendCommand(connection, "AT+CSMP=49,167,0,0", COMMAND_TIMEOUT_MILLIS);
+        if (!containsOk(csmpResponse)) {
+            return false;
+        }
+        String cnmiResponse = sendCommand(connection, "AT+CNMI=2,1,0,1,0", COMMAND_TIMEOUT_MILLIS);
+        return containsOk(cnmiResponse);
     }
 
     private void sleepBriefly() {

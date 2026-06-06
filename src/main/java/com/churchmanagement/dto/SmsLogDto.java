@@ -14,7 +14,15 @@ public class SmsLogDto {
     private String message;
     private String provider;
     private String status;
+    private String sendStatus;
+    private String deliveryStatus;
+    private String modemMessageReference;
+    private String modemRawResponse;
+    private String deliveryReportRaw;
     private String errorMessage;
+    private String errorCode;
+    private int attemptCount = 1;
+    private LocalDateTime lastAttemptAt;
     private LocalDateTime sentAt;
     private LocalDateTime createdAt;
     private Long resendOfSmsLogId;
@@ -109,6 +117,48 @@ public class SmsLogDto {
 
     public void setStatus(String status) {
         this.status = status;
+        this.sendStatus = status;
+    }
+
+    public String getSendStatus() {
+        return sendStatus == null ? status : sendStatus;
+    }
+
+    public void setSendStatus(String sendStatus) {
+        this.sendStatus = sendStatus;
+        this.status = sendStatus;
+    }
+
+    public String getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(String deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
+    }
+
+    public String getModemMessageReference() {
+        return modemMessageReference;
+    }
+
+    public void setModemMessageReference(String modemMessageReference) {
+        this.modemMessageReference = modemMessageReference;
+    }
+
+    public String getModemRawResponse() {
+        return modemRawResponse;
+    }
+
+    public void setModemRawResponse(String modemRawResponse) {
+        this.modemRawResponse = modemRawResponse;
+    }
+
+    public String getDeliveryReportRaw() {
+        return deliveryReportRaw;
+    }
+
+    public void setDeliveryReportRaw(String deliveryReportRaw) {
+        this.deliveryReportRaw = deliveryReportRaw;
     }
 
     public String getErrorMessage() {
@@ -117,6 +167,30 @@ public class SmsLogDto {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(int attemptCount) {
+        this.attemptCount = attemptCount;
+    }
+
+    public LocalDateTime getLastAttemptAt() {
+        return lastAttemptAt;
+    }
+
+    public void setLastAttemptAt(LocalDateTime lastAttemptAt) {
+        this.lastAttemptAt = lastAttemptAt;
     }
 
     public LocalDateTime getSentAt() {

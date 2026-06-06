@@ -48,6 +48,17 @@ public class ChurchService {
         }
     }
 
+    public Church findById(long id) {
+        try {
+            return churchRepository.findById(id)
+                    .orElseThrow(() -> new ChurchException("Church could not be found."));
+        } catch (ChurchException exception) {
+            throw exception;
+        } catch (DatabaseException exception) {
+            throw new ChurchException("Unable to load church right now. Please try again later.", exception);
+        }
+    }
+
     public List<Church> search(String searchText) {
         if (searchText == null || searchText.isBlank()) {
             return findAll();

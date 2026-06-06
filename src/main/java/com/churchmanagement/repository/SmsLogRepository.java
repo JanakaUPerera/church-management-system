@@ -3,6 +3,8 @@ package com.churchmanagement.repository;
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsLogSearchCriteria;
+import com.churchmanagement.enums.SmsDeliveryStatus;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.exception.DatabaseException;
 
 import javax.sql.DataSource;
@@ -33,12 +35,26 @@ public class SmsLogRepository {
 
     public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
                              SmsStatus status, String errorMessage, LocalDateTime sentAt, LocalDateTime createdAt) {
+        SmsSendStatus sendStatus = status == SmsStatus.SUCCESS ? SmsSendStatus.SENT : SmsSendStatus.valueOf(status.name());
+        SmsDeliveryStatus deliveryStatus = sendStatus == SmsSendStatus.FAILED
+                ? SmsDeliveryStatus.FAILED
+                : SmsDeliveryStatus.UNKNOWN;
+        insertSmsLog(receiptId, churchId, mobileNumber, message, provider, sendStatus, deliveryStatus, null, null,
+                null, null, errorMessage, 1, createdAt, sentAt, createdAt);
+    }
+
+    public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
+                             SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus, String modemMessageReference,
+                             String modemRawResponse, String deliveryReportRaw, String errorCode, String errorMessage,
+                             int attemptCount, LocalDateTime lastAttemptAt, LocalDateTime sentAt,
+                             LocalDateTime createdAt) {
         String sql = """
                 INSERT INTO sms_logs (
-                    sms_log_uuid, receipt_id, church_id, mobile_number, message, provider, status,
-                    error_message, sent_at, created_at
+                    sms_log_uuid, receipt_id, church_id, mobile_number, message, provider,
+                    modem_message_reference, modem_raw_response, status, delivery_status, delivery_report_raw,
+                    error_message, error_code, attempt_count, last_attempt_at, sent_at, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = dataSource.getConnection();
@@ -49,10 +65,17 @@ public class SmsLogRepository {
             statement.setString(4, mobileNumber);
             statement.setString(5, message);
             setNullableString(statement, 6, provider);
-            statement.setString(7, status.name());
-            setNullableString(statement, 8, truncate(errorMessage, 500));
-            setNullableTimestamp(statement, 9, sentAt);
-            statement.setTimestamp(10, Timestamp.valueOf(createdAt));
+            setNullableString(statement, 7, modemMessageReference);
+            setNullableText(statement, 8, modemRawResponse);
+            statement.setString(9, defaultSendStatus(sendStatus).name());
+            statement.setString(10, defaultDeliveryStatus(deliveryStatus).name());
+            setNullableText(statement, 11, deliveryReportRaw);
+            setNullableString(statement, 12, truncate(errorMessage, 500));
+            setNullableString(statement, 13, errorCode);
+            statement.setInt(14, Math.max(1, attemptCount));
+            setNullableTimestamp(statement, 15, lastAttemptAt);
+            setNullableTimestamp(statement, 16, sentAt);
+            statement.setTimestamp(17, Timestamp.valueOf(createdAt));
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Unable to insert SMS log.", exception);
@@ -67,11 +90,12 @@ public class SmsLogRepository {
                                    String resendReason) {
         String sql = """
                 INSERT INTO sms_logs (
-                    sms_log_uuid, receipt_id, church_id, mobile_number, message, provider, status,
-                    error_message, sent_at, created_at, resend_of_sms_log_id,
+                    sms_log_uuid, receipt_id, church_id, mobile_number, message, provider,
+                    modem_message_reference, modem_raw_response, status, delivery_status, delivery_report_raw,
+                    error_message, error_code, attempt_count, last_attempt_at, sent_at, created_at, resend_of_sms_log_id,
                     resent_by_user_id, resend_reason
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = dataSource.getConnection();
@@ -82,13 +106,20 @@ public class SmsLogRepository {
             statement.setString(4, newLog.getMobileNumber());
             statement.setString(5, newLog.getMessage());
             setNullableString(statement, 6, newLog.getProvider());
-            statement.setString(7, newLog.getStatus());
-            setNullableString(statement, 8, truncate(newLog.getErrorMessage(), 500));
-            setNullableTimestamp(statement, 9, newLog.getSentAt());
-            statement.setTimestamp(10, Timestamp.valueOf(newLog.getCreatedAt()));
-            statement.setLong(11, originalSmsLogId);
-            statement.setLong(12, resentByUserId);
-            setNullableString(statement, 13, truncate(resendReason, 255));
+            setNullableString(statement, 7, newLog.getModemMessageReference());
+            setNullableText(statement, 8, newLog.getModemRawResponse());
+            statement.setString(9, nullToDefault(newLog.getSendStatus(), SmsSendStatus.SENT.name()));
+            statement.setString(10, nullToDefault(newLog.getDeliveryStatus(), SmsDeliveryStatus.UNKNOWN.name()));
+            setNullableText(statement, 11, newLog.getDeliveryReportRaw());
+            setNullableString(statement, 12, truncate(newLog.getErrorMessage(), 500));
+            setNullableString(statement, 13, newLog.getErrorCode());
+            statement.setInt(14, Math.max(1, newLog.getAttemptCount()));
+            setNullableTimestamp(statement, 15, newLog.getLastAttemptAt());
+            setNullableTimestamp(statement, 16, newLog.getSentAt());
+            statement.setTimestamp(17, Timestamp.valueOf(newLog.getCreatedAt()));
+            statement.setLong(18, originalSmsLogId);
+            statement.setLong(19, resentByUserId);
+            setNullableString(statement, 20, truncate(resendReason, 255));
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -162,6 +193,10 @@ public class SmsLogRepository {
             sql.append("AND sl.status = ? ");
             parameters.add(safeCriteria.getStatus().name());
         }
+        if (safeCriteria.getDeliveryStatus() != null) {
+            sql.append("AND sl.delivery_status = ? ");
+            parameters.add(safeCriteria.getDeliveryStatus().name());
+        }
         if (safeCriteria.getMobileNumber() != null && !safeCriteria.getMobileNumber().isBlank()) {
             sql.append("AND sl.mobile_number LIKE ? ");
             parameters.add("%" + safeCriteria.getMobileNumber().strip() + "%");
@@ -195,7 +230,7 @@ public class SmsLogRepository {
         }
         if (status != null) {
             sql.append("AND sl.status = ? ");
-            parameters.add(status.name());
+            parameters.add(status == SmsStatus.SUCCESS ? SmsSendStatus.SENT.name() : status.name());
         }
         sql.append("ORDER BY sl.created_at DESC");
 
@@ -214,8 +249,9 @@ public class SmsLogRepository {
         return """
                 SELECT sl.id, sl.sms_log_uuid, sl.receipt_id, sl.church_id, r.receipt_no,
                        c.church_code, c.church_name,
-                       sl.mobile_number, sl.message, sl.provider, sl.status,
-                       sl.error_message, sl.sent_at, sl.created_at,
+                       sl.mobile_number, sl.message, sl.provider, sl.modem_message_reference, sl.modem_raw_response,
+                       sl.status, sl.delivery_status, sl.delivery_report_raw, sl.error_message, sl.error_code,
+                       sl.attempt_count, sl.last_attempt_at, sl.sent_at, sl.created_at,
                        sl.resend_of_sms_log_id, resent_by.full_name AS resent_by_user_full_name,
                        original_sms.sms_log_uuid AS resend_of_sms_log_uuid,
                        sl.resend_reason
@@ -242,8 +278,16 @@ public class SmsLogRepository {
                 log.setMobileNumber(resultSet.getString("mobile_number"));
                 log.setMessage(resultSet.getString("message"));
                 log.setProvider(resultSet.getString("provider"));
-                log.setStatus(resultSet.getString("status"));
+                log.setModemMessageReference(resultSet.getString("modem_message_reference"));
+                log.setModemRawResponse(resultSet.getString("modem_raw_response"));
+                log.setSendStatus(resultSet.getString("status"));
+                log.setDeliveryStatus(resultSet.getString("delivery_status"));
+                log.setDeliveryReportRaw(resultSet.getString("delivery_report_raw"));
                 log.setErrorMessage(resultSet.getString("error_message"));
+                log.setErrorCode(resultSet.getString("error_code"));
+                log.setAttemptCount(resultSet.getInt("attempt_count"));
+                Timestamp lastAttemptAt = resultSet.getTimestamp("last_attempt_at");
+                log.setLastAttemptAt(lastAttemptAt == null ? null : lastAttemptAt.toLocalDateTime());
                 Timestamp sentAt = resultSet.getTimestamp("sent_at");
                 log.setSentAt(sentAt == null ? null : sentAt.toLocalDateTime());
                 Timestamp createdAt = resultSet.getTimestamp("created_at");
@@ -287,6 +331,14 @@ public class SmsLogRepository {
         }
     }
 
+    private void setNullableText(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null || value.isBlank()) {
+            statement.setNull(index, Types.LONGVARCHAR);
+        } else {
+            statement.setString(index, value);
+        }
+    }
+
     private void setNullableTimestamp(PreparedStatement statement, int index, LocalDateTime value) throws SQLException {
         if (value == null) {
             statement.setNull(index, Types.TIMESTAMP);
@@ -304,9 +356,27 @@ public class SmsLogRepository {
         return value == null || value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 
+    private SmsSendStatus defaultSendStatus(SmsSendStatus status) {
+        return status == null ? SmsSendStatus.SENT : status;
+    }
+
+    private SmsDeliveryStatus defaultDeliveryStatus(SmsDeliveryStatus status) {
+        return status == null ? SmsDeliveryStatus.UNKNOWN : status;
+    }
+
+    private String nullToDefault(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value;
+    }
+
     public enum SmsStatus {
         SUCCESS,
+        QUEUED,
+        SENDING,
+        SENT,
         FAILED,
-        SKIPPED
+        SKIPPED,
+        DELIVERY_UNKNOWN,
+        DELIVERED,
+        DELIVERY_FAILED
     }
 }

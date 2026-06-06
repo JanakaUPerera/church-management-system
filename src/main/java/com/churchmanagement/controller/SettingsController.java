@@ -4,6 +4,8 @@ import com.churchmanagement.dto.AtCommandResult;
 import com.churchmanagement.dto.ComPortDto;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.enums.SmsDeliveryStatus;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
@@ -215,10 +217,13 @@ public class SettingsController {
                             baudRate
                     );
                     SmsResult result = smsServiceFactory.createSmsService().sendSms(mobileNumber, message);
+                    LocalDateTime now = LocalDateTime.now();
                     smsLogRepository.insertSmsLog(null, null, mobileNumber, message, result.getProvider(),
-                            result.isSuccess() ? SmsLogRepository.SmsStatus.SUCCESS : SmsLogRepository.SmsStatus.FAILED,
-                            result.isSuccess() ? null : result.getMessage(), result.getSentAt(),
-                            LocalDateTime.now());
+                            result.isSuccess() ? result.getSendStatus() : SmsSendStatus.FAILED,
+                            result.isSuccess() ? result.getDeliveryStatus() : SmsDeliveryStatus.FAILED,
+                            result.getModemMessageReference(), result.getModemRawResponse(), null,
+                            result.getErrorCode(), result.isSuccess() ? null : result.getErrorMessage(),
+                            1, now, result.getSentAt(), now);
                     if (result.isSuccess()) {
                         activityLogService.logSmsTestSent(currentUser.getUserId(), mobileNumber, result.getProvider());
                     } else {
@@ -228,9 +233,9 @@ public class SettingsController {
                 },
                 result -> {
                     if (result.isSuccess()) {
-                        showInfo("Test SMS sent", result.getMessage());
+                        showInfo("Test SMS sent", testSmsResultMessage(result));
                     } else {
-                        showError("Test SMS failed", result.getMessage());
+                        showError("Test SMS failed", testSmsResultMessage(result));
                     }
                 },
                 throwable -> showError("Test SMS failed", processingMessage(throwable)));
@@ -295,6 +300,18 @@ public class SettingsController {
 
     private String processingMessage(Throwable throwable) {
         return throwable.getMessage() == null ? "Action failed. Please try again." : throwable.getMessage();
+    }
+
+    private String testSmsResultMessage(SmsResult result) {
+        StringBuilder message = new StringBuilder(result.getMessage());
+        message.append(System.lineSeparator()).append("Send status: ").append(result.getSendStatus());
+        message.append(System.lineSeparator()).append("Delivery status: ").append(result.getDeliveryStatus());
+        message.append(System.lineSeparator()).append("Modem ref: ").append(blankToDash(result.getModemMessageReference()));
+        if (!result.isSuccess()) {
+            message.append(System.lineSeparator()).append("Error: ")
+                    .append(blankToDash(result.getErrorMessage()));
+        }
+        return message.toString();
     }
 
     private ComPortDetectionResult detectModemPorts(List<ComPortDto> availablePorts, int baudRate) {

@@ -46,6 +46,11 @@ public class ActivityLogService {
     public static final String SMS_SENT = "SMS_SENT";
     public static final String SMS_FAILED = "SMS_FAILED";
     public static final String SMS_SKIPPED = "SMS_SKIPPED";
+    public static final String SMS_SENT_ACCEPTED_BY_MODEM = "SMS_SENT_ACCEPTED_BY_MODEM";
+    public static final String SMS_SEND_FAILED = "SMS_SEND_FAILED";
+    public static final String SMS_DELIVERY_STATUS_UNKNOWN = "SMS_DELIVERY_STATUS_UNKNOWN";
+    public static final String SMS_DELIVERY_REPORT_ENABLED = "SMS_DELIVERY_REPORT_ENABLED";
+    public static final String SMS_DELIVERY_REPORT_NOT_SUPPORTED = "SMS_DELIVERY_REPORT_NOT_SUPPORTED";
     public static final String SMS_SETTINGS_UPDATED = "SMS_SETTINGS_UPDATED";
     public static final String SMS_TEST_SENT = "SMS_TEST_SENT";
     public static final String SMS_TEST_FAILED = "SMS_TEST_FAILED";
@@ -273,6 +278,39 @@ public class ActivityLogService {
     public void logSmsTestFailed(Long userId, String mobileNumber, String reason) {
         log(userId, SMS_TEST_FAILED,
                 "mobile_number: " + maskMobileNumber(mobileNumber) + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logSmsSentAcceptedByModem(Long userId, Long receiptId, Long churchId, String mobileNumber,
+                                          String provider, String modemReference) {
+        log(userId, SMS_SENT_ACCEPTED_BY_MODEM,
+                "receipt_id: " + nullToBlank(receiptId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
+                        + ", provider: " + nullToBlank(provider)
+                        + ", modem_reference: " + nullToBlank(modemReference));
+    }
+
+    public void logSmsSendFailed(Long userId, Long receiptId, Long churchId, String mobileNumber, String reason) {
+        log(userId, SMS_SEND_FAILED,
+                "receipt_id: " + nullToBlank(receiptId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
+                        + ", reason: " + nullToBlank(reason));
+    }
+
+    public void logSmsDeliveryStatusUnknown(Long userId, Long receiptId, Long churchId, String mobileNumber) {
+        log(userId, SMS_DELIVERY_STATUS_UNKNOWN,
+                "receipt_id: " + nullToBlank(receiptId)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber));
+    }
+
+    public void logSmsDeliveryReportEnabled(Long userId, String comPort) {
+        log(userId, SMS_DELIVERY_REPORT_ENABLED, "com_port: " + nullToBlank(comPort));
+    }
+
+    public void logSmsDeliveryReportNotSupported(Long userId, String comPort) {
+        log(userId, SMS_DELIVERY_REPORT_NOT_SUPPORTED, "com_port: " + nullToBlank(comPort));
     }
 
     public void logSmsComPortsDetected(Long userId, int portCount) {

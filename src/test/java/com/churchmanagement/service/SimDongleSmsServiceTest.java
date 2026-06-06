@@ -2,6 +2,7 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import org.junit.jupiter.api.Test;
 
@@ -80,6 +81,8 @@ class SimDongleSmsServiceTest {
                 "\r\nOK\r\n",
                 "\r\nOK\r\n",
                 "\r\nOK\r\n",
+                "\r\nOK\r\n",
+                "\r\nOK\r\n",
                 "\r\n> ",
                 "\r\n+CMGS: 23\r\nOK\r\n");
 
@@ -88,7 +91,9 @@ class SimDongleSmsServiceTest {
         assertTrue(result.isSuccess());
         assertEquals(SimDongleSmsService.PROVIDER, result.getProvider());
         assertEquals(LocalDateTime.of(2026, 5, 18, 9, 0), result.getSentAt());
-        assertEquals("AT\rAT+CMGF=1\rAT+CSCS=\"GSM\"\rAT+CMGS=\"+94771234567\"\rHello\u001A",
+        assertEquals(SmsDeliveryStatus.UNKNOWN, result.getDeliveryStatus());
+        assertEquals("23", result.getModemMessageReference());
+        assertEquals("AT\rAT+CMGF=1\rAT+CSCS=\"GSM\"\rAT+CSMP=49,167,0,0\rAT+CNMI=2,1,0,1,0\rAT+CMGS=\"+94771234567\"\rHello\u001A",
                 serialPortService.connection.outputText());
         assertTrue(serialPortService.connection.closed);
     }

@@ -40,12 +40,15 @@
         <Label text="Church" GridPane.columnIndex="4" GridPane.rowIndex="0"/>
         <ComboBox fx:id="churchComboBox" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="0"/>
 
-        <Label text="Status" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <Label text="Send Status" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
         <ComboBox fx:id="statusComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <Label text="Mobile Number" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-        <TextField fx:id="mobileNumberField" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-        <Label text="Receipt No" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
-        <TextField fx:id="receiptNoField" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
+        <Label text="Delivery Status" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+        <ComboBox fx:id="deliveryStatusComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+        <Label text="Mobile Number" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
+        <TextField fx:id="mobileNumberField" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
+
+        <Label text="Receipt No" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <TextField fx:id="receiptNoField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
         <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="4" GridPane.columnSpan="2" GridPane.rowIndex="2">
             <Button fx:id="searchButton" onAction="#handleSearch" styleClass="primary-button" text="Search"/>
@@ -59,10 +62,9 @@
             <TableColumn fx:id="dateTimeColumn" prefWidth="145" text="Date/Time"/>
             <TableColumn fx:id="receiptNoColumn" prefWidth="125" text="Receipt No"/>
             <TableColumn fx:id="churchCodeColumn" prefWidth="105" text="Church Code"/>
-            <TableColumn fx:id="churchNameColumn" prefWidth="190" text="Church Name"/>
             <TableColumn fx:id="mobileNumberColumn" prefWidth="135" text="Mobile Number"/>
-            <TableColumn fx:id="providerColumn" prefWidth="150" text="Provider"/>
-            <TableColumn fx:id="statusColumn" prefWidth="155" text="Status"/>
+            <TableColumn fx:id="messageColumn" prefWidth="220" text="Message"/>
+            <TableColumn fx:id="sendStatusColumn" prefWidth="170" text="Status"/>
             <TableColumn fx:id="actionColumn" maxWidth="135" minWidth="110" prefWidth="120" resizable="false" text="Action"/>
         </columns>
         <columnResizePolicy>

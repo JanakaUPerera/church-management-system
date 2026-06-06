@@ -6,6 +6,8 @@ import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Receipt;
 import com.churchmanagement.enums.ReceiptStatus;
+import com.churchmanagement.enums.SmsDeliveryStatus;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.repository.SmsLogRepository;
@@ -64,8 +66,8 @@ class ReceiptSmsNotificationServiceTest {
 
         assertEquals("0712345678", smsService.mobileNumber);
         assertTrue(smsService.message.contains("Receipt REC26000001 received for CH001 - St. Mary's Church"));
-        assertEquals(SmsLogRepository.SmsStatus.SUCCESS, smsLogRepository.status);
-        assertEquals(ActivityLogService.SMS_SENT, activityLogService.action);
+        assertEquals(SmsSendStatus.SENT, smsLogRepository.status);
+        assertEquals(ActivityLogService.SMS_SENT_ACCEPTED_BY_MODEM, activityLogService.action);
     }
 
     @Test
@@ -96,9 +98,9 @@ class ReceiptSmsNotificationServiceTest {
 
         notificationService.sendReceiptSubmissionSms(100L);
 
-        assertEquals(SmsLogRepository.SmsStatus.FAILED, smsLogRepository.status);
+        assertEquals(SmsSendStatus.FAILED, smsLogRepository.status);
         assertEquals("Gateway rejected message.", smsLogRepository.errorMessage);
-        assertEquals(ActivityLogService.SMS_FAILED, activityLogService.action);
+        assertEquals(ActivityLogService.SMS_SEND_FAILED, activityLogService.action);
     }
 
     @Test
@@ -179,7 +181,7 @@ class ReceiptSmsNotificationServiceTest {
 
     private static class FakeSmsLogRepository extends SmsLogRepository {
         private int insertCount;
-        private SmsStatus status;
+        private SmsSendStatus status;
         private String errorMessage;
 
         private FakeSmsLogRepository() {
@@ -190,7 +192,18 @@ class ReceiptSmsNotificationServiceTest {
         public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
                                  SmsStatus status, String errorMessage, LocalDateTime sentAt, LocalDateTime createdAt) {
             insertCount++;
-            this.status = status;
+            this.status = status == SmsStatus.SUCCESS ? SmsSendStatus.SENT : SmsSendStatus.valueOf(status.name());
+            this.errorMessage = errorMessage;
+        }
+
+        @Override
+        public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
+                                 SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus,
+                                 String modemMessageReference, String modemRawResponse, String deliveryReportRaw,
+                                 String errorCode, String errorMessage, int attemptCount,
+                                 LocalDateTime lastAttemptAt, LocalDateTime sentAt, LocalDateTime createdAt) {
+            insertCount++;
+            this.status = sendStatus;
             this.errorMessage = errorMessage;
         }
     }
@@ -219,13 +232,18 @@ class ReceiptSmsNotificationServiceTest {
         }
 
         @Override
-        public void logSmsSent(Long userId, long receiptId, Long churchId, String mobileNumber, String provider) {
-            action = SMS_SENT;
+        public void logSmsSentAcceptedByModem(Long userId, Long receiptId, Long churchId, String mobileNumber,
+                                             String provider, String modemReference) {
+            action = SMS_SENT_ACCEPTED_BY_MODEM;
         }
 
         @Override
-        public void logSmsFailed(Long userId, Long receiptId, Long churchId, String mobileNumber, String reason) {
-            action = SMS_FAILED;
+        public void logSmsSendFailed(Long userId, Long receiptId, Long churchId, String mobileNumber, String reason) {
+            action = SMS_SEND_FAILED;
+        }
+
+        @Override
+        public void logSmsDeliveryStatusUnknown(Long userId, Long receiptId, Long churchId, String mobileNumber) {
         }
 
         @Override

@@ -1,5 +1,7 @@
 package com.churchmanagement.dto;
 
+import com.churchmanagement.enums.SmsDeliveryStatus;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsLogRepository;
 
 import java.time.LocalDate;
@@ -8,7 +10,8 @@ public class SmsLogSearchCriteria {
     private LocalDate dateFrom;
     private LocalDate dateTo;
     private Long churchId;
-    private SmsLogRepository.SmsStatus status;
+    private SmsSendStatus sendStatus;
+    private SmsDeliveryStatus deliveryStatus;
     private String mobileNumber;
     private String receiptNo;
     private Integer limit;
@@ -37,12 +40,38 @@ public class SmsLogSearchCriteria {
         this.churchId = churchId;
     }
 
-    public SmsLogRepository.SmsStatus getStatus() {
-        return status;
+    public SmsSendStatus getStatus() {
+        return sendStatus;
+    }
+
+    public void setStatus(SmsSendStatus status) {
+        this.sendStatus = status;
     }
 
     public void setStatus(SmsLogRepository.SmsStatus status) {
-        this.status = status;
+        if (status == null) {
+            this.sendStatus = null;
+        } else if (status == SmsLogRepository.SmsStatus.SUCCESS) {
+            this.sendStatus = SmsSendStatus.SENT;
+        } else {
+            this.sendStatus = SmsSendStatus.valueOf(status.name());
+        }
+    }
+
+    public SmsSendStatus getSendStatus() {
+        return sendStatus;
+    }
+
+    public void setSendStatus(SmsSendStatus sendStatus) {
+        this.sendStatus = sendStatus;
+    }
+
+    public SmsDeliveryStatus getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(SmsDeliveryStatus deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
     }
 
     public String getMobileNumber() {

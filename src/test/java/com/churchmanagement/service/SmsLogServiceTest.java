@@ -2,6 +2,7 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsLogSearchCriteria;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
@@ -74,7 +75,7 @@ class SmsLogServiceTest {
 
         smsLogService.searchSmsLogs(criteria);
 
-        assertEquals(SmsLogRepository.SmsStatus.FAILED, smsLogRepository.criteria.getStatus());
+        assertEquals(SmsSendStatus.FAILED, smsLogRepository.criteria.getStatus());
     }
 
     @Test

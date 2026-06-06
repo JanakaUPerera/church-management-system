@@ -3,13 +3,8 @@ package com.churchmanagement.dto;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
 
-import java.time.LocalDateTime;
-
-public class SmsResult {
+public class SmsParsedResponse {
     private final boolean success;
-    private final String message;
-    private final String provider;
-    private final LocalDateTime sentAt;
     private final SmsSendStatus sendStatus;
     private final SmsDeliveryStatus deliveryStatus;
     private final String modemMessageReference;
@@ -17,20 +12,10 @@ public class SmsResult {
     private final String errorCode;
     private final String errorMessage;
 
-    public SmsResult(boolean success, String message, String provider, LocalDateTime sentAt) {
-        this(success, message, provider, sentAt,
-                success ? SmsSendStatus.SENT : SmsSendStatus.FAILED,
-                success ? SmsDeliveryStatus.UNKNOWN : SmsDeliveryStatus.FAILED,
-                null, null, null, success ? null : message);
-    }
-
-    public SmsResult(boolean success, String message, String provider, LocalDateTime sentAt,
-                     SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus, String modemMessageReference,
-                     String modemRawResponse, String errorCode, String errorMessage) {
+    public SmsParsedResponse(boolean success, SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus,
+                             String modemMessageReference, String modemRawResponse, String errorCode,
+                             String errorMessage) {
         this.success = success;
-        this.message = message;
-        this.provider = provider;
-        this.sentAt = sentAt;
         this.sendStatus = sendStatus;
         this.deliveryStatus = deliveryStatus;
         this.modemMessageReference = modemMessageReference;
@@ -41,18 +26,6 @@ public class SmsResult {
 
     public boolean isSuccess() {
         return success;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public LocalDateTime getSentAt() {
-        return sentAt;
     }
 
     public SmsSendStatus getSendStatus() {

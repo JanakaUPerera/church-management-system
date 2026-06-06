@@ -3,6 +3,9 @@ package com.churchmanagement.service;
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsResendRequest;
 import com.churchmanagement.dto.SmsResult;
+import com.churchmanagement.entity.Church;
+import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
@@ -25,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SmsResendServiceTest {
     private FakeSmsLogRepository smsLogRepository;
+    private FakeChurchRepository churchRepository;
     private FakeSmsService smsService;
     private FakeActivityLogService activityLogService;
     private SmsResendService smsResendService;
@@ -32,9 +36,10 @@ class SmsResendServiceTest {
     @BeforeEach
     void setUp() {
         smsLogRepository = new FakeSmsLogRepository();
+        churchRepository = new FakeChurchRepository();
         smsService = new FakeSmsService();
         activityLogService = new FakeActivityLogService();
-        smsResendService = new SmsResendService(smsLogRepository, smsService, activityLogService,
+        smsResendService = new SmsResendService(smsLogRepository, churchRepository, smsService, activityLogService,
                 fixedClock("2026-05-05T10:00:00Z"));
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("sms.resend")));
@@ -72,7 +77,7 @@ class SmsResendServiceTest {
     @Test
     void rejectResendAfterSevenDays() {
         smsLogRepository.original.setCreatedAt(LocalDateTime.of(2026, 5, 1, 10, 0));
-        smsResendService = new SmsResendService(smsLogRepository, smsService, activityLogService,
+        smsResendService = new SmsResendService(smsLogRepository, churchRepository, smsService, activityLogService,
                 fixedClock("2026-05-08T10:00:01Z"));
 
         SmsResendService.SmsResendException exception = assertThrows(
@@ -90,7 +95,7 @@ class SmsResendServiceTest {
 
         assertEquals(1, smsLogRepository.insertCount);
         assertEquals(500L, smsLogRepository.newSmsLogId);
-        assertEquals(SmsLogRepository.SmsStatus.SUCCESS.name(), smsLogRepository.insertedLog.getStatus());
+        assertEquals(SmsSendStatus.SENT.name(), smsLogRepository.insertedLog.getStatus());
     }
 
     @Test
@@ -143,13 +148,27 @@ class SmsResendServiceTest {
     }
 
     @Test
-    void resendUsesSameMobileNumberAndSameMessage() {
+    void resendUsesCurrentChurchMobileNumberAndSameMessage() {
+        churchRepository.smsMobileNumber = "+94770000002";
+
         smsResendService.resendSms(validRequest());
 
-        assertEquals("+94712345678", smsService.mobileNumber);
+        assertEquals("+94770000002", smsService.mobileNumber);
         assertEquals("Receipt REC26000001 received.", smsService.message);
-        assertEquals("+94712345678", smsLogRepository.insertedLog.getMobileNumber());
+        assertEquals("+94770000002", smsLogRepository.insertedLog.getMobileNumber());
         assertEquals("Receipt REC26000001 received.", smsLogRepository.insertedLog.getMessage());
+    }
+
+    @Test
+    void rejectResendWhenCurrentChurchMobileNumberMissing() {
+        churchRepository.smsMobileNumber = " ";
+
+        SmsResendService.SmsResendException exception = assertThrows(
+                SmsResendService.SmsResendException.class,
+                () -> smsResendService.resendSms(validRequest()));
+
+        assertEquals("Church SMS mobile number is missing.", exception.getMessage());
+        assertEquals(0, smsLogRepository.insertCount);
     }
 
     @Test
@@ -222,6 +241,25 @@ class SmsResendServiceTest {
             log.setStatus(SmsLogRepository.SmsStatus.FAILED.name());
             log.setCreatedAt(LocalDateTime.of(2026, 5, 1, 10, 0));
             return log;
+        }
+    }
+
+    private static class FakeChurchRepository extends ChurchRepository {
+        private String smsMobileNumber = "+94712345678";
+
+        private FakeChurchRepository() {
+            super((DataSource) null);
+        }
+
+        @Override
+        public Optional<Church> findById(long id) {
+            if (id != 10L) {
+                return Optional.empty();
+            }
+            Church church = new Church();
+            church.setId(id);
+            church.setSmsMobileNumber(smsMobileNumber);
+            return Optional.of(church);
         }
     }
 

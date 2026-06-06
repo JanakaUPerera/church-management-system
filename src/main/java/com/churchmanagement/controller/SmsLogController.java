@@ -4,8 +4,9 @@ import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsLogSearchCriteria;
 import com.churchmanagement.dto.SmsResendRequest;
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.enums.SmsDeliveryStatus;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.exception.DatabaseException;
-import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
@@ -45,6 +46,9 @@ import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class SmsLogController {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -61,6 +65,7 @@ public class SmsLogController {
     @FXML private DatePicker dateToPicker;
     @FXML private ComboBox<Church> churchComboBox;
     @FXML private ComboBox<String> statusComboBox;
+    @FXML private ComboBox<String> deliveryStatusComboBox;
     @FXML private TextField mobileNumberField;
     @FXML private TextField receiptNoField;
     @FXML private Button searchButton;
@@ -70,10 +75,9 @@ public class SmsLogController {
     @FXML private TableColumn<SmsLogDto, String> dateTimeColumn;
     @FXML private TableColumn<SmsLogDto, String> receiptNoColumn;
     @FXML private TableColumn<SmsLogDto, String> churchCodeColumn;
-    @FXML private TableColumn<SmsLogDto, String> churchNameColumn;
     @FXML private TableColumn<SmsLogDto, String> mobileNumberColumn;
-    @FXML private TableColumn<SmsLogDto, String> providerColumn;
-    @FXML private TableColumn<SmsLogDto, String> statusColumn;
+    @FXML private TableColumn<SmsLogDto, String> messageColumn;
+    @FXML private TableColumn<SmsLogDto, String> sendStatusColumn;
     @FXML private TableColumn<SmsLogDto, Void> actionColumn;
     @FXML private Pagination smsLogPagination;
     @FXML private ComboBox<Integer> smsLogItemsPerPageComboBox;
@@ -107,6 +111,7 @@ public class SmsLogController {
         dateToPicker.setValue(null);
         churchComboBox.getSelectionModel().clearSelection();
         statusComboBox.setValue(STATUS_ALL);
+        deliveryStatusComboBox.setValue(STATUS_ALL);
         mobileNumberField.clear();
         receiptNoField.clear();
         loadLatestLogs();
@@ -128,8 +133,10 @@ public class SmsLogController {
 
     private void configureFilters() {
         ComboBoxUtil.makeChurchSearchable(churchComboBox, churches);
-        statusComboBox.setItems(FXCollections.observableArrayList(STATUS_ALL, "SUCCESS", "FAILED", "SKIPPED"));
+        statusComboBox.setItems(FXCollections.observableArrayList(enumOptions(SmsSendStatus.values())));
         statusComboBox.setValue(STATUS_ALL);
+        deliveryStatusComboBox.setItems(FXCollections.observableArrayList(enumOptions(SmsDeliveryStatus.values())));
+        deliveryStatusComboBox.setValue(STATUS_ALL);
     }
 
     private void configureTable() {
@@ -141,16 +148,15 @@ public class SmsLogController {
                 nullToDash(cellData.getValue().getReceiptNo())));
         churchCodeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 nullToDash(cellData.getValue().getChurchCode())));
-        churchNameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
-                nullToDash(cellData.getValue().getChurchName())));
         mobileNumberColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 nullToDash(cellData.getValue().getMobileNumber())));
-        providerColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
-                nullToDash(cellData.getValue().getProvider())));
-        statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
-                nullToDash(cellData.getValue().getStatus())));
+        messageColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                nullToDash(cellData.getValue().getMessage())));
+        sendStatusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                nullToDash(cellData.getValue().getSendStatus())));
 
-        statusColumn.setCellFactory(column -> new SmsStatusCell());
+        messageColumn.setCellFactory(column -> tooltipTextCell());
+        sendStatusColumn.setCellFactory(column -> new SmsStatusCell());
         actionColumn.setCellFactory(column -> new SmsActionCell());
         smsLogTable.setRowFactory(tableView -> {
             TableRow<SmsLogDto> row = new TableRow<>();
@@ -205,7 +211,10 @@ public class SmsLogController {
         Church church = churchComboBox.getValue();
         criteria.setChurchId(church == null ? null : church.getId());
         if (statusComboBox.getValue() != null && !STATUS_ALL.equals(statusComboBox.getValue())) {
-            criteria.setStatus(SmsLogRepository.SmsStatus.valueOf(statusComboBox.getValue()));
+            criteria.setSendStatus(SmsSendStatus.valueOf(statusComboBox.getValue()));
+        }
+        if (deliveryStatusComboBox.getValue() != null && !STATUS_ALL.equals(deliveryStatusComboBox.getValue())) {
+            criteria.setDeliveryStatus(SmsDeliveryStatus.valueOf(deliveryStatusComboBox.getValue()));
         }
         criteria.setMobileNumber(mobileNumberField.getText());
         criteria.setReceiptNo(receiptNoField.getText());
@@ -257,23 +266,33 @@ public class SmsLogController {
         addDetailRow(grid, 2, "Church", nullToDash(log.getChurchCode()) + " - " + nullToDash(log.getChurchName()));
         addDetailRow(grid, 3, "Mobile Number", nullToDash(log.getMobileNumber()));
         addDetailRow(grid, 4, "Provider", nullToDash(log.getProvider()));
-        addDetailRow(grid, 5, "Status", statusBadge(log));
-        addDetailRow(grid, 6, "Sent At", formatDateTime(log.getSentAt()));
-        addDetailRow(grid, 7, "Log Type", logTypeBadge(log));
-        addDetailRow(grid, 8, "Resend Of SMS Log UUID", log.getResendOfSmsLogId() == null
+        addDetailRow(grid, 5, "Send Status", statusBadge(log.getSendStatus()));
+        addDetailRow(grid, 6, "Delivery Status", statusBadge(log.getDeliveryStatus()));
+        addDetailRow(grid, 7, "Modem Ref", nullToDash(log.getModemMessageReference()));
+        addDetailRow(grid, 8, "Attempts", String.valueOf(log.getAttemptCount()));
+        addDetailRow(grid, 9, "Last Attempt At", formatDateTime(log.getLastAttemptAt()));
+        addDetailRow(grid, 10, "Sent At", formatDateTime(log.getSentAt()));
+        addDetailRow(grid, 11, "Log Type", logTypeBadge(log));
+        addDetailRow(grid, 12, "Resend Of SMS Log UUID", log.getResendOfSmsLogId() == null
                 ? "-"
                 : nullToDash(log.getResendOfSmsLogUuid()));
-        addDetailRow(grid, 9, "Resent By", nullToDash(log.getResentByUserFullName()));
-        addDetailRow(grid, 10, "Resend Reason", nullToDash(log.getResendReason()));
+        addDetailRow(grid, 13, "Resent By", nullToDash(log.getResentByUserFullName()));
+        addDetailRow(grid, 14, "Resend Reason", nullToDash(log.getResendReason()));
         return grid;
     }
 
     private VBox smsDetailsContent(SmsLogDto log) {
         TextArea messageArea = readOnlyArea(log.getMessage());
+        TextArea rawModemArea = readOnlyArea(log.getModemRawResponse());
+        TextArea deliveryReportArea = readOnlyArea(log.getDeliveryReportRaw());
         TextArea errorArea = readOnlyArea(log.getErrorMessage());
         Label messageLabel = detailFieldLabel("Message");
+        Label rawModemLabel = detailFieldLabel("Raw Modem Response");
+        Label deliveryReportLabel = detailFieldLabel("Delivery Report Raw");
+        Label errorCodeLabel = detailFieldLabel("Error Code: " + nullToDash(log.getErrorCode()));
         Label errorLabel = detailFieldLabel("Error Message");
-        VBox content = new VBox(8, messageLabel, messageArea, errorLabel, errorArea);
+        VBox content = new VBox(8, messageLabel, messageArea, rawModemLabel, rawModemArea,
+                deliveryReportLabel, deliveryReportArea, errorCodeLabel, errorLabel, errorArea);
         content.setPrefWidth(380);
         return content;
     }
@@ -301,10 +320,10 @@ public class SmsLogController {
         return label;
     }
 
-    private Label statusBadge(SmsLogDto log) {
-        Label badge = new Label(statusText(log));
+    private Label statusBadge(String status) {
+        Label badge = new Label(nullToDash(status));
         badge.getStyleClass().add("status-badge");
-        applyStatusStyle(badge, log.getStatus());
+        applyStatusStyle(badge, status);
         return badge;
     }
 
@@ -316,16 +335,14 @@ public class SmsLogController {
         return badge;
     }
 
-    private String statusText(SmsLogDto log) {
-        String status = nullToDash(log.getStatus());
-        return log.getResendOfSmsLogId() == null ? status : status;
-    }
-
     private static void applyStatusStyle(Label badge, String status) {
         badge.getStyleClass().removeAll("status-active", "status-inactive", "status-skipped");
-        if ("SUCCESS".equals(status)) {
+        String normalizedStatus = status == null ? "" : status;
+        if (normalizedStatus.startsWith("SUCCESS")
+                || normalizedStatus.startsWith("SENT")
+                || normalizedStatus.startsWith("DELIVERED")) {
             badge.getStyleClass().add("status-active");
-        } else if ("FAILED".equals(status)) {
+        } else if (normalizedStatus.startsWith("FAILED") || normalizedStatus.startsWith("DELIVERY_FAILED")) {
             badge.getStyleClass().add("status-inactive");
         } else {
             badge.getStyleClass().add("status-skipped");
@@ -346,6 +363,13 @@ public class SmsLogController {
 
     private String nullToDash(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private List<String> enumOptions(Enum<?>[] values) {
+        List<String> options = new ArrayList<>();
+        options.add(STATUS_ALL);
+        options.addAll(Arrays.stream(values).map(Enum::name).toList());
+        return options;
     }
 
     private void setMessage(String message) {
@@ -400,7 +424,7 @@ public class SmsLogController {
         GridPane summary = new GridPane();
         summary.setHgap(12);
         summary.setVgap(8);
-        addDetailRow(summary, 0, "Mobile Number", nullToDash(log.getMobileNumber()));
+        addDetailRow(summary, 0, "Mobile Number", nullToDash(resendMobileNumber(log)));
         addDetailRow(summary, 1, "Receipt No", nullToDash(log.getReceiptNo()));
         addDetailRow(summary, 2, "Church", nullToDash(log.getChurchCode()) + " - " + nullToDash(log.getChurchName()));
 
@@ -419,16 +443,28 @@ public class SmsLogController {
                 .orElseGet(() -> new OptionalResendReason(false, null));
     }
 
+    private String resendMobileNumber(SmsLogDto log) {
+        if (log.getChurchId() == null) {
+            return log.getMobileNumber();
+        }
+        try {
+            Church church = churchService.findById(log.getChurchId());
+            return church.getSmsMobileNumber();
+        } catch (RuntimeException exception) {
+            return log.getMobileNumber();
+        }
+    }
+
     private static class SmsStatusCell extends TableCell<SmsLogDto, String> {
-        private final Label badge = new Label();
+        private final Label sendBadge = new Label();
         private final Label resendBadge = new Label("R");
-        private final HBox container = new HBox(6, badge, resendBadge);
+        private final HBox container = new HBox(6, sendBadge, resendBadge);
 
         private SmsStatusCell() {
             getStyleClass().add("centered-table-cell");
             setAlignment(Pos.CENTER);
             container.setAlignment(Pos.CENTER);
-            badge.getStyleClass().add("status-badge");
+            sendBadge.getStyleClass().add("status-badge");
             resendBadge.getStyleClass().add("status-correction-note");
         }
 
@@ -440,7 +476,7 @@ public class SmsLogController {
                 return;
             }
 
-            badge.setText(status);
+            sendBadge.setText(status);
             boolean resent = false;
             if (getIndex() >= 0 && getIndex() < getTableView().getItems().size()) {
                 SmsLogDto log = getTableView().getItems().get(getIndex());
@@ -448,7 +484,7 @@ public class SmsLogController {
             }
             resendBadge.setVisible(resent);
             resendBadge.setManaged(resent);
-            applyStatusStyle(badge, status);
+            applyStatusStyle(sendBadge, status);
             setGraphic(container);
         }
     }
