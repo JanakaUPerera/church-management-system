@@ -105,6 +105,9 @@ public class ActivityLogService {
     public static final String ROLE_ACTIVATED = "ROLE_ACTIVATED";
     public static final String ROLE_DEACTIVATED = "ROLE_DEACTIVATED";
     public static final String ROLE_PERMISSIONS_UPDATED = "ROLE_PERMISSIONS_UPDATED";
+    public static final String SETTINGS_UPDATED = "SETTINGS_UPDATED";
+    public static final String SETTINGS_UPDATE_FAILED = "SETTINGS_UPDATE_FAILED";
+    public static final String SETTINGS_CACHE_RELOADED = "SETTINGS_CACHE_RELOADED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -485,6 +488,21 @@ public class ActivityLogService {
         log(userId, action, "Roles & Permissions", roleName, "role_name: " + nullToBlank(roleName));
     }
 
+    public void logSettingUpdated(long userId, String settingKey, String oldValue, String newValue) {
+        log(userId, SETTINGS_UPDATED, "Settings", settingKey, oldValue, newValue,
+                "setting_key: " + nullToBlank(settingKey)
+                        + ", old_value: " + nullToBlank(oldValue)
+                        + ", new_value: " + nullToBlank(newValue));
+    }
+
+    public void logSettingsUpdateFailed(long userId, String reason) {
+        log(userId, SETTINGS_UPDATE_FAILED, "Settings", null, "reason: " + nullToBlank(reason));
+    }
+
+    public void logSettingsCacheReloaded(long userId) {
+        log(userId, SETTINGS_CACHE_RELOADED, "Settings", null, "System settings cache reloaded");
+    }
+
     public void logProfileUpdated(long userId, String username) {
         log(userId, PROFILE_UPDATED, "My Profile", String.valueOf(userId),
                 "Profile updated for username: " + nullToBlank(username));
@@ -518,6 +536,9 @@ public class ActivityLogService {
     private void log(Long userId, String action, String module, String recordId, String oldValue, String newValue,
                      String details) {
         try {
+            if (activityLogRepository == null) {
+                return;
+            }
             activityLogRepository.save(userId, action, module, recordId, oldValue, newValue, null, machineName(), details);
         } catch (DatabaseException exception) {
             System.err.println("Activity logging failed: " + exception.getMessage());

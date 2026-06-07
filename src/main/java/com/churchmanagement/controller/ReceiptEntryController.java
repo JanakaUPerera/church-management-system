@@ -18,6 +18,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.WeekUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -44,7 +45,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +58,7 @@ public class ReceiptEntryController {
     private final ReceiptService receiptService = new ReceiptService();
     private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final ObservableList<Church> activeChurches = FXCollections.observableArrayList();
     private static Long pendingCorrectionReceiptId;
 
@@ -174,7 +175,7 @@ public class ReceiptEntryController {
     private void updateWeekState() {
         LocalDate start = weekStartDatePicker.getValue();
         LocalDate end = WeekUtil.getSundayForMonday(start);
-        weekEndDateLabel.setText(end == null ? "-" : end.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        weekEndDateLabel.setText(dateTimeFormatter.formatDate(end));
 
         boolean late = start != null && WeekUtil.isBackWeek(start, LocalDate.now());
         lateSubmissionLabel.setText(late ? "YES" : "NO");

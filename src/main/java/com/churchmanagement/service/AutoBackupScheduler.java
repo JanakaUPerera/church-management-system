@@ -13,8 +13,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class AutoBackupScheduler {
-    private static final AutoBackupScheduler INSTANCE = new AutoBackupScheduler();
-
     private final BackupScheduleService backupScheduleService;
     private final BackupService backupService;
     private final ScheduledExecutorService executorService;
@@ -25,7 +23,7 @@ public class AutoBackupScheduler {
     }
 
     public static AutoBackupScheduler getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
     }
 
     public AutoBackupScheduler(BackupScheduleService backupScheduleService, BackupService backupService) {
@@ -66,5 +64,9 @@ public class AutoBackupScheduler {
             scheduledBackup.cancel(false);
         }
         scheduledBackups.clear();
+    }
+
+    private static class Holder {
+        private static final AutoBackupScheduler INSTANCE = new AutoBackupScheduler();
     }
 }

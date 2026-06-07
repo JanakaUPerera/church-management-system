@@ -40,6 +40,7 @@ public class ReceiptService {
     private final ActivityLogService activityLogService;
     private final Clock clock;
     private final DataSource dataSource;
+    private final SystemConfigurationCache configurationCache;
 
     public ReceiptService() {
         this(new ReceiptRepository(), new ChurchRepository(), new ReceiptNumberGeneratorService(),
@@ -67,6 +68,17 @@ public class ReceiptService {
                           ReceiptPrintService receiptPrintService,
                           ReceiptSmsNotificationService receiptSmsNotificationService,
                           ActivityLogService activityLogService, Clock clock, DataSource dataSource) {
+        this(receiptRepository, churchRepository, receiptNumberGeneratorService, receiptPrintService,
+                receiptSmsNotificationService, activityLogService, clock, dataSource,
+                SystemConfigurationCache.getInstance());
+    }
+
+    public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
+                          ReceiptNumberGeneratorService receiptNumberGeneratorService,
+                          ReceiptPrintService receiptPrintService,
+                          ReceiptSmsNotificationService receiptSmsNotificationService,
+                          ActivityLogService activityLogService, Clock clock, DataSource dataSource,
+                          SystemConfigurationCache configurationCache) {
         this.receiptRepository = receiptRepository;
         this.churchRepository = churchRepository;
         this.receiptNumberGeneratorService = receiptNumberGeneratorService;
@@ -75,6 +87,7 @@ public class ReceiptService {
         this.activityLogService = activityLogService;
         this.clock = clock;
         this.dataSource = dataSource;
+        this.configurationCache = configurationCache;
     }
 
     public ReceiptResponseDto createReceipt(CreateReceiptRequest request) {
@@ -84,6 +97,7 @@ public class ReceiptService {
 
         LocalDate today = LocalDate.now(clock);
         boolean lateSubmission = request != null && WeekUtil.isBackWeek(request.getWeekStartDate(), today);
+        enforceBackWeekSetting(lateSubmission);
         validateRequest(request, today, lateSubmission);
 
         Church church = loadActiveChurch(request.getChurchId());
@@ -168,6 +182,7 @@ public class ReceiptService {
 
         LocalDate today = LocalDate.now(clock);
         boolean lateSubmission = request != null && WeekUtil.isBackWeek(request.getWeekStartDate(), today);
+        enforceBackWeekSetting(lateSubmission);
         validateRequest(request, today, lateSubmission);
         Church church = loadActiveChurch(request.getChurchId());
 
@@ -186,6 +201,14 @@ public class ReceiptService {
         List<String> errors = ReceiptValidator.validateForCreate(request, today, lateSubmission);
         if (!errors.isEmpty()) {
             throw new ReceiptException(String.join("\n", errors));
+        }
+    }
+
+    private void enforceBackWeekSetting(boolean lateSubmission) {
+        String value = configurationCache.getString("receipt.allow.back.week");
+        boolean backWeekAllowed = value == null || value.isBlank() || Boolean.parseBoolean(value);
+        if (lateSubmission && !backWeekAllowed) {
+            throw new ReceiptException("Back-week receipts are disabled in system settings.");
         }
     }
 

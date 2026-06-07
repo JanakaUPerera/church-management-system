@@ -22,7 +22,8 @@ public class ReceiptNumberGeneratorService {
     private final DataSource dataSource;
 
     public ReceiptNumberGeneratorService() {
-        this(new ReceiptSequenceRepository(), new ActivityLogService(), new ReceiptNumberFormatter(),
+        this(new ReceiptSequenceRepository(), new ActivityLogService(),
+                new ReceiptNumberFormatter(SystemConfigurationCache.getInstance()),
                 Clock.systemDefaultZone(), DatabaseConfig.getDataSource());
     }
 
@@ -108,7 +109,7 @@ public class ReceiptNumberGeneratorService {
 
     private GeneratedReceiptNumber incrementAndFormat(ReceiptSequence sequence) {
         long nextNumber = sequence.getLastNumber() + 1;
-        if (nextNumber > ReceiptNumberFormatter.MAX_SEQUENCE) {
+        if (nextNumber > receiptNumberFormatter.maxSequence()) {
             throw new ReceiptSequenceLimitExceededException(sequence.getSequenceYear(), nextNumber);
         }
 

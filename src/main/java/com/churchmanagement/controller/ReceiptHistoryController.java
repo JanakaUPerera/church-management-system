@@ -22,6 +22,7 @@ import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import com.churchmanagement.util.WeekUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -63,13 +64,11 @@ import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
 public class ReceiptHistoryController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final Duration CANCELLATION_WINDOW = Duration.ofDays(7);
     private static final String ALL_OPTION_TEXT = "ALL";
 
@@ -80,6 +79,7 @@ public class ReceiptHistoryController {
     private final ReceiptSmsNotificationService receiptSmsNotificationService = new ReceiptSmsNotificationService();
     private final ChurchService churchService = new ChurchService();
     private final RegionService regionService = new RegionService();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final ObservableList<ReceiptResponseDto> receipts = FXCollections.observableArrayList();
     private final ObservableList<Church> allChurches = FXCollections.observableArrayList();
     private final ObservableList<Church> churches = FXCollections.observableArrayList();
@@ -786,7 +786,7 @@ public class ReceiptHistoryController {
             return "Closed";
         }
         if (isCancellationWindowOpen(receipt)) {
-            return "Open until " + receipt.getReceiptDateTime().plus(CANCELLATION_WINDOW).format(DATE_TIME_FORMAT);
+            return "Open until " + formatDateTime(receipt.getReceiptDateTime().plus(CANCELLATION_WINDOW));
         }
         return "Expired";
     }
@@ -805,7 +805,7 @@ public class ReceiptHistoryController {
         if (receipt.getCancelReason() == null || receipt.getCancelReason().isBlank()) {
             return "-";
         }
-        String cancelledAt = receipt.getCancelledAt() == null ? "" : " on " + receipt.getCancelledAt().format(DATE_TIME_FORMAT);
+        String cancelledAt = receipt.getCancelledAt() == null ? "" : " on " + formatDateTime(receipt.getCancelledAt());
         return receipt.getCancelReason() + " - by " + nullToDash(receipt.getCancelledByFullName()) + cancelledAt;
     }
 
@@ -814,7 +814,7 @@ public class ReceiptHistoryController {
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMAT);
+        return dateTimeFormatter.formatDateTime(dateTime);
     }
 
     private String nullToDash(String value) {

@@ -87,7 +87,7 @@ public class ChurchService {
                          String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
                          String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
         return create(churchCode, churchName, regionId, status, authorizedPersonName, authorizedPersonPosition,
-                authorizedPersonPositionOther, smsMobileNumber, ReceiptLanguage.ENGLISH, userId);
+                authorizedPersonPositionOther, smsMobileNumber, defaultReceiptLanguage(), userId);
     }
 
     public Church update(long id, String churchCode, String churchName, Long regionId, Church.Status status, long userId) {
@@ -98,7 +98,7 @@ public class ChurchService {
                          String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
                          String authorizedPersonPositionOther, String smsMobileNumber, long userId) {
         Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
-                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber, ReceiptLanguage.ENGLISH);
+                authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber, defaultReceiptLanguage());
         return update(id, church, userId);
     }
 
@@ -257,6 +257,19 @@ public class ChurchService {
         }
 
         return value.strip();
+    }
+
+    private ReceiptLanguage defaultReceiptLanguage() {
+        String configuredLanguage = SystemConfigurationCache.getInstance().getString("receipt.default.language");
+        if (configuredLanguage == null || configuredLanguage.isBlank()) {
+            return ReceiptLanguage.ENGLISH;
+        }
+
+        try {
+            return ReceiptLanguage.valueOf(configuredLanguage);
+        } catch (IllegalArgumentException exception) {
+            return ReceiptLanguage.ENGLISH;
+        }
     }
 
     public static class ChurchException extends RuntimeException {

@@ -16,6 +16,7 @@ public class SmsResult {
     private final String modemRawResponse;
     private final String errorCode;
     private final String errorMessage;
+    private final int attemptCount;
 
     public SmsResult(boolean success, String message, String provider, LocalDateTime sentAt) {
         this(success, message, provider, sentAt,
@@ -27,6 +28,13 @@ public class SmsResult {
     public SmsResult(boolean success, String message, String provider, LocalDateTime sentAt,
                      SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus, String modemMessageReference,
                      String modemRawResponse, String errorCode, String errorMessage) {
+        this(success, message, provider, sentAt, sendStatus, deliveryStatus, modemMessageReference, modemRawResponse,
+                errorCode, errorMessage, 1);
+    }
+
+    public SmsResult(boolean success, String message, String provider, LocalDateTime sentAt,
+                     SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus, String modemMessageReference,
+                     String modemRawResponse, String errorCode, String errorMessage, int attemptCount) {
         this.success = success;
         this.message = message;
         this.provider = provider;
@@ -37,6 +45,7 @@ public class SmsResult {
         this.modemRawResponse = modemRawResponse;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
+        this.attemptCount = Math.max(1, attemptCount);
     }
 
     public boolean isSuccess() {
@@ -77,5 +86,14 @@ public class SmsResult {
 
     public String getErrorMessage() {
         return errorMessage;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public SmsResult withAttemptCount(int attemptCount) {
+        return new SmsResult(success, message, provider, sentAt, sendStatus, deliveryStatus,
+                modemMessageReference, modemRawResponse, errorCode, errorMessage, attemptCount);
     }
 }

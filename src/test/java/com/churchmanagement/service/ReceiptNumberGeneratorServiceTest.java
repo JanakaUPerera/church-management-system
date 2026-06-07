@@ -71,6 +71,14 @@ class ReceiptNumberGeneratorServiceTest {
     }
 
     @Test
+    void formatUsesConfiguredPrefixAndPadding() {
+        ReceiptNumberFormatter customFormatter = new ReceiptNumberFormatter("DON", 4);
+
+        assertEquals("DON260001", customFormatter.format(2026, 1));
+        assertEquals(9_999L, customFormatter.maxSequence());
+    }
+
+    @Test
     void sequenceLimitExceptionWorks() {
         ReceiptSequence sequence = receiptSequenceRepository.createYear(2026);
         receiptSequenceRepository.updateLastNumber(sequence.getId(), ReceiptNumberFormatter.MAX_SEQUENCE);

@@ -7,6 +7,7 @@ import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.PasswordChangeService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ThemeService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -96,6 +97,7 @@ public class ForcePasswordChangeController {
     private void openDashboard() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.DASHBOARD_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.DASHBOARD_WIDTH, AppConfig.DASHBOARD_HEIGHT);
+        new ThemeService().applyConfiguredTheme(scene.getRoot());
         Stage currentStage = (Stage) forcePasswordRoot.getScene().getWindow();
         Stage stage = new Stage(StageStyle.UNDECORATED);
 
@@ -113,6 +115,7 @@ public class ForcePasswordChangeController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.LOGIN_VIEW));
             Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
+            new ThemeService().applyConfiguredTheme(scene.getRoot());
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             Stage currentStage = forcePasswordRoot == null || forcePasswordRoot.getScene() == null
                     ? null

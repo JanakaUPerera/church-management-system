@@ -15,6 +15,7 @@ import com.churchmanagement.service.DashboardService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -44,7 +45,6 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,7 +54,6 @@ public class DashboardHomeController {
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.00");
     private static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("#,##0.##");
     private static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("0.#");
-    private static final DateTimeFormatter BACKUP_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
     private static final String[] FALLBACK_CHART_COLORS = {
             "#f59e0b", "#2563eb", "#16a34a", "#7c3aed", "#dc2626", "#0891b2", "#ca8a04", "#4f46e5"
     };
@@ -62,6 +61,7 @@ public class DashboardHomeController {
     private final DashboardService dashboardService = new DashboardService();
     private final RegionService regionService = new RegionService();
     private final ChurchService churchService = new ChurchService();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final List<Church> trendingChurches = new ArrayList<>();
     private Long trendingChurchRegionId;
     private boolean rebuildingTrendingChurchMenu;
@@ -682,7 +682,7 @@ public class DashboardHomeController {
         lastBackupStatusLabel.getStyleClass().add(backupStatusStyle(displayStatus));
 
         boolean hasTime = createdAt != null;
-        lastBackupTimeLabel.setText(hasTime ? BACKUP_TIME_FORMAT.format(createdAt) : "");
+        lastBackupTimeLabel.setText(hasTime ? dateTimeFormatter.formatDateTime(createdAt) : "");
         lastBackupTimeLabel.setVisible(hasTime);
         lastBackupTimeLabel.setManaged(hasTime);
     }

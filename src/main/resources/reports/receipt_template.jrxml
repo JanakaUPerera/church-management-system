@@ -5,6 +5,8 @@
               name="receipt_template" pageWidth="595" pageHeight="842" columnWidth="515"
               leftMargin="40" rightMargin="40" topMargin="30" bottomMargin="30" uuid="a0bf2c1c-2a9c-44ce-90ea-fb312c9f0a31">
     <parameter name="organizationName" class="java.lang.String"/>
+    <parameter name="organizationAddress" class="java.lang.String"/>
+    <parameter name="organizationPhone" class="java.lang.String"/>
     <parameter name="PARAM_RECEIPT_TITLE" class="java.lang.String"/>
     <parameter name="PARAM_RECEIPT_NO_LABEL" class="java.lang.String"/>
     <parameter name="PARAM_RECEIPT_DATE_TIME_LABEL" class="java.lang.String"/>
@@ -45,28 +47,38 @@
     <parameter name="cancelledWatermark" class="java.lang.String"/>
 
     <title>
-        <band height="110">
+        <band height="128">
             <textField>
                 <reportElement x="0" y="0" width="515" height="24" uuid="0b8b7675-a66c-41f5-8c2e-f17890135599"/>
                 <textElement textAlignment="Center"><font size="16" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{organizationName}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="0" y="28" width="515" height="24" uuid="07191953-9e61-4bb1-9bf4-d6343eca9d0e"/>
+                <reportElement x="0" y="26" width="515" height="14" uuid="5d88fe5d-4088-46fa-97f1-06b1f82c4473"/>
+                <textElement textAlignment="Center"><font size="9"/></textElement>
+                <textFieldExpression><![CDATA[$P{organizationAddress}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="42" width="515" height="14" uuid="e02e0ea7-f1e2-4c54-8018-43e1c141905c"/>
+                <textElement textAlignment="Center"><font size="9"/></textElement>
+                <textFieldExpression><![CDATA[$P{organizationPhone}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="62" width="515" height="24" uuid="07191953-9e61-4bb1-9bf4-d6343eca9d0e"/>
                 <textElement textAlignment="Center"><font size="15" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{PARAM_RECEIPT_TITLE}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="0" y="58" width="255" height="18" uuid="17c5e091-e7d6-491f-ab9d-24b7303b3d98"/>
+                <reportElement x="0" y="92" width="255" height="18" uuid="17c5e091-e7d6-491f-ab9d-24b7303b3d98"/>
                 <textFieldExpression><![CDATA[$P{PARAM_RECEIPT_NO_LABEL} + ": " + $P{receiptNo}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="260" y="58" width="255" height="18" uuid="9fdc0be0-cbe0-481e-8e73-dbdcbb99c78d"/>
+                <reportElement x="260" y="92" width="255" height="18" uuid="9fdc0be0-cbe0-481e-8e73-dbdcbb99c78d"/>
                 <textElement textAlignment="Right"/>
                 <textFieldExpression><![CDATA[$P{PARAM_RECEIPT_DATE_TIME_LABEL} + ": " + $P{receiptDateTime}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement forecolor="#B00020" x="0" y="78" width="515" height="28" uuid="f761719c-62a6-4832-9bcd-3bf74d3da82c"/>
+                <reportElement forecolor="#B00020" x="0" y="110" width="515" height="18" uuid="f761719c-62a6-4832-9bcd-3bf74d3da82c"/>
                 <textElement textAlignment="Center"><font size="24" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{cancelledWatermark}]]></textFieldExpression>
             </textField>

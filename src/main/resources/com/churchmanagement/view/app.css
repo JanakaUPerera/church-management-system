@@ -1055,6 +1055,50 @@
     -fx-border-radius: 0 0 6 6;
 }
 
+.settings-page {
+    -fx-background-color: transparent;
+}
+
+.settings-tab-body {
+    -fx-background-color: #fffbeb;
+}
+
+.settings-form-card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 16;
+}
+
+.settings-form-card > .label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #78350f;
+}
+
+.settings-action-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 12;
+}
+
+.settings-output-area {
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.settings-output-area .content {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+}
+
 .dashboard-filter-bar {
     -fx-background-color: white;
     -fx-background-radius: 8;
@@ -1812,4 +1856,124 @@
 
 .permission-checklist .check-box:selected .mark {
     -fx-background-color: white;
+}
+
+.error-label {
+    -fx-text-fill: #b91c1c;
+    -fx-font-size: 12px;
+}
+
+.success-label {
+    -fx-text-fill: #15803d;
+    -fx-font-weight: bold;
+}
+
+/* Dark theme applied by system.theme = DARK */
+.theme-dark.dashboard-root,
+.theme-dark.login-root,
+.theme-dark {
+    -fx-background-color: #111827;
+}
+
+.theme-dark .content-wrap,
+.theme-dark .dashboard-home-root,
+.theme-dark .receipt-detail-tab-body,
+.theme-dark .tab-content-area,
+.theme-dark .scroll-pane,
+.theme-dark .scroll-pane > .viewport {
+    -fx-background-color: #111827;
+}
+
+.theme-dark .label,
+.theme-dark .value-label,
+.theme-dark .receipt-detail-label,
+.theme-dark .dashboard-card-value,
+.theme-dark .dashboard-card-value-small,
+.theme-dark .dashboard-amount-value,
+.theme-dark .dashboard-amount-total-label,
+.theme-dark .dashboard-amount-total-value,
+.theme-dark .table-view .table-cell,
+.theme-dark .combo-box .list-cell {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .form-message,
+.theme-dark .dashboard-card-label,
+.theme-dark .dashboard-card-time,
+.theme-dark .dashboard-progress-title,
+.theme-dark .dashboard-progress-region,
+.theme-dark .dashboard-amount-header,
+.theme-dark .pagination-label,
+.theme-dark .pagination-summary {
+    -fx-text-fill: #d1d5db;
+}
+
+.theme-dark .app-header,
+.theme-dark .status-bar,
+.theme-dark .table-view,
+.theme-dark .dashboard-summary-card,
+.theme-dark .dashboard-summary-card-wide,
+.theme-dark .dashboard-chart-card,
+.theme-dark .receipt-detail-card,
+.theme-dark .permission-module-pane,
+.theme-dark .submission-progress-band,
+.theme-dark .submission-totals-row,
+.theme-dark .text-field,
+.theme-dark .password-field,
+.theme-dark .text-area,
+.theme-dark .text-area .content,
+.theme-dark .combo-box-base {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #374151;
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .button {
+    -fx-background-color: #374151;
+    -fx-border-color: #4b5563;
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .button:hover {
+    -fx-background-color: #4b5563;
+    -fx-text-fill: #ffffff;
+}
+
+.theme-dark .primary-button,
+.theme-dark .button:default {
+    -fx-background-color: #d97706;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+}
+
+.theme-dark .sidebar {
+    -fx-background-color: #0f172a;
+}
+
+.theme-dark .menu-button,
+.theme-dark .active-menu-button {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .table-view .column-header-background,
+.theme-dark .table-view .filler,
+.theme-dark .table-view .corner {
+    -fx-background-color: #0f172a;
+}
+
+.theme-dark .table-view .table-row-cell,
+.theme-dark .combo-box-popup .list-view,
+.theme-dark .combo-box-popup .list-view .list-cell {
+    -fx-background-color: #1f2937;
+}
+
+.theme-dark .table-view .table-row-cell:odd,
+.theme-dark .dashboard-amount-row {
+    -fx-background-color: #172033;
+}
+
+.theme-dark .table-view .table-row-cell:hover,
+.theme-dark .table-view .table-row-cell:selected,
+.theme-dark .combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #374151;
 }

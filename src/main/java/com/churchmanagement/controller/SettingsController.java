@@ -4,6 +4,8 @@ import com.churchmanagement.dto.AtCommandResult;
 import com.churchmanagement.dto.ComPortDto;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.dto.SystemSettingDto;
+import com.churchmanagement.dto.UpdateSystemSettingRequest;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsLogRepository;
@@ -11,17 +13,21 @@ import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
-import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.ActivityLogService;
+import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.service.SmsServiceFactory;
+import com.churchmanagement.service.SystemSettingService;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.ThemeService;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.util.StringConverter;
@@ -29,6 +35,7 @@ import javafx.util.StringConverter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,12 +44,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 public class SettingsController {
     private static final int MODEM_DETECTION_TIMEOUT_MILLIS = 10_000;
     private static final int MODEM_PORT_PROBE_TIMEOUT_MILLIS = 1_500;
     private static final int MODEM_TEST_TIMEOUT_MILLIS = 10_000;
 
+    private final SystemSettingService systemSettingService = new SystemSettingService();
     private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
     private final SerialPortService serialPortService = new SerialPortService();
     private final AtCommandService atCommandService = new AtCommandService(serialPortService);
@@ -52,45 +61,44 @@ public class SettingsController {
 
     private AuthenticatedUser currentUser;
 
-    @FXML
-    private CheckBox smsEnabledCheckBox;
-
-    @FXML
-    private ComboBox<SmsSettings.GatewayType> gatewayTypeComboBox;
-
-    @FXML
-    private ComboBox<ComPortDto> comPortComboBox;
-
-    @FXML
-    private ComboBox<Integer> baudRateComboBox;
-
-    @FXML
-    private TextArea modemResponseTextArea;
-
-    @FXML
-    private Button saveSmsSettingsButton;
-
-    @FXML
-    private Button detectComPortsButton;
-
-    @FXML
-    private Button testModemButton;
-
-    @FXML
-    private TextField testSmsMobileNumberField;
-
-    @FXML
-    private TextArea testSmsMessageTextArea;
-
-    @FXML
-    private Button sendTestSmsButton;
+    @FXML private TabPane settingsTabPane;
+    @FXML private TextField organizationNameField;
+    @FXML private TextArea organizationAddressArea;
+    @FXML private TextField organizationPhoneField;
+    @FXML private Label organizationNameErrorLabel;
+    @FXML private TextField receiptPrefixField;
+    @FXML private TextField receiptPaddingField;
+    @FXML private CheckBox receiptAllowBackWeekCheckBox;
+    @FXML private ComboBox<String> receiptLanguageComboBox;
+    @FXML private Label receiptPaddingErrorLabel;
+    @FXML private Label receiptLanguageErrorLabel;
+    @FXML private CheckBox smsEnabledCheckBox;
+    @FXML private ComboBox<SmsSettings.GatewayType> gatewayTypeComboBox;
+    @FXML private CheckBox smsRetryEnabledCheckBox;
+    @FXML private TextField smsRetryMaxAttemptsField;
+    @FXML private Label smsRetryMaxAttemptsErrorLabel;
+    @FXML private ComboBox<ComPortDto> comPortComboBox;
+    @FXML private ComboBox<Integer> baudRateComboBox;
+    @FXML private TextArea modemResponseTextArea;
+    @FXML private Button saveSmsSettingsButton;
+    @FXML private Button detectComPortsButton;
+    @FXML private Button testModemButton;
+    @FXML private TextField testSmsMobileNumberField;
+    @FXML private TextArea testSmsMessageTextArea;
+    @FXML private Button sendTestSmsButton;
+    @FXML private TextField dateFormatField;
+    @FXML private TextField timeFormatField;
+    @FXML private ComboBox<String> themeComboBox;
+    @FXML private Label themeErrorLabel;
 
     @FXML
     private void initialize() {
         currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new IllegalStateException("Please sign in to manage settings."));
-        new PermissionGuard(currentUser).require("sms.settings.manage");
+        new PermissionGuard(currentUser).require("settings.manage");
 
+        receiptLanguageComboBox.getItems().setAll("ENGLISH", "SINHALA", "TAMIL");
+        themeComboBox.getItems().setAll("LIGHT", "DARK");
         gatewayTypeComboBox.getItems().setAll(SmsSettings.GatewayType.values());
         baudRateComboBox.getItems().setAll(9600, 19200, 38400, 115200);
         comPortComboBox.setConverter(new StringConverter<>() {
@@ -104,8 +112,28 @@ public class SettingsController {
                 return null;
             }
         });
-        loadSmsSettings();
+        loadSettings();
+        loadSmsGatewaySettings();
         testSmsMessageTextArea.setText("Test SMS from Church Management System.");
+    }
+
+    @FXML
+    private void saveGeneralSettings() {
+        saveSettings(List.of(
+                request("organization.name", organizationNameField.getText()),
+                request("organization.address", organizationAddressArea.getText()),
+                request("organization.phone", organizationPhoneField.getText())
+        ));
+    }
+
+    @FXML
+    private void saveReceiptSettings() {
+        saveSettings(List.of(
+                request("receipt.number.prefix", receiptPrefixField.getText()),
+                request("receipt.sequence.padding", receiptPaddingField.getText()),
+                request("receipt.allow.back.week", String.valueOf(receiptAllowBackWeekCheckBox.isSelected())),
+                request("receipt.default.language", receiptLanguageComboBox.getValue())
+        ));
     }
 
     @FXML
@@ -117,6 +145,12 @@ public class SettingsController {
 
         ProcessingDialog.run("Save Settings", "Saving SMS settings...",
                 () -> {
+                    List<SystemSettingDto> saved = systemSettingService.updateSettings(List.of(
+                            request("sms.enabled", String.valueOf(smsEnabledCheckBox.isSelected())),
+                            request("sms.gateway.type", gatewayTypeComboBox.getValue().name()),
+                            request("sms.retry.enabled", String.valueOf(smsRetryEnabledCheckBox.isSelected())),
+                            request("sms.retry.max.attempts", smsRetryMaxAttemptsField.getText())
+                    ));
                     SmsSettings settings = smsSettingsRepository.saveSettings(
                             smsEnabledCheckBox.isSelected(),
                             gatewayTypeComboBox.getValue(),
@@ -125,10 +159,24 @@ public class SettingsController {
                     );
                     activityLogService.logSmsSettingsUpdated(currentUser.getUserId(), settings.isSmsEnabled(),
                             settings.getGatewayType().name());
-                    return settings;
+                    return saved;
                 },
-                settings -> showInfo("SMS settings saved", "SMS gateway settings were saved."),
-                throwable -> showError("SMS settings failed", processingMessage(throwable)));
+                settings -> {
+                    applySettings(settings);
+                    applyThemeToScene();
+                    clearErrors();
+                    showInfo("Settings updated", "Settings updated successfully.");
+                },
+                throwable -> showValidationError(processingMessage(throwable)));
+    }
+
+    @FXML
+    private void saveSystemSettings() {
+        saveSettings(List.of(
+                request("system.date.format", dateFormatField.getText()),
+                request("system.time.format", timeFormatField.getText()),
+                request("system.theme", themeComboBox.getValue())
+        ));
     }
 
     @FXML
@@ -216,14 +264,14 @@ public class SettingsController {
                             selectedComPortName(),
                             baudRate
                     );
-                    SmsResult result = smsServiceFactory.createSmsService().sendSms(mobileNumber, message);
+                    SmsResult result = smsServiceFactory.createRoutingSmsService().sendSms(mobileNumber, message);
                     LocalDateTime now = LocalDateTime.now();
                     smsLogRepository.insertSmsLog(null, null, mobileNumber, message, result.getProvider(),
                             result.isSuccess() ? result.getSendStatus() : SmsSendStatus.FAILED,
                             result.isSuccess() ? result.getDeliveryStatus() : SmsDeliveryStatus.FAILED,
                             result.getModemMessageReference(), result.getModemRawResponse(), null,
                             result.getErrorCode(), result.isSuccess() ? null : result.getErrorMessage(),
-                            1, now, result.getSentAt(), now);
+                            result.getAttemptCount(), now, result.getSentAt(), now);
                     if (result.isSuccess()) {
                         activityLogService.logSmsTestSent(currentUser.getUserId(), mobileNumber, result.getProvider());
                     } else {
@@ -241,16 +289,84 @@ public class SettingsController {
                 throwable -> showError("Test SMS failed", processingMessage(throwable)));
     }
 
-    private void loadSmsSettings() {
+    private void loadSettings() {
+        applySettings(systemSettingService.loadSettings());
+    }
+
+    private void applySettings(List<SystemSettingDto> settings) {
+        Map<String, String> values = settings.stream()
+                .collect(Collectors.toMap(SystemSettingDto::getSettingKey,
+                        setting -> nullToBlank(setting.getSettingValue())));
+        organizationNameField.setText(values.get("organization.name"));
+        organizationAddressArea.setText(values.get("organization.address"));
+        organizationPhoneField.setText(values.get("organization.phone"));
+        receiptPrefixField.setText(values.get("receipt.number.prefix"));
+        receiptPaddingField.setText(values.get("receipt.sequence.padding"));
+        receiptAllowBackWeekCheckBox.setSelected(Boolean.parseBoolean(values.get("receipt.allow.back.week")));
+        receiptLanguageComboBox.setValue(defaultValue(values.get("receipt.default.language"), "ENGLISH"));
+        smsEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.enabled")));
+        gatewayTypeComboBox.setValue(parseGatewayType(values.get("sms.gateway.type")));
+        smsRetryEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.retry.enabled")));
+        smsRetryMaxAttemptsField.setText(values.get("sms.retry.max.attempts"));
+        dateFormatField.setText(values.get("system.date.format"));
+        timeFormatField.setText(values.get("system.time.format"));
+        themeComboBox.setValue(defaultValue(values.get("system.theme"), "LIGHT"));
+    }
+
+    private void loadSmsGatewaySettings() {
         SmsSettings settings = smsSettingsRepository.getSettings();
-        smsEnabledCheckBox.setSelected(settings.isSmsEnabled());
-        gatewayTypeComboBox.setValue(settings.getGatewayType());
         if (settings.getComPort() != null && !settings.getComPort().isBlank()) {
             comPortComboBox.getItems().setAll(new ComPortDto(settings.getComPort(), "Saved COM port",
                     settings.getComPort()));
             comPortComboBox.getSelectionModel().selectFirst();
         }
         baudRateComboBox.setValue(settings.getBaudRate() == null ? 9600 : settings.getBaudRate());
+    }
+
+    private void saveSettings(List<UpdateSystemSettingRequest> requests) {
+        ProcessingDialog.run("Save Settings", "Saving settings...",
+                () -> systemSettingService.updateSettings(requests),
+                settings -> {
+                    applySettings(settings);
+                    applyThemeToScene();
+                    clearErrors();
+                    showInfo("Settings updated", "Settings updated successfully.");
+                },
+                throwable -> showValidationError(processingMessage(throwable)));
+    }
+
+    private UpdateSystemSettingRequest request(String key, String value) {
+        return new UpdateSystemSettingRequest(key, value);
+    }
+
+    private void showValidationError(String message) {
+        clearErrors();
+        if (message.contains("Organization name")) {
+            organizationNameErrorLabel.setText(message);
+        } else if (message.contains("padding")) {
+            receiptPaddingErrorLabel.setText(message);
+        } else if (message.contains("retry max attempts")) {
+            smsRetryMaxAttemptsErrorLabel.setText(message);
+        } else if (message.contains("language")) {
+            receiptLanguageErrorLabel.setText(message);
+        } else if (message.contains("theme")) {
+            themeErrorLabel.setText(message);
+        }
+        showError("Settings update failed", message);
+    }
+
+    private void clearErrors() {
+        organizationNameErrorLabel.setText("");
+        receiptPaddingErrorLabel.setText("");
+        receiptLanguageErrorLabel.setText("");
+        smsRetryMaxAttemptsErrorLabel.setText("");
+        themeErrorLabel.setText("");
+    }
+
+    private void applyThemeToScene() {
+        if (settingsTabPane != null && settingsTabPane.getScene() != null) {
+            new ThemeService().applyConfiguredTheme(settingsTabPane.getScene().getRoot());
+        }
     }
 
     private Integer parseBaudRate() {
@@ -278,8 +394,26 @@ public class SettingsController {
         return builder.toString();
     }
 
+    private SmsSettings.GatewayType parseGatewayType(String value) {
+        try {
+            return value == null || value.isBlank()
+                    ? SmsSettings.GatewayType.MOCK
+                    : SmsSettings.GatewayType.valueOf(value);
+        } catch (IllegalArgumentException exception) {
+            return SmsSettings.GatewayType.MOCK;
+        }
+    }
+
+    private String defaultValue(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
     private String blankToDash(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private String nullToBlank(String value) {
+        return value == null ? "" : value;
     }
 
     private void showInfo(String title, String message) {

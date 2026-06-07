@@ -9,6 +9,8 @@ import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.SystemDateTimeFormatter;
+import com.churchmanagement.util.ThemeService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -36,7 +38,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -151,7 +152,7 @@ public class DashboardController {
 
     @FXML
     private void initialize() {
-        dateLabel.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
+        dateLabel.setText(new SystemDateTimeFormatter().formatDate(LocalDate.now()));
 
         Optional<AuthenticatedUser> user = AuthContext.getCurrentUser();
         if (user.isEmpty()) {
@@ -192,6 +193,7 @@ public class DashboardController {
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.LOGIN_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
+        new ThemeService().applyConfiguredTheme(scene.getRoot());
         scene.setFill(Color.TRANSPARENT);
         Stage dashboardStage = (Stage) dateLabel.getScene().getWindow();
         Stage stage = new Stage(StageStyle.TRANSPARENT);
@@ -542,6 +544,7 @@ public class DashboardController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.FORCE_PASSWORD_CHANGE_VIEW));
             Scene scene = new Scene(loader.load(), AppConfig.FORCE_PASSWORD_CHANGE_WIDTH,
                     AppConfig.FORCE_PASSWORD_CHANGE_HEIGHT);
+            new ThemeService().applyConfiguredTheme(scene.getRoot());
             scene.setFill(Color.TRANSPARENT);
             Stage dashboardStage = (Stage) dateLabel.getScene().getWindow();
             Stage stage = new Stage(StageStyle.TRANSPARENT);

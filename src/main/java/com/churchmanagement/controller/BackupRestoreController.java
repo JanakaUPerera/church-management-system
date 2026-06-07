@@ -20,6 +20,7 @@ import com.churchmanagement.util.ApplicationRestartUtil;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -50,11 +51,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 
 public class BackupRestoreController {
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-    private static final DateTimeFormatter TIME_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
     private static final String FILTER_ALL = "ALL";
 
     private final BackupService backupService = new BackupService();
@@ -64,6 +62,7 @@ public class BackupRestoreController {
     private final WindowsTaskSchedulerScriptService taskSchedulerScriptService = new WindowsTaskSchedulerScriptService();
     private final BackupRepository backupRepository = new BackupRepository();
     private final RestoreRepository restoreRepository = new RestoreRepository();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final ObservableList<BackupLogDto> allBackupLogs = FXCollections.observableArrayList();
     private final ObservableList<BackupLogDto> filteredBackupLogs = FXCollections.observableArrayList();
     private final ObservableList<BackupScheduleDto> backupSchedules = FXCollections.observableArrayList();
@@ -738,11 +737,11 @@ public class BackupRestoreController {
     }
 
     private String formatDateTime(LocalDateTime value) {
-        return value == null ? "" : value.format(DATE_TIME_FORMAT);
+        return value == null ? "" : dateTimeFormatter.formatDateTime(value);
     }
 
     private String formatTime12Hour(LocalTime value) {
-        return value == null ? "" : value.format(TIME_DISPLAY_FORMAT);
+        return value == null ? "" : dateTimeFormatter.formatTime(value);
     }
 
     private int hour12(LocalTime value) {

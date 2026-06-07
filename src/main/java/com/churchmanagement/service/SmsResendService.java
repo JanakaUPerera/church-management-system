@@ -103,7 +103,7 @@ public class SmsResendService {
         log.setModemRawResponse(result.getModemRawResponse());
         log.setErrorCode(result.getErrorCode());
         log.setErrorMessage(result.isSuccess() ? null : result.getErrorMessage());
-        log.setAttemptCount(Math.max(1, original.getAttemptCount() + 1));
+        log.setAttemptCount(Math.max(1, original.getAttemptCount()) + result.getAttemptCount());
         log.setLastAttemptAt(LocalDateTime.now(clock));
         log.setSentAt(result.isSuccess() ? result.getSentAt() : null);
         log.setCreatedAt(LocalDateTime.now(clock));

@@ -8,6 +8,7 @@ import com.churchmanagement.service.ActivityLogQueryService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -31,16 +32,15 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ActivityLogController {
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String ALL_ACTIONS = "ALL ACTIONS";
     private static final String ALL_MODULES = "ALL MODULES";
 
     private final ActivityLogQueryService activityLogQueryService = new ActivityLogQueryService();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final UserRepository userRepository = new UserRepository();
     private final ObservableList<ActivityLogDto> activityLogs = FXCollections.observableArrayList();
     private final ObservableList<UserOption> users = FXCollections.observableArrayList();
@@ -378,7 +378,7 @@ public class ActivityLogController {
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMAT);
+        return dateTimeFormatter.formatDateTime(dateTime);
     }
 
     private String formatUser(ActivityLogDto log) {

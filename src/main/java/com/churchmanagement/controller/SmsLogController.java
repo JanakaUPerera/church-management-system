@@ -16,6 +16,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -45,16 +46,15 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class SmsLogController {
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String STATUS_ALL = "ALL";
 
     private final SmsLogService smsLogService = new SmsLogService();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final SmsResendService smsResendService = new SmsResendService();
     private final ChurchService churchService = new ChurchService();
     private final ObservableList<SmsLogDto> smsLogs = FXCollections.observableArrayList();
@@ -358,7 +358,7 @@ public class SmsLogController {
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMAT);
+        return dateTimeFormatter.formatDateTime(dateTime);
     }
 
     private String nullToDash(String value) {

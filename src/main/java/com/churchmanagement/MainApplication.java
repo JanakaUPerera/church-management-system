@@ -5,8 +5,10 @@ import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.config.MigrationRunner;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.service.AutoBackupScheduler;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ApplicationRestartUtil;
+import com.churchmanagement.util.ThemeService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -25,6 +27,7 @@ public class MainApplication extends Application {
     public void init() {
         try {
             MigrationRunner.runMigrations();
+            SystemConfigurationCache.getInstance().loadSettings();
         } catch (DatabaseException exception) {
             startupException = exception;
         }
@@ -40,6 +43,7 @@ public class MainApplication extends Application {
 
         FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.LOGIN_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
+        new ThemeService().applyConfiguredTheme(scene.getRoot());
         scene.setFill(Color.TRANSPARENT);
 
         stage.initStyle(StageStyle.TRANSPARENT);

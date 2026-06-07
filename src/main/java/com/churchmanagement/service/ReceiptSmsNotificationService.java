@@ -74,7 +74,7 @@ public class ReceiptSmsNotificationService {
             if (result.isSuccess()) {
                 smsLogRepository.insertSmsLog(receiptId, church.getId(), mobileNumber, message, result.getProvider(),
                         result.getSendStatus(), result.getDeliveryStatus(), result.getModemMessageReference(),
-                        result.getModemRawResponse(), null, result.getErrorCode(), null, 1, now,
+                        result.getModemRawResponse(), null, result.getErrorCode(), null, result.getAttemptCount(), now,
                         result.getSentAt(), now);
                 activityLogService.logSmsSentAcceptedByModem(userId, receiptId, church.getId(), mobileNumber,
                         result.getProvider(), result.getModemMessageReference());
@@ -86,7 +86,7 @@ public class ReceiptSmsNotificationService {
                 smsLogRepository.insertSmsLog(receiptId, church.getId(), mobileNumber, message, result.getProvider(),
                         SmsSendStatus.FAILED, SmsDeliveryStatus.FAILED, result.getModemMessageReference(),
                         result.getModemRawResponse(), null, result.getErrorCode(), result.getErrorMessage(),
-                        1, now, result.getSentAt(), now);
+                        result.getAttemptCount(), now, result.getSentAt(), now);
                 activityLogService.logSmsSendFailed(userId, receiptId, church.getId(), mobileNumber,
                         result.getErrorMessage());
             }

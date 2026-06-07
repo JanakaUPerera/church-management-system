@@ -5,142 +5,74 @@ import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.exception.DatabaseException;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 public class SmsSettingsRepository {
-    private final DataSource dataSource;
+    private static final String SMS_ENABLED_KEY = "sms.enabled";
+    private static final String SMS_GATEWAY_TYPE_KEY = "sms.gateway.type";
+    private static final String SMS_COM_PORT_KEY = "sms.com.port";
+    private static final String SMS_BAUD_RATE_KEY = "sms.baud.rate";
+
+    private final SystemSettingRepository systemSettingRepository;
 
     public SmsSettingsRepository() {
         this(DatabaseConfig.getDataSource());
     }
 
     public SmsSettingsRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+        this(new SystemSettingRepository(dataSource));
+    }
+
+    SmsSettingsRepository(SystemSettingRepository systemSettingRepository) {
+        this.systemSettingRepository = systemSettingRepository;
     }
 
     public SmsSettings getSettings() {
-        String sql = """
-                SELECT id, sms_enabled, gateway_type, com_port, baud_rate, created_at, updated_at
-                FROM sms_settings
-                ORDER BY id
-                LIMIT 1
-                """;
-
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return mapSettings(resultSet);
-                }
-            }
-            return createDefaultSettings();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Unable to load SMS settings.", exception);
-        }
+        SmsSettings settings = new SmsSettings();
+        settings.setSmsEnabled(Boolean.parseBoolean(systemSettingRepository.getValue(SMS_ENABLED_KEY)));
+        settings.setGatewayType(gatewayType(systemSettingRepository.getValue(SMS_GATEWAY_TYPE_KEY)));
+        settings.setComPort(blankToNull(systemSettingRepository.getValue(SMS_COM_PORT_KEY)));
+        settings.setBaudRate(defaultInt(systemSettingRepository.getValue(SMS_BAUD_RATE_KEY), 9600));
+        return settings;
     }
 
     public SmsSettings saveSettings(boolean smsEnabled, SmsSettings.GatewayType gatewayType,
                                     String comPort, Integer baudRate) {
         try {
-            Optional<Long> settingsId = findSettingsId();
-            if (settingsId.isPresent()) {
-                updateSettings(settingsId.get(), smsEnabled, gatewayType, comPort, baudRate);
-            } else {
-                insertSettings(smsEnabled, gatewayType, comPort, baudRate);
-            }
+            systemSettingRepository.updateSetting(SMS_ENABLED_KEY, Boolean.toString(smsEnabled));
+            systemSettingRepository.updateSetting(SMS_GATEWAY_TYPE_KEY,
+                    (gatewayType == null ? SmsSettings.GatewayType.MOCK : gatewayType).name());
+            systemSettingRepository.updateSetting(SMS_COM_PORT_KEY, blankToNull(comPort));
+            systemSettingRepository.updateSetting(SMS_BAUD_RATE_KEY,
+                    Integer.toString(baudRate == null ? 9600 : baudRate));
             return getSettings();
-        } catch (SQLException exception) {
+        } catch (RuntimeException exception) {
             throw new DatabaseException("Unable to save SMS settings.", exception);
         }
     }
 
-    private SmsSettings createDefaultSettings() throws SQLException {
-        insertSettings(false, SmsSettings.GatewayType.MOCK, null, 9600);
-        return getSettings();
-    }
-
-    private Optional<Long> findSettingsId() {
-        String sql = "SELECT id FROM sms_settings ORDER BY id LIMIT 1";
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-            return resultSet.next() ? Optional.of(resultSet.getLong("id")) : Optional.empty();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Unable to find SMS settings.", exception);
+    private SmsSettings.GatewayType gatewayType(String value) {
+        if (value == null || value.isBlank()) {
+            return SmsSettings.GatewayType.MOCK;
+        }
+        try {
+            return SmsSettings.GatewayType.valueOf(value.strip());
+        } catch (IllegalArgumentException exception) {
+            return SmsSettings.GatewayType.MOCK;
         }
     }
 
-    private void insertSettings(boolean smsEnabled, SmsSettings.GatewayType gatewayType,
-                                String comPort, Integer baudRate) throws SQLException {
-        String sql = """
-                INSERT INTO sms_settings (sms_enabled, gateway_type, com_port, baud_rate, created_at)
-                VALUES (?, ?, ?, ?, ?)
-                """;
-
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            setSettingsParameters(statement, smsEnabled, gatewayType, comPort, baudRate);
-            statement.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-            statement.executeUpdate();
+    private int defaultInt(String value, int fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(value.strip());
+        } catch (NumberFormatException exception) {
+            return fallback;
         }
     }
 
-    private void updateSettings(long id, boolean smsEnabled, SmsSettings.GatewayType gatewayType,
-                                String comPort, Integer baudRate) {
-        String sql = """
-                UPDATE sms_settings
-                SET sms_enabled = ?, gateway_type = ?, com_port = ?, baud_rate = ?, updated_at = ?
-                WHERE id = ?
-                """;
-
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            setSettingsParameters(statement, smsEnabled, gatewayType, comPort, baudRate);
-            statement.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-            statement.setLong(6, id);
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Unable to save SMS settings.", exception);
-        }
-    }
-
-    private void setSettingsParameters(PreparedStatement statement, boolean smsEnabled,
-                                       SmsSettings.GatewayType gatewayType, String comPort,
-                                       Integer baudRate) throws SQLException {
-        statement.setBoolean(1, smsEnabled);
-        statement.setString(2, (gatewayType == null ? SmsSettings.GatewayType.MOCK : gatewayType).name());
-        if (comPort == null || comPort.isBlank()) {
-            statement.setNull(3, Types.VARCHAR);
-        } else {
-            statement.setString(3, comPort.strip());
-        }
-        if (baudRate == null) {
-            statement.setNull(4, Types.INTEGER);
-        } else {
-            statement.setInt(4, baudRate);
-        }
-    }
-
-    private SmsSettings mapSettings(ResultSet resultSet) throws SQLException {
-        SmsSettings settings = new SmsSettings();
-        settings.setId(resultSet.getLong("id"));
-        settings.setSmsEnabled(resultSet.getBoolean("sms_enabled"));
-        settings.setGatewayType(SmsSettings.GatewayType.valueOf(resultSet.getString("gateway_type")));
-        settings.setComPort(resultSet.getString("com_port"));
-        int baudRate = resultSet.getInt("baud_rate");
-        settings.setBaudRate(resultSet.wasNull() ? null : baudRate);
-        Timestamp createdAt = resultSet.getTimestamp("created_at");
-        settings.setCreatedAt(createdAt == null ? null : createdAt.toLocalDateTime());
-        Timestamp updatedAt = resultSet.getTimestamp("updated_at");
-        settings.setUpdatedAt(updatedAt == null ? null : updatedAt.toLocalDateTime());
-        return settings;
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.strip();
     }
 }

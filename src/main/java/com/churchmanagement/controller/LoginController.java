@@ -5,6 +5,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.service.AuthService;
 import com.churchmanagement.util.ButtonIconUtil;
+import com.churchmanagement.util.ThemeService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -117,6 +118,7 @@ public class LoginController {
     private void openDashboard() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.DASHBOARD_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.DASHBOARD_WIDTH, AppConfig.DASHBOARD_HEIGHT);
+        new ThemeService().applyConfiguredTheme(scene.getRoot());
         Stage loginStage = (Stage) usernameField.getScene().getWindow();
         Stage stage = new Stage(StageStyle.UNDECORATED);
 
@@ -134,6 +136,7 @@ public class LoginController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(AppConfig.FORCE_PASSWORD_CHANGE_VIEW));
         Scene scene = new Scene(loader.load(), AppConfig.FORCE_PASSWORD_CHANGE_WIDTH,
                 AppConfig.FORCE_PASSWORD_CHANGE_HEIGHT);
+        new ThemeService().applyConfiguredTheme(scene.getRoot());
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         Stage loginStage = (Stage) usernameField.getScene().getWindow();
         Stage stage = new Stage(StageStyle.TRANSPARENT);

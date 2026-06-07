@@ -5,50 +5,145 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="18" styleClass="content-section" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.churchmanagement.controller.SettingsController">
-    <padding>
-        <Insets bottom="28" left="28" right="28" top="28"/>
-    </padding>
-    <Label styleClass="section-title" text="SMS Settings"/>
-    <GridPane hgap="14" vgap="12">
-        <Label text="Enable SMS" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <CheckBox fx:id="smsEnabledCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+<TabPane fx:id="settingsTabPane"
+         styleClass="dashboard-tab-pane"
+         tabClosingPolicy="UNAVAILABLE"
+         xmlns="http://javafx.com/javafx/21"
+         xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="com.churchmanagement.controller.SettingsController">
+    <tabs>
+        <Tab closable="false" text="General">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+            <VBox spacing="14" styleClass="settings-page">
+                <padding>
+                    <Insets bottom="8" left="2" right="2" top="12"/>
+                </padding>
+                <GridPane hgap="14" vgap="10" styleClass="settings-form-card">
+                    <Label text="Organization Name" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField fx:id="organizationNameField" prefWidth="420" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                    <Label fx:id="organizationNameErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
 
-        <Label text="Gateway type" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <ComboBox fx:id="gatewayTypeComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                    <Label text="Address" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextArea fx:id="organizationAddressArea" prefColumnCount="38" prefRowCount="3" wrapText="true"
+                              GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
-        <Label text="COM port" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-        <ComboBox fx:id="comPortComboBox" prefWidth="360" promptText="Detect and select COM port"
-                  GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                    <Label text="Phone" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <TextField fx:id="organizationPhoneField" prefWidth="260" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                </GridPane>
+                <Button onAction="#saveGeneralSettings" styleClass="primary-button" text="Save General"/>
+            </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+        <Tab closable="false" text="Receipt">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+            <VBox spacing="14" styleClass="settings-page">
+                <padding>
+                    <Insets bottom="8" left="2" right="2" top="12"/>
+                </padding>
+                <GridPane hgap="14" vgap="10" styleClass="settings-form-card">
+                    <Label text="Receipt Prefix" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField fx:id="receiptPrefixField" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
-        <Label text="Baud rate" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-        <ComboBox fx:id="baudRateComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-    </GridPane>
-    <HBox spacing="10">
-        <Button fx:id="detectComPortsButton" onAction="#detectComPorts" text="Detect COM Ports"/>
-        <Button fx:id="testModemButton" onAction="#testModem" text="Test Modem"/>
-        <Button fx:id="saveSmsSettingsButton" onAction="#saveSmsSettings" styleClass="primary-button" text="Save settings"/>
-    </HBox>
-    <TextArea fx:id="modemResponseTextArea" editable="false" prefRowCount="10" promptText="AT command response"
-              wrapText="true"/>
-    <Label styleClass="section-title" text="Test Real SMS"/>
-    <GridPane hgap="14" vgap="12">
-        <Label text="Mobile number" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <TextField fx:id="testSmsMobileNumberField" prefWidth="260" promptText="0771234567 or +94771234567"
-                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                    <Label text="Sequence Padding" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextField fx:id="receiptPaddingField" prefWidth="100" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                    <Label fx:id="receiptPaddingErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
 
-        <Label text="Message" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <TextArea fx:id="testSmsMessageTextArea" prefColumnCount="36" prefRowCount="3" wrapText="true"
-                  GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-    </GridPane>
-    <HBox spacing="10">
-        <Button fx:id="sendTestSmsButton" onAction="#testSms" styleClass="primary-button" text="Send Test SMS"/>
-    </HBox>
-</VBox>
+                    <Label text="Allow Back Week" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <CheckBox fx:id="receiptAllowBackWeekCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                    <Label text="Default Receipt Language" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <ComboBox fx:id="receiptLanguageComboBox" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                    <Label fx:id="receiptLanguageErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                </GridPane>
+                <Button onAction="#saveReceiptSettings" styleClass="primary-button" text="Save Receipt"/>
+            </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+        <Tab closable="false" text="SMS">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+            <VBox spacing="14" styleClass="settings-page">
+                <padding>
+                    <Insets bottom="8" left="2" right="2" top="12"/>
+                </padding>
+                <GridPane hgap="14" vgap="10" styleClass="settings-form-card">
+                    <Label text="SMS Enabled" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <CheckBox fx:id="smsEnabledCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                    <Label text="Gateway Type" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <ComboBox fx:id="gatewayTypeComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                    <Label text="Retry Enabled" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <CheckBox fx:id="smsRetryEnabledCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                    <Label text="Retry Max Attempts" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <TextField fx:id="smsRetryMaxAttemptsField" prefWidth="100" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                    <Label fx:id="smsRetryMaxAttemptsErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+
+                    <Label text="COM port" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                    <ComboBox fx:id="comPortComboBox" prefWidth="360" promptText="Detect and select COM port"
+                              GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                    <Label text="Baud rate" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                    <ComboBox fx:id="baudRateComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                </GridPane>
+                <HBox spacing="10" styleClass="settings-action-bar">
+                    <Button fx:id="detectComPortsButton" onAction="#detectComPorts" text="Detect COM Ports"/>
+                    <Button fx:id="testModemButton" onAction="#testModem" text="Test Modem"/>
+                    <Button fx:id="saveSmsSettingsButton" onAction="#saveSmsSettings" styleClass="primary-button" text="Save SMS"/>
+                </HBox>
+                <TextArea fx:id="modemResponseTextArea" editable="false" prefRowCount="6" promptText="AT command response"
+                          styleClass="settings-output-area"
+                          wrapText="true"/>
+                <GridPane hgap="14" vgap="10" styleClass="settings-form-card">
+                    <Label text="Mobile number" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField fx:id="testSmsMobileNumberField" prefWidth="260" promptText="0771234567 or +94771234567"
+                               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                    <Label text="Message" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextArea fx:id="testSmsMessageTextArea" prefColumnCount="36" prefRowCount="3" wrapText="true"
+                              GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                </GridPane>
+                <Button fx:id="sendTestSmsButton" onAction="#testSms" styleClass="primary-button" text="Send Test SMS"/>
+            </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+        <Tab closable="false" text="System">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+            <VBox spacing="14" styleClass="settings-page">
+                <padding>
+                    <Insets bottom="8" left="2" right="2" top="12"/>
+                </padding>
+                <GridPane hgap="14" vgap="10" styleClass="settings-form-card">
+                    <Label text="Date Format" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField fx:id="dateFormatField" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                    <Label text="Time Format" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextField fx:id="timeFormatField" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                </GridPane>
+                <Button onAction="#saveSystemSettings" styleClass="primary-button" text="Save System"/>
+            </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+    </tabs>
+</TabPane>

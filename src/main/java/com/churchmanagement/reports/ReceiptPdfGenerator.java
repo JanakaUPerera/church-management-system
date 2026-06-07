@@ -10,6 +10,8 @@ import com.churchmanagement.repository.ReceiptPrintRepository;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.service.ReceiptFontService;
 import com.churchmanagement.service.ReceiptLabelTranslationService;
+import com.churchmanagement.service.SystemConfigurationCache;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -30,14 +32,12 @@ import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ReceiptPdfGenerator {
     private static final String TEMPLATE_PATH = "/reports/receipt_template.jrxml";
     private static final String UNICODE_TEST_TEMPLATE_PATH = "/reports/unicode_font_test.jrxml";
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
 
     private final ReceiptRepository receiptRepository;
@@ -46,6 +46,8 @@ public class ReceiptPdfGenerator {
     private final ReceiptLabelTranslationService translationService;
     private final DataSource dataSource;
     private final Clock clock;
+    private final SystemConfigurationCache configurationCache;
+    private final SystemDateTimeFormatter dateTimeFormatter;
 
     public ReceiptPdfGenerator() {
         this(new ReceiptRepository(), new ReceiptPrintRepository(), DatabaseConfig.getDataSource(),
@@ -66,12 +68,23 @@ public class ReceiptPdfGenerator {
     public ReceiptPdfGenerator(ReceiptRepository receiptRepository, ReceiptPrintRepository receiptPrintRepository,
                                DataSource dataSource, Clock clock, ReceiptFontService receiptFontService,
                                ReceiptLabelTranslationService translationService) {
+        this(receiptRepository, receiptPrintRepository, dataSource, clock, receiptFontService, translationService,
+                SystemConfigurationCache.getInstance(), new SystemDateTimeFormatter());
+    }
+
+    public ReceiptPdfGenerator(ReceiptRepository receiptRepository, ReceiptPrintRepository receiptPrintRepository,
+                               DataSource dataSource, Clock clock, ReceiptFontService receiptFontService,
+                               ReceiptLabelTranslationService translationService,
+                               SystemConfigurationCache configurationCache,
+                               SystemDateTimeFormatter dateTimeFormatter) {
         this.receiptRepository = receiptRepository;
         this.receiptPrintRepository = receiptPrintRepository;
         this.dataSource = dataSource;
         this.clock = clock;
         this.receiptFontService = receiptFontService;
         this.translationService = translationService;
+        this.configurationCache = configurationCache;
+        this.dateTimeFormatter = dateTimeFormatter;
     }
 
     public String generateReceiptPdf(long receiptId) {
@@ -139,7 +152,9 @@ public class ReceiptPdfGenerator {
     Map<String, Object> parameters(ReceiptResponseDto receipt) {
         Map<String, Object> parameters = new HashMap<>();
         putLabels(parameters, receipt);
-        parameters.put("organizationName", AppConfig.APPLICATION_NAME);
+        parameters.put("organizationName", setting("organization.name", AppConfig.APPLICATION_NAME));
+        parameters.put("organizationAddress", setting("organization.address", ""));
+        parameters.put("organizationPhone", setting("organization.phone", ""));
         parameters.put("receiptNo", receipt.getReceiptNo());
         parameters.put("receiptDateTime", formatDateTime(receipt.getReceiptDateTime()));
         parameters.put("churchCode", nullToDash(receipt.getChurchCode()));
@@ -231,7 +246,7 @@ public class ReceiptPdfGenerator {
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMAT);
+        return dateTimeFormatter.formatDateTime(dateTime);
     }
 
     private String formatAmount(BigDecimal amount) {
@@ -240,6 +255,11 @@ public class ReceiptPdfGenerator {
 
     private String nullToDash(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private String setting(String key, String fallback) {
+        String value = configurationCache.getString(key);
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private String padRight(String value, int length) {

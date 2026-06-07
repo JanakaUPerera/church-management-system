@@ -12,6 +12,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -38,14 +39,13 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class SubmissionStatusController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String ALL_OPTION_TEXT = "ALL";
 
     private final SubmissionStatusService submissionStatusService = new SubmissionStatusService();
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final RegionService regionService = new RegionService();
     private final ChurchService churchService = new ChurchService();
     private final ObservableList<SubmissionStatusDto> statusRows = FXCollections.observableArrayList();
@@ -359,7 +359,7 @@ public class SubmissionStatusController {
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMAT);
+        return dateTimeFormatter.formatDateTime(dateTime);
     }
 
     private String nullToDash(String value) {

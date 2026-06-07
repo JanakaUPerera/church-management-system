@@ -50,7 +50,7 @@ class AutoBackupSchedulerTest {
         private final List<LocalTime> scheduledTimes = new ArrayList<>();
 
         private CapturingScheduler(BackupScheduleService backupScheduleService) {
-            super(backupScheduleService, new BackupService());
+            super(backupScheduleService, null);
         }
 
         @Override
