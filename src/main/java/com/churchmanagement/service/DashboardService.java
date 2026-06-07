@@ -40,7 +40,7 @@ public class DashboardService {
         weekly.setWeekEndDate(safeWeekEnd);
         applyWeeklyPermissions(weekly, guard);
 
-        if (guard.can("report.view")) {
+        if (guard.can("report.menu.view")) {
             weekly.setSubmittedVsPendingChart(dashboardRepository.getSubmittedVsPendingChart(
                     safeWeekStart, safeWeekEnd, regionId));
             weekly.setRegionSubmissionProgress(dashboardRepository.getRegionWiseSubmissionProgress(
@@ -76,8 +76,8 @@ public class DashboardService {
         trending.setDateFrom(range.dateFrom());
         trending.setDateTo(range.dateTo());
         trending.setGroupingMode(groupingMode(range.dateFrom(), range.dateTo()));
-        trending.setChartsVisible(guard.can("report.view"));
-        if (guard.can("report.view")) {
+        trending.setChartsVisible(guard.can("report.menu.view"));
+        if (guard.can("report.menu.view")) {
             trending.setTotalCollectionTrend(dashboardRepository.getTotalCollectionTrend(
                     range.dateFrom(), range.dateTo(), regionId));
             trending.setCollectionTypeWiseTrend(dashboardRepository.getCollectionTypeWiseTrend(
@@ -98,7 +98,7 @@ public class DashboardService {
         PermissionGuard guard = new PermissionGuard(user);
         DateRange range = defaultTrendingRange(dateFrom, dateTo);
         validateDateRange(range.dateFrom(), range.dateTo());
-        if (!guard.can("report.view")) {
+        if (!guard.can("report.menu.view")) {
             return List.of();
         }
         return dashboardRepository.getChurchWiseCollectionTrend(range.dateFrom(), range.dateTo(), regionId, churchIds);
@@ -193,10 +193,10 @@ public class DashboardService {
     }
 
     private void applyWeeklyPermissions(WeeklyDashboardDto weekly, PermissionGuard guard) {
-        boolean receiptView = guard.can("receipt.view");
+        boolean receiptView = guard.can("receipt.menu.view");
         weekly.setReceiptSummaryVisible(receiptView);
-        weekly.setChartsVisible(guard.can("report.view"));
-        weekly.setSmsFailedVisible(guard.can("sms.logs.view"));
+        weekly.setChartsVisible(guard.can("report.menu.view"));
+        weekly.setSmsFailedVisible(guard.can("sms.menu.view"));
         weekly.setBackupStatusVisible(guard.can("backup.view"));
         weekly.setTodaysReceiptsTotalVisible(receiptView);
         weekly.setLateSubmissionsVisible(receiptView
@@ -209,7 +209,7 @@ public class DashboardService {
             weekly.setLateSubmissions(0);
             weekly.setTodaysReceiptsTotal(null);
         }
-        if (!guard.can("sms.logs.view")) {
+        if (!guard.can("sms.menu.view")) {
             weekly.setSmsFailedCount(0);
         }
         if (!guard.can("backup.view")) {

@@ -117,7 +117,7 @@ public class ChurchController {
         currentUser = user.get();
         permissionGuard = new PermissionGuard(currentUser);
 
-        if (!permissionGuard.can("church.view")) {
+        if (!permissionGuard.can("church.menu.view")) {
             setMessage("You do not have permission to view churches.");
             setFormDisabled(true);
             return;

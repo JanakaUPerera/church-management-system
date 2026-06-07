@@ -95,7 +95,7 @@ public class SettingsController {
     private void initialize() {
         currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new IllegalStateException("Please sign in to manage settings."));
-        new PermissionGuard(currentUser).require("settings.manage");
+        new PermissionGuard(currentUser).require("settings.menu.view");
 
         receiptLanguageComboBox.getItems().setAll("ENGLISH", "SINHALA", "TAMIL");
         themeComboBox.getItems().setAll("LIGHT", "DARK");

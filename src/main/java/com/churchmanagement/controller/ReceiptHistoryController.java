@@ -118,7 +118,7 @@ public class ReceiptHistoryController {
         }
 
         permissionGuard = new PermissionGuard(user.get());
-        if (!permissionGuard.can("receipt.view")) {
+        if (!permissionGuard.can("receipt.menu.view")) {
             setMessage("You do not have permission to view receipt history.");
             return;
         }

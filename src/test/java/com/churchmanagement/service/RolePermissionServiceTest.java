@@ -45,7 +45,7 @@ class RolePermissionServiceTest {
         service = new RolePermissionService(roleRepository, permissionRepository, activityLogService,
                 Clock.fixed(Instant.parse("2026-06-01T10:00:00Z"), ZoneId.of("UTC")));
         AuthContext.setCurrentUser(new AuthenticatedUser(1L, "admin", "System Administrator", 1L, "Admin",
-                List.of("role.manage", "user.manage")));
+                List.of("role.menu.view", "role.create", "role.update", "role.delete", "user.update")));
     }
 
     @AfterEach
@@ -116,30 +116,30 @@ class RolePermissionServiceTest {
     }
 
     @Test
-    void blockRemovingLastRoleManageAccess() {
+    void blockRemovingLastRoleUpdateAccess() {
         AuthContext.setCurrentUser(new AuthenticatedUser(2L, "manager", "Manager", 2L, "User",
-                List.of("role.manage")));
-        permissionRepository.rolePermissions.put(1L, new LinkedHashSet<>(List.of("user.manage")));
-        permissionRepository.rolePermissions.put(2L, new LinkedHashSet<>(List.of("role.manage")));
+                List.of("role.update")));
+        permissionRepository.rolePermissions.put(1L, new LinkedHashSet<>(List.of("user.update")));
+        permissionRepository.rolePermissions.put(2L, new LinkedHashSet<>(List.of("role.update")));
 
         RolePermissionService.RolePermissionException exception = assertThrows(
                 RolePermissionService.RolePermissionException.class,
                 () -> service.updateRolePermissions(new RolePermissionUpdateRequest(2L, List.of("receipt.create"))));
 
-        assertEquals("At least one active role must keep role.manage permission.", exception.getMessage());
+        assertEquals("At least one active role must keep role.update permission.", exception.getMessage());
     }
 
     @Test
     void blockRemovingCriticalAdminPermission() {
         RolePermissionService.RolePermissionException exception = assertThrows(
                 RolePermissionService.RolePermissionException.class,
-                () -> service.updateRolePermissions(new RolePermissionUpdateRequest(1L, List.of("user.manage"))));
+                () -> service.updateRolePermissions(new RolePermissionUpdateRequest(1L, List.of("user.update"))));
 
         assertEquals("Critical permissions cannot be removed from the Admin role.", exception.getMessage());
     }
 
     @Test
-    void userWithoutRoleManageRejected() {
+    void userWithoutRoleMenuViewRejected() {
         AuthContext.setCurrentUser(new AuthenticatedUser(2L, "user", "Standard User", 2L, "User",
                 List.of("receipt.create")));
 
@@ -147,7 +147,7 @@ class RolePermissionServiceTest {
                 RolePermissionService.RolePermissionException.class,
                 () -> service.findRoles());
 
-        assertEquals("You do not have permission to manage roles and permissions.", exception.getMessage());
+        assertEquals("You do not have permission to perform this action.", exception.getMessage());
     }
 
     private static class FakeRoleRepository extends RoleRepository {
@@ -226,8 +226,8 @@ class RolePermissionServiceTest {
 
     private static class FakePermissionRepository extends PermissionRepository {
         private final List<Permission> permissions = List.of(
-                new Permission(1L, "role.manage", "Roles & Permissions", "Manage roles", LocalDateTime.now()),
-                new Permission(2L, "user.manage", "User Management", "Manage users", LocalDateTime.now()),
+                new Permission(1L, "role.update", "Roles & Permissions", "Update roles and manage role permissions", LocalDateTime.now()),
+                new Permission(2L, "user.update", "User Management", "Update users and reset passwords", LocalDateTime.now()),
                 new Permission(3L, "receipt.create", "Receipts", "Create receipts", LocalDateTime.now()),
                 new Permission(4L, "report.view", "Reports", "View reports", LocalDateTime.now())
         );
@@ -235,7 +235,7 @@ class RolePermissionServiceTest {
 
         private FakePermissionRepository() {
             super((DataSource) null);
-            rolePermissions.put(1L, new LinkedHashSet<>(List.of("role.manage", "user.manage")));
+            rolePermissions.put(1L, new LinkedHashSet<>(List.of("role.update", "user.update")));
             rolePermissions.put(2L, new LinkedHashSet<>(List.of("receipt.create")));
         }
 

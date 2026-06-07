@@ -48,7 +48,7 @@ class ReceiptCancellationServiceTest {
         service = new ReceiptCancellationService(receiptRepository, cancellationRepository, activityLogService,
                 fixedClock(), dataSource);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
-                "Admin", List.of("RECEIPT_CANCEL")));
+                "Admin", List.of("receipt.cancel")));
     }
 
     @AfterEach

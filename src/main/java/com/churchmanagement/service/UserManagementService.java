@@ -34,7 +34,7 @@ public class UserManagementService {
     }
 
     public List<User> findAll() {
-        requireUserManagePermission();
+        requirePermission("user.menu.view");
         try {
             return userRepository.findAll();
         } catch (DatabaseException exception) {
@@ -43,7 +43,7 @@ public class UserManagementService {
     }
 
     public List<User> search(String searchText) {
-        requireUserManagePermission();
+        requirePermission("user.menu.view");
         if (searchText == null || searchText.isBlank()) {
             return findAll();
         }
@@ -55,7 +55,7 @@ public class UserManagementService {
     }
 
     public List<UserManagementRepository.RoleOption> findRoles() {
-        requireUserManagePermission();
+        requirePermission("user.menu.view");
         try {
             return userRepository.findRoles();
         } catch (DatabaseException exception) {
@@ -64,7 +64,7 @@ public class UserManagementService {
     }
 
     public User create(CreateUserRequest request) {
-        AuthenticatedUser currentUser = requireUserManagePermission();
+        AuthenticatedUser currentUser = requirePermission("user.create");
         CreateUserRequest normalized = normalizeCreateRequest(request);
         validateCreate(normalized);
 
@@ -95,7 +95,7 @@ public class UserManagementService {
     }
 
     public User update(long id, UpdateUserRequest request) {
-        AuthenticatedUser currentUser = requireUserManagePermission();
+        AuthenticatedUser currentUser = requirePermission("user.update");
         UpdateUserRequest normalized = normalizeUpdateRequest(request);
         validateUpdate(normalized);
 
@@ -139,7 +139,7 @@ public class UserManagementService {
     }
 
     public void resetPassword(long id, ResetPasswordRequest request) {
-        AuthenticatedUser currentUser = requireUserManagePermission();
+        AuthenticatedUser currentUser = requirePermission("user.update");
         ResetPasswordRequest normalized = new ResetPasswordRequest(
                 request == null ? "" : nullToBlank(request.getTemporaryPassword()),
                 request != null && request.isForcePasswordChange());
@@ -164,7 +164,7 @@ public class UserManagementService {
     }
 
     private void updateStatus(long id, User.Status status, String action) {
-        AuthenticatedUser currentUser = requireUserManagePermission();
+        AuthenticatedUser currentUser = requirePermission("user.delete");
         try {
             User user = userRepository.findById(id)
                     .orElseThrow(() -> new UserManagementException("User could not be found."));
@@ -182,14 +182,14 @@ public class UserManagementService {
         }
     }
 
-    private AuthenticatedUser requireUserManagePermission() {
+    private AuthenticatedUser requirePermission(String permissionCode) {
         AuthenticatedUser currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new UserManagementException("Please sign in to manage users."));
         try {
-            new PermissionGuard(currentUser).require("user.manage");
+            new PermissionGuard(currentUser).require(permissionCode);
             return currentUser;
         } catch (SecurityException exception) {
-            throw new UserManagementException("You do not have permission to manage users.", exception);
+            throw new UserManagementException("You do not have permission to perform this action.", exception);
         }
     }
 

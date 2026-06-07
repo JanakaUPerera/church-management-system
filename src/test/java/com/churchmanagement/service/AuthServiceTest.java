@@ -83,8 +83,8 @@ class AuthServiceTest {
     void loadsPermissionsForAuthenticatedUser() {
         AuthenticatedUser user = authService.login("admin", "admin123");
 
-        assertTrue(user.hasPermission("USER_MANAGE"));
-        assertTrue(user.hasAnyPermission("REPORT_VIEW", "MISSING_PERMISSION"));
+        assertTrue(user.hasPermission("user.update"));
+        assertTrue(user.hasAnyPermission("report.menu.view", "MISSING_PERMISSION"));
         assertFalse(user.hasPermission("MISSING_PERMISSION"));
         assertTrue(user.hasRole("admin"));
     }
@@ -132,7 +132,7 @@ class AuthServiceTest {
 
         @Override
         public List<String> findPermissionCodesByRoleId(long roleId) {
-            return List.of("REPORT_VIEW", "USER_MANAGE");
+            return List.of("report.menu.view", "user.update");
         }
     }
 

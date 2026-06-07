@@ -61,7 +61,7 @@ public class RolePermissionController {
             return;
         }
 
-        if (!new PermissionGuard(user.get()).can(RolePermissionService.ROLE_MANAGE_PERMISSION)) {
+        if (!new PermissionGuard(user.get()).can(RolePermissionService.ROLE_MENU_VIEW_PERMISSION)) {
             setFormDisabled(true);
             return;
         }

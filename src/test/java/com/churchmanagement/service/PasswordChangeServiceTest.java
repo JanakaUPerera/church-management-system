@@ -33,7 +33,7 @@ class PasswordChangeServiceTest {
         passwordChangeService = new PasswordChangeService(userRepository, activityLogService,
                 Clock.fixed(Instant.parse("2026-06-01T08:00:00Z"), ZoneId.of("UTC")));
         AuthContext.setCurrentUser(new AuthenticatedUser(5L, "forced", "Forced User", 2L,
-                "User", List.of("REPORT_VIEW"), true));
+                "User", List.of("report.menu.view"), true));
     }
 
     @AfterEach

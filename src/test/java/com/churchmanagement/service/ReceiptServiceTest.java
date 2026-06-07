@@ -65,7 +65,7 @@ class ReceiptServiceTest {
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
                 activityLogService, fixedClock(), dataSource);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
-                "Admin", List.of("RECEIPT_CREATE")));
+                "Admin", List.of("receipt.create")));
     }
 
     @AfterEach

@@ -96,7 +96,7 @@ public class RegionController {
         currentUser = user.get();
         permissionGuard = new PermissionGuard(currentUser);
 
-        if (!permissionGuard.can("region.view")) {
+        if (!permissionGuard.can("region.menu.view")) {
             setMessage("You do not have permission to view regions.");
             setFormDisabled(true);
             return;

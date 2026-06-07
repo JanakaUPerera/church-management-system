@@ -98,7 +98,7 @@ public class ReceiptEntryController {
 
         currentUser = user.get();
         permissionGuard = new PermissionGuard(currentUser);
-        if (!permissionGuard.can("receipt.create")) {
+        if (!permissionGuard.can("receipt.entry.menu.view")) {
             setMessage("You do not have permission to create receipts.");
             setFormDisabled(true);
             return;

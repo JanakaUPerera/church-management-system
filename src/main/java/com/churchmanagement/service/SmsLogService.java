@@ -105,7 +105,7 @@ public class SmsLogService {
         AuthenticatedUser currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new SmsLogException("You do not have permission to view SMS logs."));
         try {
-            new PermissionGuard(currentUser).require("sms.logs.view");
+            new PermissionGuard(currentUser).require("sms.menu.view");
             return currentUser;
         } catch (SecurityException exception) {
             throw new SmsLogException("You do not have permission to view SMS logs.", exception);

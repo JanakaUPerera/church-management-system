@@ -67,7 +67,7 @@ public class ActivityLogQueryService {
         AuthenticatedUser currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new ActivityLogException("You do not have permission to view activity logs."));
         try {
-            new PermissionGuard(currentUser).require("activity.view");
+            new PermissionGuard(currentUser).require("activity.menu.view");
             return currentUser;
         } catch (SecurityException exception) {
             throw new ActivityLogException("You do not have permission to view activity logs.", exception);

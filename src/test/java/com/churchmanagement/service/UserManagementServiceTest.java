@@ -39,7 +39,7 @@ class UserManagementServiceTest {
         userManagementService = new UserManagementService(userRepository, activityLogService,
                 Clock.fixed(Instant.parse("2026-06-01T10:00:00Z"), ZoneId.of("UTC")));
         AuthContext.setCurrentUser(new AuthenticatedUser(1L, "admin", "Admin", 1L, "Admin",
-                List.of("user.manage")));
+                List.of("user.create", "user.update", "user.delete", "user.menu.view")));
     }
 
     @AfterEach
@@ -142,14 +142,14 @@ class UserManagementServiceTest {
     }
 
     @Test
-    void userWithoutUserManageRejected() {
-        AuthContext.setCurrentUser(new AuthenticatedUser(3L, "user", "User", 2L, "User", List.of("REPORT_VIEW")));
+    void userWithoutUserMenuViewRejected() {
+        AuthContext.setCurrentUser(new AuthenticatedUser(3L, "user", "User", 2L, "User", List.of("report.menu.view")));
 
         UserManagementService.UserManagementException exception = assertThrows(
                 UserManagementService.UserManagementException.class,
                 () -> userManagementService.findAll());
 
-        assertEquals("You do not have permission to manage users.", exception.getMessage());
+        assertEquals("You do not have permission to perform this action.", exception.getMessage());
     }
 
     private static class FakeUserManagementRepository extends UserManagementRepository {

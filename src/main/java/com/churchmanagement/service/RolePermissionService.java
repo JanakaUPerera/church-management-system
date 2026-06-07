@@ -18,9 +18,12 @@ import java.util.List;
 import java.util.Set;
 
 public class RolePermissionService {
-    public static final String ROLE_MANAGE_PERMISSION = "role.manage";
+    public static final String ROLE_MENU_VIEW_PERMISSION = "role.menu.view";
+    public static final String ROLE_CREATE_PERMISSION = "role.create";
+    public static final String ROLE_UPDATE_PERMISSION = "role.update";
+    public static final String ROLE_DELETE_PERMISSION = "role.delete";
     private static final String ADMIN_ROLE_NAME = "Admin";
-    private static final Set<String> ADMIN_CRITICAL_PERMISSIONS = Set.of("role.manage", "user.manage");
+    private static final Set<String> ADMIN_CRITICAL_PERMISSIONS = Set.of("role.update", "user.update");
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
@@ -40,7 +43,7 @@ public class RolePermissionService {
     }
 
     public List<Role> findRoles() {
-        requireRoleManagePermission();
+        requirePermission(ROLE_MENU_VIEW_PERMISSION);
         try {
             return roleRepository.findAll();
         } catch (DatabaseException exception) {
@@ -49,7 +52,7 @@ public class RolePermissionService {
     }
 
     public List<PermissionDto> findPermissions() {
-        requireRoleManagePermission();
+        requirePermission(ROLE_MENU_VIEW_PERMISSION);
         try {
             return permissionRepository.findAll().stream().map(PermissionDto::fromPermission).toList();
         } catch (DatabaseException exception) {
@@ -59,7 +62,7 @@ public class RolePermissionService {
     }
 
     public Set<String> findPermissionCodesByRoleId(long roleId) {
-        requireRoleManagePermission();
+        requirePermission(ROLE_MENU_VIEW_PERMISSION);
         try {
             ensureRoleExists(roleId);
             return permissionRepository.findPermissionCodeSetByRoleId(roleId);
@@ -70,7 +73,7 @@ public class RolePermissionService {
     }
 
     public Role createRole(String roleName) {
-        AuthenticatedUser currentUser = requireRoleManagePermission();
+        AuthenticatedUser currentUser = requirePermission(ROLE_CREATE_PERMISSION);
         String normalizedName = normalizeRoleName(roleName);
         validateRoleName(normalizedName);
 
@@ -96,7 +99,7 @@ public class RolePermissionService {
     }
 
     public Role updateRoleName(long roleId, String roleName) {
-        AuthenticatedUser currentUser = requireRoleManagePermission();
+        AuthenticatedUser currentUser = requirePermission(ROLE_UPDATE_PERMISSION);
         String normalizedName = normalizeRoleName(roleName);
         validateRoleName(normalizedName);
 
@@ -126,7 +129,7 @@ public class RolePermissionService {
     }
 
     public void updateRolePermissions(RolePermissionUpdateRequest request) {
-        AuthenticatedUser currentUser = requireRoleManagePermission();
+        AuthenticatedUser currentUser = requirePermission(ROLE_UPDATE_PERMISSION);
         if (request == null || request.getRoleId() == null) {
             throw new RolePermissionException("Select a role before saving permissions.");
         }
@@ -153,16 +156,16 @@ public class RolePermissionService {
     }
 
     private void updateStatus(long roleId, Role.Status status, String action) {
-        AuthenticatedUser currentUser = requireRoleManagePermission();
+        AuthenticatedUser currentUser = requirePermission(ROLE_DELETE_PERMISSION);
         try {
             Role role = ensureRoleExists(roleId);
             if (isAdminRole(role) && status == Role.Status.INACTIVE) {
                 throw new RolePermissionException("Admin role cannot be deactivated.");
             }
             if (status == Role.Status.INACTIVE
-                    && permissionRepository.findPermissionCodeSetByRoleId(roleId).contains(ROLE_MANAGE_PERMISSION)
-                    && roleRepository.countActiveRolesWithPermission(ROLE_MANAGE_PERMISSION) <= 1) {
-                throw new RolePermissionException("At least one active role must keep role.manage permission.");
+                    && permissionRepository.findPermissionCodeSetByRoleId(roleId).contains(ROLE_UPDATE_PERMISSION)
+                    && roleRepository.countActiveRolesWithPermission(ROLE_UPDATE_PERMISSION) <= 1) {
+                throw new RolePermissionException("At least one active role must keep role.update permission.");
             }
 
             roleRepository.updateStatus(roleId, status, LocalDateTime.now(clock));
@@ -180,21 +183,21 @@ public class RolePermissionService {
             throw new RolePermissionException("Critical permissions cannot be removed from the Admin role.");
         }
 
-        boolean removesRoleManage = !selectedPermissions.contains(ROLE_MANAGE_PERMISSION);
-        if (role.getStatus() == Role.Status.ACTIVE && removesRoleManage
-                && roleRepository.countActiveRolesWithPermissionExcluding(role.getId(), ROLE_MANAGE_PERMISSION) == 0) {
-            throw new RolePermissionException("At least one active role must keep role.manage permission.");
+        boolean removesRoleUpdate = !selectedPermissions.contains(ROLE_UPDATE_PERMISSION);
+        if (role.getStatus() == Role.Status.ACTIVE && removesRoleUpdate
+                && roleRepository.countActiveRolesWithPermissionExcluding(role.getId(), ROLE_UPDATE_PERMISSION) == 0) {
+            throw new RolePermissionException("At least one active role must keep role.update permission.");
         }
     }
 
-    private AuthenticatedUser requireRoleManagePermission() {
+    private AuthenticatedUser requirePermission(String permissionCode) {
         AuthenticatedUser currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new RolePermissionException("Please sign in to manage roles and permissions."));
         try {
-            new PermissionGuard(currentUser).require(ROLE_MANAGE_PERMISSION);
+            new PermissionGuard(currentUser).require(permissionCode);
             return currentUser;
         } catch (SecurityException exception) {
-            throw new RolePermissionException("You do not have permission to manage roles and permissions.", exception);
+            throw new RolePermissionException("You do not have permission to perform this action.", exception);
         }
     }
 

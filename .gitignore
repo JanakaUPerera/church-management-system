@@ -37,3 +37,6 @@ logs/
 
 # User uploads
 user_uploads/
+
+# claude code
+.claude/

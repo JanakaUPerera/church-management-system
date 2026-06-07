@@ -113,7 +113,7 @@ public class SubmissionStatusService {
         AuthenticatedUser currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new SubmissionStatusException("Please sign in to view submission status."));
         try {
-            new PermissionGuard(currentUser).require("receipt.view");
+            new PermissionGuard(currentUser).require("receipt.menu.view");
         } catch (SecurityException exception) {
             throw new SubmissionStatusException("You do not have permission to view submission status.", exception);
         }

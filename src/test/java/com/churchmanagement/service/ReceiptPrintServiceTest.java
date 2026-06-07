@@ -140,7 +140,7 @@ class ReceiptPrintServiceTest {
     @Test
     void userWithoutReceiptPrintCannotPrint() {
         AuthContext.setCurrentUser(new AuthenticatedUser(8L, "user", "Standard User", 2L,
-                "User", List.of("RECEIPT_CREATE")));
+                "User", List.of("receipt.create")));
 
         ReceiptPrintService.ReceiptPrintException exception = assertThrows(
                 ReceiptPrintService.ReceiptPrintException.class,

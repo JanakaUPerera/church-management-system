@@ -79,7 +79,7 @@ public class UserManagementController {
 
         currentUser = user.get();
         permissionGuard = new PermissionGuard(currentUser);
-        if (!permissionGuard.can("user.manage")) {
+        if (!permissionGuard.can("user.menu.view")) {
             setFormDisabled(true);
             return;
         }
