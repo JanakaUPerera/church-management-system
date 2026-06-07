@@ -86,6 +86,20 @@ public class SmsLogRepository {
         return findById(smsLogId);
     }
 
+    public boolean hasResend(long smsLogId) {
+        String sql = "SELECT 1 FROM sms_logs WHERE resend_of_sms_log_id = ? LIMIT 1";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, smsLogId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to check SMS resend status.", exception);
+        }
+    }
+
     public long insertResendSmsLog(SmsLogDto newLog, long originalSmsLogId, long resentByUserId,
                                    String resendReason) {
         String sql = """

@@ -18,16 +18,19 @@ import java.time.LocalDateTime;
 public class SmsResendService {
     private static final int RESEND_WINDOW_DAYS = 7;
     private static final int MAX_REASON_LENGTH = 255;
+    private static final int DEFAULT_MAX_ATTEMPTS = 3;
 
     private final SmsLogRepository smsLogRepository;
     private final ChurchRepository churchRepository;
     private final SmsService smsService;
+    private final SmsServiceFactory smsServiceFactory;
     private final ActivityLogService activityLogService;
     private final Clock clock;
+    private final SystemConfigurationCache configurationCache;
 
     public SmsResendService() {
-        this(new SmsLogRepository(), new ChurchRepository(), new SmsServiceFactory().createRoutingSmsService(),
-                new ActivityLogService(), Clock.systemDefaultZone());
+        this(new SmsLogRepository(), new ChurchRepository(), new SmsServiceFactory(),
+                new ActivityLogService(), Clock.systemDefaultZone(), SystemConfigurationCache.getInstance());
     }
 
     public SmsResendService(SmsLogRepository smsLogRepository, SmsService smsService,
@@ -37,11 +40,32 @@ public class SmsResendService {
 
     public SmsResendService(SmsLogRepository smsLogRepository, ChurchRepository churchRepository, SmsService smsService,
                             ActivityLogService activityLogService, Clock clock) {
+        this(smsLogRepository, churchRepository, smsService, activityLogService, clock,
+                SystemConfigurationCache.getInstance());
+    }
+
+    public SmsResendService(SmsLogRepository smsLogRepository, ChurchRepository churchRepository, SmsService smsService,
+                            ActivityLogService activityLogService, Clock clock,
+                            SystemConfigurationCache configurationCache) {
         this.smsLogRepository = smsLogRepository;
         this.churchRepository = churchRepository;
         this.smsService = smsService;
+        this.smsServiceFactory = null;
         this.activityLogService = activityLogService;
         this.clock = clock;
+        this.configurationCache = configurationCache;
+    }
+
+    public SmsResendService(SmsLogRepository smsLogRepository, ChurchRepository churchRepository,
+                            SmsServiceFactory smsServiceFactory, ActivityLogService activityLogService, Clock clock,
+                            SystemConfigurationCache configurationCache) {
+        this.smsLogRepository = smsLogRepository;
+        this.churchRepository = churchRepository;
+        this.smsService = null;
+        this.smsServiceFactory = smsServiceFactory;
+        this.activityLogService = activityLogService;
+        this.clock = clock;
+        this.configurationCache = configurationCache;
     }
 
     public SmsResult resendSms(SmsResendRequest request) {
@@ -66,16 +90,24 @@ public class SmsResendService {
         if (original.getMessage() == null || original.getMessage().isBlank()) {
             throw new SmsResendException("Original SMS message is missing.");
         }
+        if (smsLogRepository.hasResend(original.getId())) {
+            throw new SmsResendException("A newer resend already exists for this SMS.");
+        }
+        int priorAttemptCount = Math.max(1, original.getAttemptCount());
+        int remainingAttempts = configuredMaxAttempts() - priorAttemptCount;
+        if (remainingAttempts <= 0) {
+            throw new SmsResendException("SMS resend attempt limit has been reached.");
+        }
         String resendMobileNumber = resolveCurrentMobileNumber(original);
 
         SmsResult result;
         try {
-            result = smsService.sendSms(resendMobileNumber, original.getMessage());
+            result = resendSmsService(remainingAttempts).sendSms(resendMobileNumber, original.getMessage());
         } catch (RuntimeException exception) {
             result = new SmsResult(false, exception.getMessage(), MockSmsService.PROVIDER, null);
         }
 
-        SmsLogDto resendLog = buildResendLog(original, resendMobileNumber, result);
+        SmsLogDto resendLog = buildResendLog(original, resendMobileNumber, result, priorAttemptCount);
         long newSmsLogId = smsLogRepository.insertResendSmsLog(
                 resendLog, original.getId(), currentUser.getUserId(), resendReason);
         if (result.isSuccess()) {
@@ -88,7 +120,27 @@ public class SmsResendService {
         return result;
     }
 
-    private SmsLogDto buildResendLog(SmsLogDto original, String resendMobileNumber, SmsResult result) {
+    private SmsService resendSmsService(int remainingAttempts) {
+        if (smsServiceFactory != null) {
+            return smsServiceFactory.createRoutingSmsService(remainingAttempts);
+        }
+        return smsService;
+    }
+
+    private int configuredMaxAttempts() {
+        String value = configurationCache.getString("sms.retry.max.attempts");
+        if (value == null || value.isBlank()) {
+            return DEFAULT_MAX_ATTEMPTS;
+        }
+        try {
+            return Math.max(1, Integer.parseInt(value.strip()));
+        } catch (NumberFormatException exception) {
+            return DEFAULT_MAX_ATTEMPTS;
+        }
+    }
+
+    private SmsLogDto buildResendLog(SmsLogDto original, String resendMobileNumber, SmsResult result,
+                                     int priorAttemptCount) {
         SmsLogDto log = new SmsLogDto();
         log.setReceiptId(original.getReceiptId());
         log.setChurchId(original.getChurchId());
@@ -103,7 +155,7 @@ public class SmsResendService {
         log.setModemRawResponse(result.getModemRawResponse());
         log.setErrorCode(result.getErrorCode());
         log.setErrorMessage(result.isSuccess() ? null : result.getErrorMessage());
-        log.setAttemptCount(Math.max(1, original.getAttemptCount()) + result.getAttemptCount());
+        log.setAttemptCount(Math.max(1, priorAttemptCount) + result.getAttemptCount());
         log.setLastAttemptAt(LocalDateTime.now(clock));
         log.setSentAt(result.isSuccess() ? result.getSentAt() : null);
         log.setCreatedAt(LocalDateTime.now(clock));

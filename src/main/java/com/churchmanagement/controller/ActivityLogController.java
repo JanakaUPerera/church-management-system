@@ -7,6 +7,7 @@ import com.churchmanagement.repository.UserRepository;
 import com.churchmanagement.service.ActivityLogQueryService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
+import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
@@ -71,6 +72,7 @@ public class ActivityLogController {
     @FXML
     private void initialize() {
         configureButtonIcons();
+        configureDateFilters();
         configureTable();
         loadFilters();
         loadLatestLogs();
@@ -120,6 +122,11 @@ public class ActivityLogController {
         ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
         ButtonIconUtil.applyIcon(viewDetailsButton, "fas-eye");
         ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
+    }
+
+    private void configureDateFilters() {
+        DatePickerUtil.applySystemDateFormat(dateFromPicker);
+        DatePickerUtil.applySystemDateFormat(dateToPicker);
     }
 
     private void configureTable() {
@@ -323,9 +330,10 @@ public class ActivityLogController {
             if (separator < 0) {
                 return value;
             }
-            String label = formalLabel(part.substring(0, separator));
+            String rawLabel = part.substring(0, separator);
+            String label = formalLabel(rawLabel);
             String fieldValue = part.substring(separator + 1).strip();
-            rows.add(new KeyValueRow(label, fieldValue.isBlank() ? "-" : fieldValue));
+            rows.add(new KeyValueRow(label, displayKeyValue(rawLabel, fieldValue)));
             maxLabelLength = Math.max(maxLabelLength, label.length());
         }
 
@@ -379,6 +387,35 @@ public class ActivityLogController {
 
     private String formatDateTime(LocalDateTime dateTime) {
         return dateTimeFormatter.formatDateTime(dateTime);
+    }
+
+    private String displayKeyValue(String key, String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+        if (isDateTimeKey(key)) {
+            try {
+                return dateTimeFormatter.formatDateTime(LocalDateTime.parse(value.strip()));
+            } catch (java.time.format.DateTimeParseException ignored) {
+                try {
+                    return dateTimeFormatter.formatDate(java.time.LocalDate.parse(value.strip()));
+                } catch (java.time.format.DateTimeParseException ignoredAgain) {
+                    return value;
+                }
+            }
+        }
+        return value;
+    }
+
+    private boolean isDateTimeKey(String key) {
+        if (key == null) {
+            return false;
+        }
+        String normalized = key.strip().toLowerCase();
+        return normalized.contains("date")
+                || normalized.contains("time")
+                || normalized.endsWith("_at")
+                || normalized.endsWith(" at");
     }
 
     private String formatUser(ActivityLogDto log) {

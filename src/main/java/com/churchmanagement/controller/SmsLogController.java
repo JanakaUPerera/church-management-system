@@ -14,6 +14,7 @@ import com.churchmanagement.service.SmsLogService;
 import com.churchmanagement.service.SmsResendService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
+import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.SystemDateTimeFormatter;
@@ -132,6 +133,8 @@ public class SmsLogController {
     }
 
     private void configureFilters() {
+        DatePickerUtil.applySystemDateFormat(dateFromPicker);
+        DatePickerUtil.applySystemDateFormat(dateToPicker);
         ComboBoxUtil.makeChurchSearchable(churchComboBox, churches);
         statusComboBox.setItems(FXCollections.observableArrayList(enumOptions(SmsSendStatus.values())));
         statusComboBox.setValue(STATUS_ALL);
@@ -526,7 +529,7 @@ public class SmsLogController {
             resendButton.setDisable(!log.isCanResend());
             resendButton.setTooltip(log.isCanResend()
                     ? new Tooltip("Resend SMS")
-                    : new Tooltip("SMS resend period has expired. Resend is allowed only within 7 days."));
+                    : new Tooltip(nullToDash(log.getResendDisabledReason())));
             setGraphic(actionBox);
         }
     }

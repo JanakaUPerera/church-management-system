@@ -35,6 +35,7 @@ public final class ProcessingDialog {
         }
 
         StackPane overlay = content(message, owner);
+        new ThemeService().applyConfiguredTheme(overlay);
         Scene scene = new Scene(overlay, overlay.getPrefWidth(), overlay.getPrefHeight());
         scene.setFill(Color.TRANSPARENT);
         URL stylesheet = ProcessingDialog.class.getResource(APP_STYLESHEET);

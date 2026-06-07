@@ -362,7 +362,7 @@ public class ReceiptEntryController {
         container.setPrefWidth(430);
         container.getChildren().addAll(
                 summaryRow("Church:", church == null ? "" : church.getChurchCode() + " - " + church.getChurchName()),
-                summaryRow("Week:", request.getWeekStartDate() + " to " + request.getWeekEndDate()),
+                summaryRow("Week:", formatWeek(request.getWeekStartDate(), request.getWeekEndDate())),
                 summaryRow("Submitted by:", nullToDash(request.getSubmittedByName()))
         );
         if (correctedFromReceiptId != null) {
@@ -373,6 +373,10 @@ public class ReceiptEntryController {
                 summaryRow("Late submission:", WeekUtil.isBackWeek(request.getWeekStartDate(), LocalDate.now()) ? "YES" : "NO")
         );
         return container;
+    }
+
+    private String formatWeek(LocalDate weekStartDate, LocalDate weekEndDate) {
+        return dateTimeFormatter.formatDate(weekStartDate) + " to " + dateTimeFormatter.formatDate(weekEndDate);
     }
 
     private HBox summaryRow(String labelText, String valueText) {

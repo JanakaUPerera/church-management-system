@@ -45,11 +45,15 @@ public class SmsServiceFactory {
     }
 
     public SmsService createRoutingSmsService() {
-        return this::sendWithConfiguredRetry;
+        return (mobileNumber, message) -> sendWithConfiguredRetry(mobileNumber, message, maxAttempts());
     }
 
-    private SmsResult sendWithConfiguredRetry(String mobileNumber, String message) {
-        int maxAttempts = maxAttempts();
+    public SmsService createRoutingSmsService(int maxAttempts) {
+        int safeMaxAttempts = Math.max(1, maxAttempts);
+        return (mobileNumber, message) -> sendWithConfiguredRetry(mobileNumber, message, safeMaxAttempts);
+    }
+
+    private SmsResult sendWithConfiguredRetry(String mobileNumber, String message, int maxAttempts) {
         SmsResult lastResult = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             lastResult = createSmsService().sendSms(mobileNumber, message);

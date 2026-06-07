@@ -229,7 +229,7 @@ public class ReceiptHistoryController {
     }
 
     private String formatWeek(ReceiptResponseDto receipt) {
-        return receipt.getWeekStartDate() + " to " + receipt.getWeekEndDate();
+        return formatDate(receipt.getWeekStartDate()) + " to " + formatDate(receipt.getWeekEndDate());
     }
 
     private void loadFilters() {
@@ -476,7 +476,7 @@ public class ReceiptHistoryController {
 
     private GridPane submissionDetailsGrid(ReceiptResponseDto receipt) {
         GridPane grid = detailGrid();
-        addDetailRow(grid, 0, "Week", receipt.getWeekStartDate() + " to " + receipt.getWeekEndDate());
+        addDetailRow(grid, 0, "Week", formatWeek(receipt));
         addDetailRow(grid, 1, "Receipt Date", formatDateTime(receipt.getReceiptDateTime()));
         addDetailRow(grid, 2, "Late Submission", lateSubmissionBadge(receipt.isLateSubmission()));
         addDetailRow(grid, 3, "Submitted By", nullToDash(receipt.getSubmittedByName()));
@@ -817,6 +817,10 @@ public class ReceiptHistoryController {
         return dateTimeFormatter.formatDateTime(dateTime);
     }
 
+    private String formatDate(LocalDate date) {
+        return dateTimeFormatter.formatDate(date);
+    }
+
     private String nullToDash(String value) {
         return value == null || value.isBlank() ? "-" : value;
     }
@@ -829,7 +833,7 @@ public class ReceiptHistoryController {
 
     private void updateWeekEndDate() {
         LocalDate weekEnd = WeekUtil.getSundayForMonday(weekStartDatePicker.getValue());
-        weekEndDateLabel.setText(weekEnd == null ? "-" : weekEnd.toString());
+        weekEndDateLabel.setText(formatDate(weekEnd));
     }
 
     private void showError(String title, String message) {

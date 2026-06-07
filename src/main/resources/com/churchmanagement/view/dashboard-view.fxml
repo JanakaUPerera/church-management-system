@@ -3,12 +3,14 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane styleClass="dashboard-root"
             stylesheets="@app.css"
@@ -20,7 +22,16 @@
             <padding>
                 <Insets bottom="14" left="22" right="22" top="14"/>
             </padding>
-            <Label styleClass="app-name" text="Church Management System"/>
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="brand-wrap">
+                <ImageView fx:id="brandLogoImageView" fitHeight="42" fitWidth="42" preserveRatio="true" smooth="true" styleClass="brand-logo">
+                    <image>
+                        <Image url="@images/gethsemana_logo.jpg"/>
+                    </image>
+                </ImageView>
+                <VBox alignment="CENTER_LEFT" spacing="1">
+                    <Label fx:id="organizationNameLabel" styleClass="organization-name" text="Church Management System"/>
+                </VBox>
+            </HBox>
             <Region HBox.hgrow="ALWAYS"/>
             <StackPane styleClass="header-avatar">
                 <ImageView fx:id="profileImageView" fitHeight="42" fitWidth="42" preserveRatio="true"/>
@@ -74,11 +85,22 @@
             <padding>
                 <Insets bottom="8" left="18" right="18" top="8"/>
             </padding>
+            <Label fx:id="versionLabel" styleClass="value-label"/>
             <Label fx:id="statusLabel" styleClass="value-label" text="Ready"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <HBox alignment="CENTER" spacing="6" styleClass="connection-status">
+                <StackPane fx:id="modemStatusBadge" styleClass="connection-status-badge">
+                    <FontIcon iconLiteral="fas-sms" styleClass="connection-status-icon"/>
+                </StackPane>
+                <Label styleClass="value-label" text="Modem:"/>
+                <Label fx:id="modemStatusLabel" styleClass="status-value-badge" text="Checking"/>
+            </HBox>
             <HBox alignment="CENTER" spacing="6" styleClass="database-status">
-                <Label fx:id="databaseStatusDot" styleClass="database-status-dot"/>
-                <Label fx:id="databaseStatusLabel" styleClass="value-label" text="Database: Checking..."/>
+                <StackPane fx:id="databaseStatusBadge" styleClass="connection-status-badge">
+                    <FontIcon iconLiteral="fas-database" styleClass="connection-status-icon"/>
+                </StackPane>
+                <Label styleClass="value-label" text="Database:"/>
+                <Label fx:id="databaseStatusLabel" styleClass="status-value-badge" text="Checking"/>
             </HBox>
             <Label fx:id="dateLabel" styleClass="value-label"/>
         </HBox>

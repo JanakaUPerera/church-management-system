@@ -54,6 +54,7 @@ public final class DialogStyler {
             dialogPane.getStyleClass().add(APP_DIALOG_PANE);
         }
 
+        new ThemeService().applyConfiguredTheme(dialogPane);
         applyButtonIcons(dialogPane);
     }
 

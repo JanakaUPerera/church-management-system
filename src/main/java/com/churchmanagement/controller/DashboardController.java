@@ -2,11 +2,16 @@ package com.churchmanagement.controller;
 
 import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
+import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
+import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.AutoBackupScheduler;
+import com.churchmanagement.service.SerialPortService;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.SystemDateTimeFormatter;
@@ -14,6 +19,7 @@ import com.churchmanagement.util.ThemeService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -48,6 +54,8 @@ public class DashboardController {
     private static DashboardController activeController;
 
     private final ActivityLogService activityLogService = new ActivityLogService();
+    private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
+    private final AtCommandService atCommandService = new AtCommandService(new SerialPortService());
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
     private List<MenuDefinition> menuDefinitions;
@@ -55,10 +63,20 @@ public class DashboardController {
     private double windowDragOffsetX;
     private double windowDragOffsetY;
     private ScheduledExecutorService databaseStatusMonitor;
+    private ScheduledExecutorService modemStatusMonitor;
 
     private static final double SIDEBAR_EXPANDED_WIDTH = 235;
     private static final double SIDEBAR_COLLAPSED_WIDTH = 72;
+    private static final double MENU_ICON_SIZE = 22;
     private static final long DATABASE_STATUS_REFRESH_SECONDS = 30;
+    private static final long MODEM_STATUS_REFRESH_SECONDS = 30;
+    private static final int MODEM_STATUS_PROBE_TIMEOUT_MILLIS = 1_500;
+
+    @FXML
+    private ImageView brandLogoImageView;
+
+    @FXML
+    private Label organizationNameLabel;
 
     @FXML
     private Label dateLabel;
@@ -82,10 +100,19 @@ public class DashboardController {
     private Label statusLabel;
 
     @FXML
-    private Label databaseStatusDot;
+    private Label versionLabel;
+
+    @FXML
+    private StackPane databaseStatusBadge;
 
     @FXML
     private Label databaseStatusLabel;
+
+    @FXML
+    private StackPane modemStatusBadge;
+
+    @FXML
+    private Label modemStatusLabel;
 
     @FXML
     private StackPane contentPane;
@@ -153,6 +180,7 @@ public class DashboardController {
     @FXML
     private void initialize() {
         dateLabel.setText(new SystemDateTimeFormatter().formatDate(LocalDate.now()));
+        versionLabel.setText("Version " + AppConfig.APPLICATION_VERSION);
 
         Optional<AuthenticatedUser> user = AuthContext.getCurrentUser();
         if (user.isEmpty()) {
@@ -169,11 +197,14 @@ public class DashboardController {
 
         activeController = this;
         permissionGuard = new PermissionGuard(currentUser);
+        configureBrandLogo();
+        applyOrganizationName();
         refreshHeaderFromAuthContext();
         ButtonIconUtil.applyIcon(logoutButton, "fas-sign-out-alt");
         ButtonIconUtil.applyIcon(myProfileButton, "fas-user");
         configureWindowHeader();
         startDatabaseStatusMonitor();
+        startModemStatusMonitor();
 
         menuDefinitions = createMenuDefinitions();
         applyMenuIcons();
@@ -183,9 +214,22 @@ public class DashboardController {
         loadMenu(menuDefinitions.getFirst());
     }
 
+    private void configureBrandLogo() {
+        double radius = Math.min(brandLogoImageView.getFitWidth(), brandLogoImageView.getFitHeight()) / 2;
+        Circle clip = new Circle(radius, radius, radius);
+        brandLogoImageView.setClip(clip);
+    }
+
+    private void applyOrganizationName() {
+        String organizationName = SystemConfigurationCache.getInstance().getString("organization.name");
+        organizationNameLabel.setText(organizationName == null || organizationName.isBlank()
+                ? AppConfig.APPLICATION_NAME
+                : organizationName.strip());
+    }
+
     @FXML
     private void handleLogout() throws IOException {
-        stopDatabaseStatusMonitor();
+        stopStatusMonitors();
         AutoBackupScheduler.getInstance().cancel();
         AuthContext.getCurrentUser()
                 .ifPresent(user -> activityLogService.logLogout(user.getUserId(), user.getUsername()));
@@ -268,7 +312,7 @@ public class DashboardController {
         Platform.runLater(() -> {
             if (dateLabel.getScene() != null && dateLabel.getScene().getWindow() != null) {
                 dateLabel.getScene().getWindow()
-                        .addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> stopDatabaseStatusMonitor());
+                        .addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> stopStatusMonitors());
             }
         });
     }
@@ -287,26 +331,27 @@ public class DashboardController {
     }
 
     private void updateDatabaseStatusChecking() {
-        databaseStatusLabel.setText("Database: Checking...");
+        databaseStatusLabel.setText("Checking");
         databaseStatusLabel.getStyleClass().removeAll(
-                "database-status-text-connected", "database-status-text-disconnected");
-        databaseStatusDot.getStyleClass().removeAll(
-                "database-status-dot-connected", "database-status-dot-disconnected");
+                "status-value-badge-connected", "status-value-badge-disconnected", "status-value-badge-checking");
+        databaseStatusLabel.getStyleClass().add("status-value-badge-checking");
+        databaseStatusBadge.getStyleClass().removeAll(
+                "connection-status-badge-connected", "connection-status-badge-disconnected");
     }
 
     private void updateDatabaseStatus(boolean connected) {
-        databaseStatusLabel.setText(connected ? "Database: Connected" : "Database: Disconnected");
+        databaseStatusLabel.setText(connected ? "Connected" : "Disconnected");
         databaseStatusLabel.getStyleClass().removeAll(
-                "database-status-text-connected", "database-status-text-disconnected");
+                "status-value-badge-connected", "status-value-badge-disconnected", "status-value-badge-checking");
         databaseStatusLabel.getStyleClass().add(connected
-                ? "database-status-text-connected"
-                : "database-status-text-disconnected");
+                ? "status-value-badge-connected"
+                : "status-value-badge-disconnected");
 
-        databaseStatusDot.getStyleClass().removeAll(
-                "database-status-dot-connected", "database-status-dot-disconnected");
-        databaseStatusDot.getStyleClass().add(connected
-                ? "database-status-dot-connected"
-                : "database-status-dot-disconnected");
+        databaseStatusBadge.getStyleClass().removeAll(
+                "connection-status-badge-connected", "connection-status-badge-disconnected");
+        databaseStatusBadge.getStyleClass().add(connected
+                ? "connection-status-badge-connected"
+                : "connection-status-badge-disconnected");
     }
 
     private void stopDatabaseStatusMonitor() {
@@ -314,6 +359,78 @@ public class DashboardController {
             databaseStatusMonitor.shutdownNow();
             databaseStatusMonitor = null;
         }
+    }
+
+    private void startModemStatusMonitor() {
+        updateModemStatusChecking();
+        modemStatusMonitor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "modem-status-monitor");
+            thread.setDaemon(true);
+            return thread;
+        });
+        modemStatusMonitor.scheduleWithFixedDelay(this::checkModemStatus,
+                0, MODEM_STATUS_REFRESH_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void checkModemStatus() {
+        ModemStatus status;
+        try {
+            SmsSettings settings = smsSettingsRepository.getSettings();
+            if (settings.getComPort() == null || settings.getComPort().isBlank()) {
+                status = ModemStatus.NOT_CONFIGURED;
+            } else {
+                int baudRate = settings.getBaudRate() == null ? 9600 : settings.getBaudRate();
+                status = atCommandService.isModemPort(settings.getComPort(), baudRate,
+                        MODEM_STATUS_PROBE_TIMEOUT_MILLIS)
+                        ? ModemStatus.CONNECTED
+                        : ModemStatus.DISCONNECTED;
+            }
+        } catch (RuntimeException exception) {
+            status = ModemStatus.DISCONNECTED;
+        }
+
+        ModemStatus finalStatus = status;
+        Platform.runLater(() -> updateModemStatus(finalStatus));
+    }
+
+    private void updateModemStatusChecking() {
+        modemStatusLabel.setText("Checking");
+        modemStatusLabel.getStyleClass().removeAll(
+                "status-value-badge-connected", "status-value-badge-disconnected", "status-value-badge-checking");
+        modemStatusLabel.getStyleClass().add("status-value-badge-checking");
+        modemStatusBadge.getStyleClass().removeAll(
+                "connection-status-badge-connected", "connection-status-badge-disconnected");
+    }
+
+    private void updateModemStatus(ModemStatus status) {
+        modemStatusLabel.setText(switch (status) {
+            case CONNECTED -> "Connected";
+            case DISCONNECTED -> "Disconnected";
+            case NOT_CONFIGURED -> "Not configured";
+        });
+        modemStatusLabel.getStyleClass().removeAll(
+                "status-value-badge-connected", "status-value-badge-disconnected", "status-value-badge-checking");
+        modemStatusLabel.getStyleClass().add(status == ModemStatus.CONNECTED
+                ? "status-value-badge-connected"
+                : "status-value-badge-disconnected");
+
+        modemStatusBadge.getStyleClass().removeAll(
+                "connection-status-badge-connected", "connection-status-badge-disconnected");
+        modemStatusBadge.getStyleClass().add(status == ModemStatus.CONNECTED
+                ? "connection-status-badge-connected"
+                : "connection-status-badge-disconnected");
+    }
+
+    private void stopModemStatusMonitor() {
+        if (modemStatusMonitor != null) {
+            modemStatusMonitor.shutdownNow();
+            modemStatusMonitor = null;
+        }
+    }
+
+    private void stopStatusMonitors() {
+        stopDatabaseStatusMonitor();
+        stopModemStatusMonitor();
     }
 
     private void updateMaximizeIcon(Stage stage) {
@@ -478,10 +595,16 @@ public class DashboardController {
         button.setGraphicTextGap(10);
     }
 
-    private FontIcon createMenuIcon(String iconLiteral) {
+    private Node createMenuIcon(String iconLiteral) {
         FontIcon icon = new FontIcon(iconLiteral);
         icon.getStyleClass().add("menu-icon");
-        return icon;
+        icon.setIconSize(16);
+        StackPane iconBox = new StackPane(icon);
+        iconBox.getStyleClass().add("menu-icon-box");
+        iconBox.setMinSize(MENU_ICON_SIZE, MENU_ICON_SIZE);
+        iconBox.setPrefSize(MENU_ICON_SIZE, MENU_ICON_SIZE);
+        iconBox.setMaxSize(MENU_ICON_SIZE, MENU_ICON_SIZE);
+        return iconBox;
     }
 
     private MenuDefinition findMenu(Button button) {
@@ -634,5 +757,11 @@ public class DashboardController {
 
     private record MenuDefinition(String title, String viewPath, Button button, String activityAction,
                                   String... permissionCodes) {
+    }
+
+    private enum ModemStatus {
+        CONNECTED,
+        DISCONNECTED,
+        NOT_CONFIGURED
     }
 }

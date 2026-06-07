@@ -30,6 +30,7 @@ public class SmsLogDto {
     private String resentByUserFullName;
     private String resendReason;
     private boolean canResend;
+    private String resendDisabledReason;
 
     public Long getId() {
         return id;
@@ -247,5 +248,13 @@ public class SmsLogDto {
 
     public void setCanResend(boolean canResend) {
         this.canResend = canResend;
+    }
+
+    public String getResendDisabledReason() {
+        return resendDisabledReason;
+    }
+
+    public void setResendDisabledReason(String resendDisabledReason) {
+        this.resendDisabledReason = resendDisabledReason;
     }
 }

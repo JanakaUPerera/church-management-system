@@ -12,9 +12,13 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 
 public class SmsLogService {
+    private static final int RESEND_WINDOW_DAYS = 7;
+    private static final int DEFAULT_MAX_ATTEMPTS = 3;
+
     private final SmsLogRepository smsLogRepository;
     private final ActivityLogService activityLogService;
     private final Clock clock;
+    private final SystemConfigurationCache configurationCache;
 
     public SmsLogService() {
         this(new SmsLogRepository(), new ActivityLogService(), Clock.systemDefaultZone());
@@ -25,9 +29,15 @@ public class SmsLogService {
     }
 
     public SmsLogService(SmsLogRepository smsLogRepository, ActivityLogService activityLogService, Clock clock) {
+        this(smsLogRepository, activityLogService, clock, SystemConfigurationCache.getInstance());
+    }
+
+    public SmsLogService(SmsLogRepository smsLogRepository, ActivityLogService activityLogService, Clock clock,
+                         SystemConfigurationCache configurationCache) {
         this.smsLogRepository = smsLogRepository;
         this.activityLogService = activityLogService;
         this.clock = clock;
+        this.configurationCache = configurationCache;
     }
 
     public List<SmsLogDto> latestLogs(int limit) {
@@ -52,10 +62,42 @@ public class SmsLogService {
     private void applyCanResend(List<SmsLogDto> logs, AuthenticatedUser currentUser) {
         boolean hasPermission = new PermissionGuard(currentUser).can("sms.resend");
         LocalDateTime now = LocalDateTime.now(clock);
+        int maxAttempts = configuredMaxAttempts();
         for (SmsLogDto log : logs) {
-            log.setCanResend(hasPermission
-                    && log.getCreatedAt() != null
-                    && !now.isAfter(log.getCreatedAt().plusDays(7)));
+            if (!hasPermission) {
+                disableResend(log, "You do not have permission to resend SMS.");
+            } else if (log.getCreatedAt() == null
+                    || now.isAfter(log.getCreatedAt().plusDays(RESEND_WINDOW_DAYS))) {
+                disableResend(log, "SMS resend period has expired. Resend is allowed only within 7 days.");
+            } else if (hasResend(log)) {
+                disableResend(log, "A newer resend already exists for this SMS.");
+            } else if (Math.max(1, log.getAttemptCount()) >= maxAttempts) {
+                disableResend(log, "SMS resend attempt limit has been reached.");
+            } else {
+                log.setCanResend(true);
+                log.setResendDisabledReason(null);
+            }
+        }
+    }
+
+    private void disableResend(SmsLogDto log, String reason) {
+        log.setCanResend(false);
+        log.setResendDisabledReason(reason);
+    }
+
+    private boolean hasResend(SmsLogDto log) {
+        return log.getId() != null && smsLogRepository.hasResend(log.getId());
+    }
+
+    private int configuredMaxAttempts() {
+        String value = configurationCache.getString("sms.retry.max.attempts");
+        if (value == null || value.isBlank()) {
+            return DEFAULT_MAX_ATTEMPTS;
+        }
+        try {
+            return Math.max(1, Integer.parseInt(value.strip()));
+        } catch (NumberFormatException exception) {
+            return DEFAULT_MAX_ATTEMPTS;
         }
     }
 

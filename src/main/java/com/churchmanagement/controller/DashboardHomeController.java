@@ -206,6 +206,8 @@ public class DashboardHomeController {
         DashboardService.DateRange weeklyRange = dashboardService.defaultWeeklyRange();
         DashboardService.DateRange trendingRange = dashboardService.defaultTrendingRange();
         DatePickerUtil.enableMondaysOnly(weeklyWeekDatePicker);
+        DatePickerUtil.applySystemDateFormat(trendingDateFromPicker);
+        DatePickerUtil.applySystemDateFormat(trendingDateToPicker);
         weeklyWeekDatePicker.setValue(weeklyRange.dateFrom());
         trendingDateFromPicker.setValue(trendingRange.dateFrom());
         trendingDateToPicker.setValue(trendingRange.dateTo());

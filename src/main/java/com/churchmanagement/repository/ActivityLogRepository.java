@@ -4,6 +4,7 @@ import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.dto.ActivityLogDto;
 import com.churchmanagement.dto.ActivityLogSearchCriteria;
 import com.churchmanagement.exception.DatabaseException;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -12,8 +13,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,9 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class ActivityLogRepository {
-    private static final DateTimeFormatter AUDIT_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
     private final DataSource dataSource;
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
 
     public ActivityLogRepository() {
         this(DatabaseConfig.getDataSource());
@@ -187,7 +188,7 @@ public class ActivityLogRepository {
     }
 
     private String formatAuditDateTime(LocalDateTime createdAt) {
-        return createdAt == null ? "-" : createdAt.format(AUDIT_DATE_TIME_FORMAT);
+        return dateTimeFormatter.formatDateTime(createdAt);
     }
 
     private String formatReceiptAuditDescription(String action, String description) {
@@ -226,7 +227,7 @@ public class ActivityLogRepository {
         return values.entrySet().stream()
                 .filter(entry -> shouldShowAuditDetail(entry.getKey(), values))
                 .filter(entry -> !entry.getValue().isBlank())
-                .map(entry -> humanizeKey(entry.getKey()) + ": " + humanizeValue(entry.getValue()))
+                .map(entry -> humanizeKey(entry.getKey()) + ": " + humanizeValue(entry.getKey(), entry.getValue()))
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("");
     }
@@ -289,7 +290,7 @@ public class ActivityLogRepository {
         return builder.toString();
     }
 
-    private String humanizeValue(String value) {
+    private String humanizeValue(String key, String value) {
         if ("true".equalsIgnoreCase(value)) {
             return "Yes";
         }
@@ -299,7 +300,50 @@ public class ActivityLogRepository {
         if ("<not generated>".equalsIgnoreCase(value)) {
             return "Not generated";
         }
+        if (isDateTimeKey(key)) {
+            String formattedDateTime = tryFormatDateTime(value);
+            if (formattedDateTime != null) {
+                return formattedDateTime;
+            }
+            String formattedDate = tryFormatDate(value);
+            if (formattedDate != null) {
+                return formattedDate;
+            }
+        }
         return value;
+    }
+
+    private boolean isDateTimeKey(String key) {
+        if (key == null) {
+            return false;
+        }
+        String normalized = key.strip().toLowerCase();
+        return normalized.contains("date")
+                || normalized.contains("time")
+                || normalized.endsWith("_at")
+                || normalized.endsWith(" at");
+    }
+
+    private String tryFormatDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return dateTimeFormatter.formatDateTime(LocalDateTime.parse(value.strip()));
+        } catch (DateTimeParseException exception) {
+            return null;
+        }
+    }
+
+    private String tryFormatDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return dateTimeFormatter.formatDate(LocalDate.parse(value.strip()));
+        } catch (DateTimeParseException exception) {
+            return null;
+        }
     }
 
     public List<String> findDistinctActions() {

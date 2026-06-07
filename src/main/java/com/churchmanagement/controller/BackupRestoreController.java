@@ -18,6 +18,7 @@ import com.churchmanagement.service.RestoreService;
 import com.churchmanagement.service.WindowsTaskSchedulerScriptService;
 import com.churchmanagement.util.ApplicationRestartUtil;
 import com.churchmanagement.util.ButtonIconUtil;
+import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.SystemDateTimeFormatter;
@@ -394,6 +395,10 @@ public class BackupRestoreController {
     }
 
     private void configureFilters() {
+        DatePickerUtil.applySystemDateFormat(backupDateFromPicker);
+        DatePickerUtil.applySystemDateFormat(backupDateToPicker);
+        DatePickerUtil.applySystemDateFormat(restoreDateFromPicker);
+        DatePickerUtil.applySystemDateFormat(restoreDateToPicker);
         backupTypeFilterComboBox.setItems(FXCollections.observableArrayList(FILTER_ALL, "MANUAL", "AUTO", "PRE_RESTORE"));
         backupTypeFilterComboBox.setValue(FILTER_ALL);
         backupStatusFilterComboBox.setItems(FXCollections.observableArrayList(FILTER_ALL, "SUCCESS", "FAILED"));
