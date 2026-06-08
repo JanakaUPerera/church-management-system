@@ -29,12 +29,34 @@ import javafx.scene.control.TitledPane;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public class RolePermissionController {
+    private static final List<String> MODULE_DISPLAY_ORDER = List.of(
+            "Regions",
+            "Churches",
+            "Receipts",
+            "Reports",
+            "User Management",
+            "Roles & Permissions",
+            "Backup",
+            "Activity Logs",
+            "SMS Logs",
+            "Settings"
+    );
+    private static final Map<String, Integer> MODULE_ORDER = buildOrderMap(MODULE_DISPLAY_ORDER);
+    private static final Map<String, Integer> ACTION_ORDER = buildOrderMap(List.of(
+            "menu",
+            "create",
+            "view",
+            "edit",
+            "delete"
+    ));
+
     private final RolePermissionService rolePermissionService = new RolePermissionService();
     private final ObservableList<RoleDto> roles = FXCollections.observableArrayList();
     private final List<PermissionDto> permissions = new ArrayList<>();
@@ -182,7 +204,7 @@ public class RolePermissionController {
         permissionCheckBoxes.clear();
 
         Map<String, List<PermissionDto>> permissionsByModule = new LinkedHashMap<>();
-        for (PermissionDto permission : permissions) {
+        for (PermissionDto permission : sortedPermissions()) {
             permissionsByModule.computeIfAbsent(permission.getModule(), key -> new ArrayList<>()).add(permission);
         }
 
@@ -190,7 +212,7 @@ public class RolePermissionController {
             VBox groupBox = new VBox(8);
             groupBox.getStyleClass().add("permission-checklist");
             for (PermissionDto permission : group.getValue()) {
-                CheckBox checkBox = new CheckBox(permission.getPermissionCode() + " - " + permission.getDescription());
+                CheckBox checkBox = new CheckBox(permission.getDescription());
                 checkBox.setWrapText(true);
                 permissionCheckBoxes.put(permission.getPermissionCode(), checkBox);
                 groupBox.getChildren().add(checkBox);
@@ -200,6 +222,46 @@ public class RolePermissionController {
             titledPane.setExpanded(true);
             permissionGroupsBox.getChildren().add(titledPane);
         }
+    }
+
+    private List<PermissionDto> sortedPermissions() {
+        return permissions.stream()
+                .sorted(Comparator
+                        .comparingInt((PermissionDto permission) -> moduleOrder(permission.getModule()))
+                        .thenComparingInt(permission -> ACTION_ORDER.getOrDefault(actionKey(permission),
+                                ACTION_ORDER.size()))
+                        .thenComparing(PermissionDto::getDescription, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private static int moduleOrder(String module) {
+        if (module != null && module.toLowerCase().contains("settings")) {
+            return MODULE_ORDER.size() + 1;
+        }
+        return MODULE_ORDER.getOrDefault(module, MODULE_ORDER.size());
+    }
+
+    private static String actionKey(PermissionDto permission) {
+        String permissionCode = permission.getPermissionCode();
+        if (permissionCode == null || permissionCode.isBlank()) {
+            return "";
+        }
+        if ("menu.view".equals(permissionCode) || permissionCode.endsWith(".menu.view")) {
+            return "menu";
+        }
+        String action = permissionCode.substring(permissionCode.lastIndexOf('.') + 1);
+        if ("update".equals(action)) {
+            return "edit";
+        }
+        return action;
+    }
+
+    private static Map<String, Integer> buildOrderMap(List<String> values) {
+        Map<String, Integer> order = new LinkedHashMap<>();
+        for (int index = 0; index < values.size(); index++) {
+            order.put(values.get(index), index);
+        }
+        return order;
     }
 
     private void loadSelectedRole(RoleDto role) {
