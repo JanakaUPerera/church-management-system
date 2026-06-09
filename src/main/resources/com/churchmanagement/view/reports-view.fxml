@@ -2,25 +2,106 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="16" styleClass="module-page"
-      xmlns="http://javafx.com/javafx/21"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.churchmanagement.controller.ReportsController">
+<BorderPane styleClass="module-page"
+            xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.churchmanagement.controller.ReportsController">
     <padding>
-        <Insets bottom="22" left="22" right="22" top="22"/>
+        <Insets bottom="18" left="18" right="18" top="18"/>
     </padding>
-    <Label styleClass="section-title" text="PDF Diagnostics"/>
-    <HBox alignment="CENTER_LEFT" spacing="10">
-        <Button fx:id="unicodeFontTestButton" onAction="#handleUnicodeFontTest" styleClass="primary-button" text="Generate Unicode Font Test PDF"/>
-        <Region HBox.hgrow="ALWAYS"/>
-    </HBox>
-    <Label text="English Text"/>
-    <Label text="සිංහල පෙළ"/>
-    <Label text="தமிழ் உரை"/>
-    <Label fx:id="unicodeFontPathLabel" styleClass="value-label"/>
-</VBox>
+    <left>
+        <VBox spacing="8" prefWidth="260" BorderPane.alignment="CENTER">
+            <Label styleClass="section-title" text="Report Type"/>
+            <ListView fx:id="reportTypeListView" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </left>
+    <top>
+        <VBox spacing="10" BorderPane.alignment="CENTER">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <ComboBox fx:id="reportTypeComboBox" prefWidth="320"/>
+                <ComboBox fx:id="quickDateComboBox" prefWidth="150"/>
+                <Button fx:id="refreshButton" onAction="#handleRefresh" styleClass="primary-button" text="Refresh"/>
+                <Button fx:id="clearButton" onAction="#handleClear" text="Clear"/>
+                <HBox HBox.hgrow="ALWAYS"/>
+                <Button fx:id="exportPdfButton" onAction="#handleExportPdf" text="Export PDF"/>
+                <Button fx:id="exportExcelButton" onAction="#handleExportExcel" text="Export Excel"/>
+                <Button fx:id="printButton" onAction="#handlePrint" text="Print"/>
+            </HBox>
+            <GridPane fx:id="filterGrid" hgap="10" vgap="8">
+                <HBox fx:id="dateRangeBox" spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="Date From"/>
+                    <DatePicker fx:id="dateFromPicker"/>
+                    <Label text="Date To"/>
+                    <DatePicker fx:id="dateToPicker"/>
+                </HBox>
+                <HBox fx:id="weekStartBox" spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="Week Start"/>
+                    <DatePicker fx:id="weekStartDatePicker"/>
+                </HBox>
+                <HBox fx:id="regionBox" spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label text="Region"/>
+                    <ComboBox fx:id="regionComboBox" prefWidth="240"/>
+                </HBox>
+                <HBox fx:id="churchBox" spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <Label text="Church"/>
+                    <ComboBox fx:id="churchComboBox" prefWidth="260"/>
+                </HBox>
+                <HBox fx:id="statusBox" spacing="6" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                    <Label text="Status"/>
+                    <ComboBox fx:id="statusComboBox" prefWidth="150"/>
+                </HBox>
+                <HBox fx:id="receiptNoBox" spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label text="Receipt No"/>
+                    <TextField fx:id="receiptNoField" prefWidth="180"/>
+                </HBox>
+                <HBox fx:id="userBox" spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                    <Label text="User"/>
+                    <ComboBox fx:id="userComboBox" prefWidth="220"/>
+                </HBox>
+            </GridPane>
+        </VBox>
+    </top>
+    <center>
+        <VBox spacing="8" BorderPane.alignment="CENTER">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <TextField fx:id="tableSearchField" promptText="Search within table" HBox.hgrow="ALWAYS"/>
+                <Label fx:id="messageLabel" styleClass="value-label"/>
+            </HBox>
+            <TableView fx:id="reportTable" VBox.vgrow="ALWAYS">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <ComboBox fx:id="itemsPerPageComboBox" prefWidth="90"/>
+                <Label fx:id="paginationSummaryLabel"/>
+                <Pagination fx:id="reportPagination" HBox.hgrow="ALWAYS"/>
+            </HBox>
+        </VBox>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_LEFT" spacing="18" BorderPane.alignment="CENTER">
+            <Label text="Offertory Total"/>
+            <Label fx:id="offertoryTotalLabel" styleClass="value-label"/>
+            <Label text="Tithes Total"/>
+            <Label fx:id="tithesTotalLabel" styleClass="value-label"/>
+            <Label text="Other Donations Total"/>
+            <Label fx:id="otherDonationsTotalLabel" styleClass="value-label"/>
+            <Label text="Grand Total"/>
+            <Label fx:id="grandTotalLabel" styleClass="value-label"/>
+        </HBox>
+    </bottom>
+</BorderPane>

@@ -5,8 +5,5 @@ public enum SmsSendStatus {
     SENDING,
     SENT,
     FAILED,
-    SKIPPED,
-    DELIVERY_UNKNOWN,
-    DELIVERED,
-    DELIVERY_FAILED
+    SKIPPED
 }

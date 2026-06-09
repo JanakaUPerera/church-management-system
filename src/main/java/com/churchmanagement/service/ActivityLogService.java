@@ -108,6 +108,11 @@ public class ActivityLogService {
     public static final String SETTINGS_UPDATED = "SETTINGS_UPDATED";
     public static final String SETTINGS_UPDATE_FAILED = "SETTINGS_UPDATE_FAILED";
     public static final String SETTINGS_CACHE_RELOADED = "SETTINGS_CACHE_RELOADED";
+    public static final String REPORT_VIEWED = "REPORT_VIEWED";
+    public static final String REPORT_FILTER_CHANGED = "REPORT_FILTER_CHANGED";
+    public static final String REPORT_EXPORTED_PDF = "REPORT_EXPORTED_PDF";
+    public static final String REPORT_EXPORTED_EXCEL = "REPORT_EXPORTED_EXCEL";
+    public static final String REPORT_PRINTED = "REPORT_PRINTED";
 
     private final ActivityLogRepository activityLogRepository;
 
@@ -501,6 +506,31 @@ public class ActivityLogService {
 
     public void logSettingsCacheReloaded(long userId) {
         log(userId, SETTINGS_CACHE_RELOADED, "Settings", null, "System settings cache reloaded");
+    }
+
+    public void logReportViewed(long userId, String reportType, int resultCount) {
+        log(userId, REPORT_VIEWED, "Reports", reportType,
+                "report_type: " + nullToBlank(reportType) + ", result_count: " + resultCount);
+    }
+
+    public void logReportFilterChanged(long userId, String reportType, String filters) {
+        log(userId, REPORT_FILTER_CHANGED, "Reports", reportType,
+                "report_type: " + nullToBlank(reportType) + ", filters: " + nullToBlank(filters));
+    }
+
+    public void logReportExportedPdf(long userId, String reportType, String path) {
+        log(userId, REPORT_EXPORTED_PDF, "Reports", reportType,
+                "report_type: " + nullToBlank(reportType) + ", pdf_file_path: " + nullToBlank(path));
+    }
+
+    public void logReportExportedExcel(long userId, String reportType, String path) {
+        log(userId, REPORT_EXPORTED_EXCEL, "Reports", reportType,
+                "report_type: " + nullToBlank(reportType) + ", excel_file_path: " + nullToBlank(path));
+    }
+
+    public void logReportPrinted(long userId, String reportType, String path) {
+        log(userId, REPORT_PRINTED, "Reports", reportType,
+                "report_type: " + nullToBlank(reportType) + ", pdf_file_path: " + nullToBlank(path));
     }
 
     public void logProfileUpdated(long userId, String username) {

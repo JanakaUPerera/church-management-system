@@ -51,8 +51,18 @@ public class SmsLogSearchCriteria {
     public void setStatus(SmsLogRepository.SmsStatus status) {
         if (status == null) {
             this.sendStatus = null;
+            this.deliveryStatus = null;
         } else if (status == SmsLogRepository.SmsStatus.SUCCESS) {
             this.sendStatus = SmsSendStatus.SENT;
+        } else if (status == SmsLogRepository.SmsStatus.DELIVERED) {
+            this.sendStatus = null;
+            this.deliveryStatus = SmsDeliveryStatus.DELIVERED;
+        } else if (status == SmsLogRepository.SmsStatus.DELIVERY_UNKNOWN) {
+            this.sendStatus = null;
+            this.deliveryStatus = SmsDeliveryStatus.UNKNOWN;
+        } else if (status == SmsLogRepository.SmsStatus.DELIVERY_FAILED) {
+            this.sendStatus = null;
+            this.deliveryStatus = SmsDeliveryStatus.FAILED;
         } else {
             this.sendStatus = SmsSendStatus.valueOf(status.name());
         }

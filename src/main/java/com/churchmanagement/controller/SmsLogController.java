@@ -79,6 +79,7 @@ public class SmsLogController {
     @FXML private TableColumn<SmsLogDto, String> mobileNumberColumn;
     @FXML private TableColumn<SmsLogDto, String> messageColumn;
     @FXML private TableColumn<SmsLogDto, String> sendStatusColumn;
+    @FXML private TableColumn<SmsLogDto, String> deliveryStatusColumn;
     @FXML private TableColumn<SmsLogDto, Void> actionColumn;
     @FXML private Pagination smsLogPagination;
     @FXML private ComboBox<Integer> smsLogItemsPerPageComboBox;
@@ -157,9 +158,12 @@ public class SmsLogController {
                 nullToDash(cellData.getValue().getMessage())));
         sendStatusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 nullToDash(cellData.getValue().getSendStatus())));
+        deliveryStatusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                nullToDash(cellData.getValue().getDeliveryStatus())));
 
         messageColumn.setCellFactory(column -> tooltipTextCell());
         sendStatusColumn.setCellFactory(column -> new SmsStatusCell());
+        deliveryStatusColumn.setCellFactory(column -> new SmsStatusCell());
         actionColumn.setCellFactory(column -> new SmsActionCell());
         smsLogTable.setRowFactory(tableView -> {
             TableRow<SmsLogDto> row = new TableRow<>();
@@ -345,7 +349,7 @@ public class SmsLogController {
                 || normalizedStatus.startsWith("SENT")
                 || normalizedStatus.startsWith("DELIVERED")) {
             badge.getStyleClass().add("status-active");
-        } else if (normalizedStatus.startsWith("FAILED") || normalizedStatus.startsWith("DELIVERY_FAILED")) {
+        } else if (normalizedStatus.startsWith("FAILED")) {
             badge.getStyleClass().add("status-inactive");
         } else {
             badge.getStyleClass().add("status-skipped");

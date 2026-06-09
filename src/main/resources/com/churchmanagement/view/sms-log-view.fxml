@@ -64,7 +64,8 @@
             <TableColumn fx:id="churchCodeColumn" prefWidth="105" text="Church Code"/>
             <TableColumn fx:id="mobileNumberColumn" prefWidth="135" text="Mobile Number"/>
             <TableColumn fx:id="messageColumn" prefWidth="220" text="Message"/>
-            <TableColumn fx:id="sendStatusColumn" prefWidth="170" text="Status"/>
+            <TableColumn fx:id="sendStatusColumn" prefWidth="130" text="Send Status"/>
+            <TableColumn fx:id="deliveryStatusColumn" prefWidth="145" text="Delivery Status"/>
             <TableColumn fx:id="actionColumn" maxWidth="135" minWidth="110" prefWidth="120" resizable="false" text="Action"/>
         </columns>
         <columnResizePolicy>

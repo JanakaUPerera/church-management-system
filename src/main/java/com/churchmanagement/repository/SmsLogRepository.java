@@ -35,10 +35,10 @@ public class SmsLogRepository {
 
     public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
                              SmsStatus status, String errorMessage, LocalDateTime sentAt, LocalDateTime createdAt) {
-        SmsSendStatus sendStatus = status == SmsStatus.SUCCESS ? SmsSendStatus.SENT : SmsSendStatus.valueOf(status.name());
+        SmsSendStatus sendStatus = toSendStatus(status);
         SmsDeliveryStatus deliveryStatus = sendStatus == SmsSendStatus.FAILED
                 ? SmsDeliveryStatus.FAILED
-                : SmsDeliveryStatus.UNKNOWN;
+                : toDeliveryStatus(status);
         insertSmsLog(receiptId, churchId, mobileNumber, message, provider, sendStatus, deliveryStatus, null, null,
                 null, null, errorMessage, 1, createdAt, sentAt, createdAt);
     }
@@ -376,6 +376,29 @@ public class SmsLogRepository {
 
     private SmsDeliveryStatus defaultDeliveryStatus(SmsDeliveryStatus status) {
         return status == null ? SmsDeliveryStatus.UNKNOWN : status;
+    }
+
+    private SmsSendStatus toSendStatus(SmsStatus status) {
+        if (status == null || status == SmsStatus.SUCCESS
+                || status == SmsStatus.DELIVERED
+                || status == SmsStatus.DELIVERY_UNKNOWN
+                || status == SmsStatus.DELIVERY_FAILED) {
+            return SmsSendStatus.SENT;
+        }
+        return SmsSendStatus.valueOf(status.name());
+    }
+
+    private SmsDeliveryStatus toDeliveryStatus(SmsStatus status) {
+        if (status == SmsStatus.DELIVERED) {
+            return SmsDeliveryStatus.DELIVERED;
+        }
+        if (status == SmsStatus.DELIVERY_FAILED) {
+            return SmsDeliveryStatus.FAILED;
+        }
+        if (status == SmsStatus.SKIPPED) {
+            return SmsDeliveryStatus.NOT_SUPPORTED;
+        }
+        return SmsDeliveryStatus.UNKNOWN;
     }
 
     private String nullToDefault(String value, String defaultValue) {

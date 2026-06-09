@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="generic_report" pageWidth="842" pageHeight="595" orientation="Landscape"
+              columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+    <property name="net.sf.jasperreports.default.font.name" value="Noto Sans"/>
+    <style name="base" fontName="Noto Sans" fontSize="11"/>
+    <style name="header" style="base" isBold="true"/>
+    <parameter name="organizationName" class="java.lang.String"/>
+    <parameter name="reportTitle" class="java.lang.String"/>
+    <parameter name="generatedAt" class="java.lang.String"/>
+    <parameter name="filters" class="java.lang.String"/>
+    <parameter name="rowCount" class="java.lang.Integer"/>
+    <parameter name="offertoryTotal" class="java.lang.String"/>
+    <parameter name="tithesTotal" class="java.lang.String"/>
+    <parameter name="otherDonationsTotal" class="java.lang.String"/>
+    <parameter name="grandTotal" class="java.lang.String"/>
+    <parameter name="header1" class="java.lang.String"/>
+    <parameter name="header2" class="java.lang.String"/>
+    <parameter name="header3" class="java.lang.String"/>
+    <parameter name="header4" class="java.lang.String"/>
+    <parameter name="header5" class="java.lang.String"/>
+    <parameter name="header6" class="java.lang.String"/>
+    <parameter name="header7" class="java.lang.String"/>
+    <parameter name="header8" class="java.lang.String"/>
+    <parameter name="header9" class="java.lang.String"/>
+    <parameter name="header10" class="java.lang.String"/>
+    <parameter name="header11" class="java.lang.String"/>
+    <parameter name="header12" class="java.lang.String"/>
+    <field name="column1" class="java.lang.String"/>
+    <field name="column2" class="java.lang.String"/>
+    <field name="column3" class="java.lang.String"/>
+    <field name="column4" class="java.lang.String"/>
+    <field name="column5" class="java.lang.String"/>
+    <field name="column6" class="java.lang.String"/>
+    <field name="column7" class="java.lang.String"/>
+    <field name="column8" class="java.lang.String"/>
+    <field name="column9" class="java.lang.String"/>
+    <field name="column10" class="java.lang.String"/>
+    <field name="column11" class="java.lang.String"/>
+    <field name="column12" class="java.lang.String"/>
+    <title>
+        <band height="112">
+            <textField><reportElement style="header" x="0" y="0" width="802" height="22"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$P{organizationName}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="0" y="26" width="802" height="22"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$P{reportTitle}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="0" y="54" width="802" height="18"/><textFieldExpression><![CDATA["Generated: " + $P{generatedAt} + "    Rows: " + $P{rowCount}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="0" y="78" width="802" height="28"/><textFieldExpression><![CDATA[$P{filters}]]></textFieldExpression></textField>
+        </band>
+    </title>
+    <columnHeader><band height="24">
+            <textField><reportElement style="header" x="0" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header1}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="67" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header2}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="134" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header3}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="201" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header4}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="268" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header5}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="335" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header6}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="402" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header7}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="469" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header8}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="536" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header9}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="603" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$P{header10}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="670" y="0" width="66" height="22"/><textFieldExpression><![CDATA[$P{header11}]]></textFieldExpression></textField>
+            <textField><reportElement style="header" x="736" y="0" width="66" height="22"/><textFieldExpression><![CDATA[$P{header12}]]></textFieldExpression></textField>
+        </band>
+    </columnHeader>
+    <detail><band height="24">
+            <textField><reportElement style="base" x="0" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column1}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="67" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column2}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="134" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column3}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="201" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column4}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="268" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column5}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="335" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column6}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="402" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column7}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="469" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column8}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="536" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column9}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="603" y="0" width="67" height="22"/><textFieldExpression><![CDATA[$F{column10}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="670" y="0" width="66" height="22"/><textFieldExpression><![CDATA[$F{column11}]]></textFieldExpression></textField>
+            <textField><reportElement style="base" x="736" y="0" width="66" height="22"/><textFieldExpression><![CDATA[$F{column12}]]></textFieldExpression></textField>
+        </band>
+    </detail>
+    <pageFooter><band height="22">
+            <textField><reportElement style="base" x="680" y="0" width="122" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression></textField>
+        </band>
+    </pageFooter>
+</jasperReport>
