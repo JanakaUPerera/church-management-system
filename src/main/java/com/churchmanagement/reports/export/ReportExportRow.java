@@ -4,9 +4,13 @@ import java.util.List;
 
 public class ReportExportRow {
     private final List<String> values;
+    private final boolean totalsRow;
+    private final boolean oddRow;
 
-    public ReportExportRow(List<String> values) {
+    public ReportExportRow(List<String> values, boolean totalsRow, boolean oddRow) {
         this.values = values;
+        this.totalsRow = totalsRow;
+        this.oddRow = oddRow;
     }
 
     public String getColumn1() { return value(0); }
@@ -21,6 +25,8 @@ public class ReportExportRow {
     public String getColumn10() { return value(9); }
     public String getColumn11() { return value(10); }
     public String getColumn12() { return value(11); }
+    public boolean isTotalsRow() { return totalsRow; }
+    public boolean isOddRow() { return oddRow; }
 
     private String value(int index) {
         return index < values.size() ? values.get(index) : "";

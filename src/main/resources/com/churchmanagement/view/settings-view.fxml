@@ -136,9 +136,15 @@
                     <Label text="Time Format" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                     <TextField fx:id="timeFormatField" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
-                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                    <Label text="Report Export Location" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <HBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <TextField fx:id="reportExportFolderField" prefWidth="420"/>
+                        <Button fx:id="browseReportExportFolderButton" onAction="#browseReportExportFolder" text="Browse"/>
+                    </HBox>
+
+                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
                 </GridPane>
                 <Button onAction="#saveSystemSettings" styleClass="primary-button" text="Save System"/>
             </VBox>

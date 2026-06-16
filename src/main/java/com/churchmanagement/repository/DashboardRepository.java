@@ -199,7 +199,7 @@ public class DashboardRepository {
                 GROUP BY c.id, c.church_name
                 HAVING value > 0
                 ORDER BY value DESC, c.church_name
-                LIMIT 3
+                LIMIT 20
                 """);
         return queryPoints(sql.toString(), statement -> setParameters(statement, parameters));
     }

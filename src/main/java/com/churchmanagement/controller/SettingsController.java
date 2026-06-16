@@ -18,6 +18,7 @@ import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.service.SmsServiceFactory;
 import com.churchmanagement.service.SystemSettingService;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.ThemeService;
@@ -30,8 +31,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,6 +92,8 @@ public class SettingsController {
     @FXML private Button sendTestSmsButton;
     @FXML private TextField dateFormatField;
     @FXML private TextField timeFormatField;
+    @FXML private TextField reportExportFolderField;
+    @FXML private Button browseReportExportFolderButton;
     @FXML private ComboBox<String> themeComboBox;
     @FXML private Label themeErrorLabel;
 
@@ -101,6 +107,7 @@ public class SettingsController {
         themeComboBox.getItems().setAll("LIGHT", "DARK");
         gatewayTypeComboBox.getItems().setAll(SmsSettings.GatewayType.values());
         baudRateComboBox.getItems().setAll(9600, 19200, 38400, 115200);
+        configureButtonIcons();
         comPortComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(ComPortDto port) {
@@ -175,8 +182,26 @@ public class SettingsController {
         saveSettings(List.of(
                 request("system.date.format", dateFormatField.getText()),
                 request("system.time.format", timeFormatField.getText()),
+                request("reports.export.folder", reportExportFolderField.getText()),
                 request("system.theme", themeComboBox.getValue())
         ));
+    }
+
+    @FXML
+    private void browseReportExportFolder() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Select Report Export Folder");
+        String currentPath = reportExportFolderField.getText();
+        if (currentPath != null && !currentPath.isBlank()) {
+            File currentFolder = new File(currentPath);
+            if (currentFolder.isDirectory()) {
+                chooser.setInitialDirectory(currentFolder.getAbsoluteFile());
+            }
+        }
+        File selected = chooser.showDialog(window());
+        if (selected != null) {
+            reportExportFolderField.setText(selected.getAbsolutePath());
+        }
     }
 
     @FXML
@@ -310,7 +335,12 @@ public class SettingsController {
         smsRetryMaxAttemptsField.setText(values.get("sms.retry.max.attempts"));
         dateFormatField.setText(values.get("system.date.format"));
         timeFormatField.setText(values.get("system.time.format"));
+        reportExportFolderField.setText(defaultValue(values.get("reports.export.folder"), "./reports"));
         themeComboBox.setValue(defaultValue(values.get("system.theme"), "LIGHT"));
+    }
+
+    private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(browseReportExportFolderButton, "fas-folder-open");
     }
 
     private void loadSmsGatewaySettings() {
@@ -367,6 +397,10 @@ public class SettingsController {
         if (settingsTabPane != null && settingsTabPane.getScene() != null) {
             new ThemeService().applyConfiguredTheme(settingsTabPane.getScene().getRoot());
         }
+    }
+
+    private Window window() {
+        return settingsTabPane.getScene().getWindow();
     }
 
     private Integer parseBaudRate() {

@@ -48,16 +48,16 @@ class DashboardServiceTest {
     }
 
     @Test
-    void defaultWeeklyDateIsPreviousWeek() {
+    void defaultWeeklyDateIsCurrentWeek() {
         DashboardService.DateRange range = dashboardService.defaultWeeklyRange();
         WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(null, null, null);
 
-        assertEquals(LocalDate.of(2026, 5, 25), range.dateFrom());
-        assertEquals(LocalDate.of(2026, 5, 31), range.dateTo());
+        assertEquals(LocalDate.of(2026, 6, 1), range.dateFrom());
+        assertEquals(LocalDate.of(2026, 6, 7), range.dateTo());
         assertEquals(range.dateFrom(), weekly.getWeekStartDate());
         assertEquals(range.dateTo(), weekly.getWeekEndDate());
         assertTrue(weekly.isTodaysReceiptsTotalVisible());
-        assertTrue(weekly.isWeekCollectionVisible());
+        assertFalse(weekly.isWeekCollectionVisible());
         assertEquals(ActivityLogService.DASHBOARD_WEEKLY_VIEWED, activityLogService.lastAction);
     }
 

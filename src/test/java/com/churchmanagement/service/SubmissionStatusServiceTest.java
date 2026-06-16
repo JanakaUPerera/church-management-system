@@ -93,12 +93,12 @@ class SubmissionStatusServiceTest {
     }
 
     @Test
-    void defaultPreviousWeekSupportsPreviousAndNextNavigationMath() {
+    void defaultCurrentWeekSupportsPreviousAndNextNavigationMath() {
         LocalDate defaultWeek = service.defaultWeekStart();
 
-        assertEquals(LocalDate.of(2026, 5, 25), defaultWeek);
-        assertEquals(LocalDate.of(2026, 5, 18), defaultWeek.minusWeeks(1));
-        assertEquals(LocalDate.of(2026, 6, 1), defaultWeek.plusWeeks(1));
+        assertEquals(LocalDate.of(2026, 6, 1), defaultWeek);
+        assertEquals(LocalDate.of(2026, 5, 25), defaultWeek.minusWeeks(1));
+        assertEquals(LocalDate.of(2026, 6, 8), defaultWeek.plusWeeks(1));
     }
 
     @Test

@@ -15,6 +15,9 @@ public class SubmissionStatusReportDto extends AbstractReportRow {
     private String receiptNo;
     private LocalDateTime submittedAt;
     private boolean lateSubmission;
+    private BigDecimal offertoryTotal = BigDecimal.ZERO;
+    private BigDecimal tithesTotal = BigDecimal.ZERO;
+    private BigDecimal otherDonationsTotal = BigDecimal.ZERO;
     private BigDecimal grandTotal = BigDecimal.ZERO;
 
     @Override
@@ -22,6 +25,8 @@ public class SubmissionStatusReportDto extends AbstractReportRow {
         return columns("Region", text(regionName), "Church Code", text(churchCode), "Church", text(churchName),
                 "Week Start", date(weekStartDate), "Status", text(status), "Receipt No", text(receiptNo),
                 "Submitted At", dateTime(submittedAt), "Late Submission", lateSubmission ? "Yes" : "No",
+                "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Other Donations", zero(otherDonationsTotal),
                 "Grand Total", zero(grandTotal));
     }
 
@@ -45,6 +50,12 @@ public class SubmissionStatusReportDto extends AbstractReportRow {
     public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
     public boolean isLateSubmission() { return lateSubmission; }
     public void setLateSubmission(boolean lateSubmission) { this.lateSubmission = lateSubmission; }
+    public BigDecimal getOffertoryTotal() { return offertoryTotal; }
+    public void setOffertoryTotal(BigDecimal offertoryTotal) { this.offertoryTotal = zero(offertoryTotal); }
+    public BigDecimal getTithesTotal() { return tithesTotal; }
+    public void setTithesTotal(BigDecimal tithesTotal) { this.tithesTotal = zero(tithesTotal); }
+    public BigDecimal getOtherDonationsTotal() { return otherDonationsTotal; }
+    public void setOtherDonationsTotal(BigDecimal otherDonationsTotal) { this.otherDonationsTotal = zero(otherDonationsTotal); }
     public BigDecimal getGrandTotal() { return grandTotal; }
     public void setGrandTotal(BigDecimal grandTotal) { this.grandTotal = zero(grandTotal); }
 }

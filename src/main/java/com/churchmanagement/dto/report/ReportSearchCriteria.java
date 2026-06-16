@@ -14,6 +14,10 @@ public class ReportSearchCriteria {
     private ReportType reportType;
     private int offset;
     private int limit = 500;
+    private boolean offertoryColumnSelected = true;
+    private boolean tithesColumnSelected = true;
+    private boolean otherDonationsColumnSelected = true;
+    private boolean grandTotalColumnSelected = true;
 
     public LocalDate getDateFrom() {
         return dateFrom;
@@ -101,5 +105,37 @@ public class ReportSearchCriteria {
 
     public void setLimit(int limit) {
         this.limit = limit <= 0 ? 500 : limit;
+    }
+
+    public boolean isOffertoryColumnSelected() {
+        return offertoryColumnSelected;
+    }
+
+    public void setOffertoryColumnSelected(boolean offertoryColumnSelected) {
+        this.offertoryColumnSelected = offertoryColumnSelected;
+    }
+
+    public boolean isTithesColumnSelected() {
+        return tithesColumnSelected;
+    }
+
+    public void setTithesColumnSelected(boolean tithesColumnSelected) {
+        this.tithesColumnSelected = tithesColumnSelected;
+    }
+
+    public boolean isOtherDonationsColumnSelected() {
+        return otherDonationsColumnSelected;
+    }
+
+    public void setOtherDonationsColumnSelected(boolean otherDonationsColumnSelected) {
+        this.otherDonationsColumnSelected = otherDonationsColumnSelected;
+    }
+
+    public boolean isGrandTotalColumnSelected() {
+        return grandTotalColumnSelected;
+    }
+
+    public void setGrandTotalColumnSelected(boolean grandTotalColumnSelected) {
+        this.grandTotalColumnSelected = grandTotalColumnSelected;
     }
 }

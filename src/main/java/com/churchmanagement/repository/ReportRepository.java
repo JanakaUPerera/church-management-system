@@ -88,6 +88,9 @@ public class ReportRepository {
                        CASE WHEN r.id IS NULL THEN 'MISSING' ELSE 'SUBMITTED' END status,
                        r.receipt_no, r.receipt_datetime submitted_at,
                        COALESCE(r.is_late_submission, FALSE) is_late_submission,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OFFERTORY' THEN ri.amount ELSE 0 END), 0) offertory_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'TITHES' THEN ri.amount ELSE 0 END), 0) tithes_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OTHER_DONATIONS' THEN ri.amount ELSE 0 END), 0) other_donations_total,
                        COALESCE(SUM(ri.amount), 0) grand_total
                 FROM churches c
                 JOIN regions rg ON rg.id = c.region_id
@@ -105,7 +108,7 @@ public class ReportRepository {
         appendReceiptNoFilter(sql, parameters, criteria, "r");
         appendSubmissionStatusFilter(sql, parameters, criteria);
         sql.append("""
-                GROUP BY r.id, rg.region_name, c.church_code, c.church_name, r.week_start_date, r.receipt_no,
+                GROUP BY c.id, r.id, rg.region_name, c.church_code, c.church_name, r.week_start_date, r.receipt_no,
                          r.receipt_datetime, r.is_late_submission
                 ORDER BY rg.region_name, c.church_code
                 """);
@@ -141,6 +144,9 @@ public class ReportRepository {
         StringBuilder sql = new StringBuilder("""
                 SELECT r.id receipt_id, rg.region_name, c.church_code, c.church_name, r.week_start_date,
                        r.receipt_no, r.receipt_datetime submitted_at, r.late_submission_reason reason,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OFFERTORY' THEN ri.amount ELSE 0 END), 0) offertory_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'TITHES' THEN ri.amount ELSE 0 END), 0) tithes_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OTHER_DONATIONS' THEN ri.amount ELSE 0 END), 0) other_donations_total,
                        COALESCE(SUM(ri.amount), 0) grand_total
                 FROM receipts r
                 JOIN regions rg ON rg.id = r.region_id
@@ -208,6 +214,9 @@ public class ReportRepository {
                        COUNT(DISTINCT r.week_start_date) submitted_weeks,
                        GREATEST(0, TIMESTAMPDIFF(WEEK, ?, ?) + 1 - COUNT(DISTINCT r.week_start_date)) missing_weeks,
                        COUNT(DISTINCT CASE WHEN r.is_late_submission = TRUE THEN r.id END) late_count,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OFFERTORY' THEN ri.amount ELSE 0 END), 0) offertory_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'TITHES' THEN ri.amount ELSE 0 END), 0) tithes_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OTHER_DONATIONS' THEN ri.amount ELSE 0 END), 0) other_donations_total,
                        COALESCE(SUM(ri.amount), 0) total_collections
                 FROM churches c
                 JOIN regions rg ON rg.id = c.region_id
@@ -234,6 +243,9 @@ public class ReportRepository {
                        GREATEST(0, COUNT(DISTINCT c.id) * (TIMESTAMPDIFF(WEEK, ?, ?) + 1)
                             - COUNT(DISTINCT CONCAT(r.church_id, ':', r.week_start_date))) missing_weeks,
                        COUNT(DISTINCT CASE WHEN r.is_late_submission = TRUE THEN r.id END) late_count,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OFFERTORY' THEN ri.amount ELSE 0 END), 0) offertory_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'TITHES' THEN ri.amount ELSE 0 END), 0) tithes_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OTHER_DONATIONS' THEN ri.amount ELSE 0 END), 0) other_donations_total,
                        COALESCE(SUM(ri.amount), 0) total_collections
                 FROM regions rg
                 JOIN churches c ON c.region_id = rg.id AND c.status = 'ACTIVE'
@@ -528,7 +540,7 @@ public class ReportRepository {
             }
             return rows;
         } catch (SQLException exception) {
-            throw new DatabaseException("Unable to load report data.", exception);
+            throw new DatabaseException(reportQueryErrorMessage(sql, exception), exception);
         }
     }
 
@@ -540,6 +552,17 @@ public class ReportRepository {
         for (int index = 0; index < parameters.size(); index++) {
             statement.setObject(index + 1, parameters.get(index));
         }
+    }
+
+    private String reportQueryErrorMessage(String sql, SQLException exception) {
+        return "Unable to load report data. SQLState=" + exception.getSQLState()
+                + ", ErrorCode=" + exception.getErrorCode()
+                + ", Detail=" + exception.getMessage()
+                + ", SQL=" + compactSql(sql);
+    }
+
+    private String compactSql(String sql) {
+        return sql == null ? "" : sql.replaceAll("\\s+", " ").strip();
     }
 
     private WeeklyChurchCollectionReportDto mapWeeklyChurchCollection(ResultSet rs) throws SQLException {
@@ -586,6 +609,9 @@ public class ReportRepository {
         dto.setReceiptNo(rs.getString("receipt_no"));
         dto.setSubmittedAt(localDateTime(rs, "submitted_at"));
         dto.setLateSubmission(rs.getBoolean("is_late_submission"));
+        dto.setOffertoryTotal(rs.getBigDecimal("offertory_total"));
+        dto.setTithesTotal(rs.getBigDecimal("tithes_total"));
+        dto.setOtherDonationsTotal(rs.getBigDecimal("other_donations_total"));
         dto.setGrandTotal(rs.getBigDecimal("grand_total"));
         return dto;
     }
@@ -612,6 +638,9 @@ public class ReportRepository {
         dto.setReceiptNo(rs.getString("receipt_no"));
         dto.setSubmittedAt(localDateTime(rs, "submitted_at"));
         dto.setReason(rs.getString("reason"));
+        dto.setOffertoryTotal(rs.getBigDecimal("offertory_total"));
+        dto.setTithesTotal(rs.getBigDecimal("tithes_total"));
+        dto.setOtherDonationsTotal(rs.getBigDecimal("other_donations_total"));
         dto.setGrandTotal(rs.getBigDecimal("grand_total"));
         return dto;
     }
@@ -640,6 +669,9 @@ public class ReportRepository {
         dto.setSubmittedWeeks(rs.getLong("submitted_weeks"));
         dto.setMissingWeeks(rs.getLong("missing_weeks"));
         dto.setLateCount(rs.getLong("late_count"));
+        dto.setOffertoryTotal(rs.getBigDecimal("offertory_total"));
+        dto.setTithesTotal(rs.getBigDecimal("tithes_total"));
+        dto.setOtherDonationsTotal(rs.getBigDecimal("other_donations_total"));
         dto.setTotalCollections(rs.getBigDecimal("total_collections"));
         return dto;
     }
@@ -653,6 +685,9 @@ public class ReportRepository {
         dto.setSubmittedWeeks(rs.getLong("submitted_weeks"));
         dto.setMissingWeeks(rs.getLong("missing_weeks"));
         dto.setLateCount(rs.getLong("late_count"));
+        dto.setOffertoryTotal(rs.getBigDecimal("offertory_total"));
+        dto.setTithesTotal(rs.getBigDecimal("tithes_total"));
+        dto.setOtherDonationsTotal(rs.getBigDecimal("other_donations_total"));
         dto.setTotalCollections(rs.getBigDecimal("total_collections"));
         return dto;
     }

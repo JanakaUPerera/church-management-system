@@ -28,6 +28,38 @@ public final class DatePickerUtil {
         });
     }
 
+    public static void disableFutureDates(DatePicker datePicker) {
+        applySystemDateFormat(datePicker);
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setDisable(empty || date.isAfter(LocalDate.now()));
+            }
+        });
+        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && newValue.isAfter(LocalDate.now())) {
+                datePicker.setValue(oldValue);
+            }
+        });
+    }
+
+    public static void enableMondaysOnlyAndDisableFutureDates(DatePicker datePicker) {
+        applySystemDateFormat(datePicker);
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setDisable(empty || !isMonday(date) || date.isAfter(LocalDate.now()));
+            }
+        });
+        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && (!isMonday(newValue) || newValue.isAfter(LocalDate.now()))) {
+                datePicker.setValue(oldValue);
+            }
+        });
+    }
+
     public static void applySystemDateFormat(DatePicker datePicker) {
         if (datePicker == null) {
             return;

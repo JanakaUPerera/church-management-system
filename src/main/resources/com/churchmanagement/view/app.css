@@ -627,6 +627,11 @@
     -fx-alignment: CENTER;
 }
 
+.report-table .table-cell.report-right-cell,
+.report-table .table-row-cell:selected .table-cell.report-right-cell {
+    -fx-alignment: CENTER_RIGHT;
+}
+
 .table-view .table-row-cell:selected .table-cell {
     -fx-text-fill: #451a03;
 }
@@ -1312,6 +1317,17 @@
     -fx-text-fill: #92400e;
 }
 
+.dashboard-chart-card .chart-legend {
+    -fx-background-color: #fffbeb;
+    -fx-background-radius: 5;
+    -fx-border-color: #fde68a;
+    -fx-border-radius: 5;
+}
+
+.dashboard-chart-card .chart-legend-item {
+    -fx-text-fill: #451a03;
+}
+
 .dashboard-chart-card .default-color0.chart-pie {
     -fx-pie-color: #16a34a;
 }
@@ -1467,7 +1483,43 @@
 
 .dashboard-performance-row {
     -fx-alignment: center-left;
+    -fx-padding: 0;
+}
+
+.dashboard-performance-item {
     -fx-padding: 5 0;
+}
+
+.dashboard-performance-progress {
+    -fx-min-height: 6;
+    -fx-pref-height: 6;
+    -fx-max-height: 6;
+    -fx-padding: 0 0 0 32;
+    -fx-border-width: 0;
+}
+
+.dashboard-performance-progress .track {
+    -fx-background-color: #fef3c7;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
+
+.dashboard-performance-progress .bar {
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+    -fx-padding: 3;
+}
+
+.dashboard-performance-progress-1 .bar {
+    -fx-background-color: #fbbf24;
+}
+
+.dashboard-performance-progress-2 .bar {
+    -fx-background-color: #9ca3af;
+}
+
+.dashboard-performance-progress-3 .bar {
+    -fx-background-color: #fb923c;
 }
 
 .dashboard-rank-badge {
@@ -1730,6 +1782,78 @@
 
 .value-label {
     -fx-font-weight: normal;
+}
+
+.report-card-scroll,
+.report-card-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.report-card-scroll {
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.report-card-grid {
+    -fx-background-color: transparent;
+}
+
+.report-card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.4;
+    -fx-border-radius: 8;
+    -fx-padding: 16;
+    -fx-pref-width: 258;
+    -fx-min-height: 142;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(120, 53, 15, 0.10), 10, 0.12, 0, 3);
+}
+
+.report-card:hover {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: #f59e0b;
+    -fx-effect: dropshadow(gaussian, rgba(120, 53, 15, 0.18), 14, 0.18, 0, 5);
+}
+
+.report-card:pressed {
+    -fx-background-color: #fef3c7;
+}
+
+.report-card-icon {
+    -fx-icon-color: #d97706;
+    -fx-icon-size: 24px;
+}
+
+.report-card-title {
+    -fx-text-fill: #451a03;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.report-card-action {
+    -fx-text-fill: #92400e;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+
+.report-dialog-content {
+    -fx-background-color: #fffbeb;
+    -fx-padding: 14 16 16 16;
+}
+
+.report-dialog-content .field-label {
+    -fx-font-weight: bold !important;
+}
+
+.report-dialog-content .submission-totals-label {
+    -fx-font-weight: bold !important;
+}
+
+.report-results-area {
+    -fx-padding: 10 0 0 0;
 }
 
 /* ═══════════════════════════════════════════════
@@ -2034,9 +2158,19 @@
 .theme-dark .dashboard-progress-title,
 .theme-dark .dashboard-progress-region,
 .theme-dark .dashboard-amount-header,
+.theme-dark .dashboard-chart-card .chart-title,
+.theme-dark .dashboard-chart-card .axis-label,
+.theme-dark .dashboard-chart-card .chart-legend-item,
 .theme-dark .pagination-label,
 .theme-dark .pagination-summary {
     -fx-text-fill: #d1d5db;
+}
+
+.theme-dark .dashboard-chart-card .chart-legend {
+    -fx-background-color: #111827;
+    -fx-background-radius: 5;
+    -fx-border-color: #374151;
+    -fx-border-radius: 5;
 }
 
 .theme-dark .app-header,
@@ -2293,12 +2427,43 @@
 .theme-dark .field-label,
 .theme-dark .section-title,
 .theme-dark .module-title,
+.theme-dark .report-card-title,
 .theme-dark .backup-card-title,
 .theme-dark .submission-totals-label,
 .theme-dark .submission-progress-title,
 .theme-dark .muted-label,
 .theme-dark .warning-label {
     -fx-text-fill: #d1d5db;
+}
+
+.theme-dark .report-card-scroll,
+.theme-dark .report-card-scroll > .viewport,
+.theme-dark .report-card-grid,
+.theme-dark .report-dialog-content {
+    -fx-background-color: #111827;
+}
+
+.theme-dark .report-card {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #4b5563;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 12, 0.18, 0, 4);
+}
+
+.theme-dark .report-card:hover {
+    -fx-background-color: #263244;
+    -fx-border-color: #f59e0b;
+}
+
+.theme-dark .report-card:pressed {
+    -fx-background-color: #374151;
+}
+
+.theme-dark .report-card-icon {
+    -fx-icon-color: #f59e0b;
+}
+
+.theme-dark .report-card-action {
+    -fx-text-fill: #fef3c7;
 }
 
 .theme-dark .text-field,

@@ -8,6 +8,8 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -99,6 +101,7 @@ public class SystemSettingService {
                     "SMS retry max attempts must be between 0 and 10.");
             case "backup.retention.days" -> requireIntegerBetween(normalized, 1, 365,
                     "Backup retention days must be between 1 and 365.");
+            case "reports.export.folder" -> requirePath(normalized, "Report export location is required.");
             case "system.theme" -> requireOneOf(normalized, "System theme must be LIGHT or DARK.", "LIGHT", "DARK");
             case "receipt.default.language" -> requireOneOf(normalized,
                     "Receipt default language must be ENGLISH, SINHALA, or TAMIL.",
@@ -160,6 +163,15 @@ public class SystemSettingService {
             }
         }
         throw new SystemSettingException(message);
+    }
+
+    private void requirePath(String value, String message) {
+        requireText(value, message);
+        try {
+            Path.of(value);
+        } catch (InvalidPathException exception) {
+            throw new SystemSettingException("Report export location is invalid.", exception);
+        }
     }
 
     public static class SystemSettingException extends RuntimeException {

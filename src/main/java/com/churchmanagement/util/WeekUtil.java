@@ -12,6 +12,10 @@ public final class WeekUtil {
         return today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
     }
 
+    public static LocalDate getCurrentWeekMonday(LocalDate today) {
+        return today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
     public static LocalDate getPreviousWeekSunday(LocalDate today) {
         return getPreviousWeekMonday(today).plusDays(6);
     }

@@ -14,13 +14,17 @@ public class LateSubmissionReportDto extends AbstractReportRow {
     private String receiptNo;
     private LocalDateTime submittedAt;
     private String reason;
+    private BigDecimal offertoryTotal = BigDecimal.ZERO;
+    private BigDecimal tithesTotal = BigDecimal.ZERO;
+    private BigDecimal otherDonationsTotal = BigDecimal.ZERO;
     private BigDecimal grandTotal = BigDecimal.ZERO;
 
     @Override
     public LinkedHashMap<String, Object> columns() {
         return columns("Region", text(regionName), "Church Code", text(churchCode), "Church", text(churchName),
                 "Week Start", date(weekStartDate), "Receipt No", text(receiptNo), "Submitted At", dateTime(submittedAt),
-                "Reason", text(reason), "Grand Total", zero(grandTotal));
+                "Reason", text(reason), "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
     }
 
     @Override
@@ -41,6 +45,12 @@ public class LateSubmissionReportDto extends AbstractReportRow {
     public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+    public BigDecimal getOffertoryTotal() { return offertoryTotal; }
+    public void setOffertoryTotal(BigDecimal offertoryTotal) { this.offertoryTotal = zero(offertoryTotal); }
+    public BigDecimal getTithesTotal() { return tithesTotal; }
+    public void setTithesTotal(BigDecimal tithesTotal) { this.tithesTotal = zero(tithesTotal); }
+    public BigDecimal getOtherDonationsTotal() { return otherDonationsTotal; }
+    public void setOtherDonationsTotal(BigDecimal otherDonationsTotal) { this.otherDonationsTotal = zero(otherDonationsTotal); }
     public BigDecimal getGrandTotal() { return grandTotal; }
     public void setGrandTotal(BigDecimal grandTotal) { this.grandTotal = zero(grandTotal); }
 }

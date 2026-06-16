@@ -15,6 +15,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <javafx.version>21.0.10</javafx.version>
         <slf4j.version>1.7.36</slf4j.version>
+        <log4j.version>2.23.1</log4j.version>
         <flyway.version>12.6.2</flyway.version>
         <jackson.annotations.version>2.21</jackson.annotations.version>
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
@@ -45,6 +46,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>

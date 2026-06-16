@@ -31,7 +31,7 @@ class SystemSettingServiceTest {
 
         List<SystemSettingDto> settings = service.loadSettings();
 
-        assertEquals(16, settings.size());
+        assertEquals(17, settings.size());
         assertEquals("organization.name", settings.getFirst().getSettingKey());
     }
 
@@ -188,6 +188,7 @@ class SystemSettingServiceTest {
             add(setting("backup.auto.enabled", "false", "BOOLEAN", "BACKUP"));
             add(setting("backup.retention.days", "30", "INTEGER", "BACKUP"));
             add(setting("system.date.format", "yyyy-MM-dd", "STRING", "SYSTEM"));
+            add(setting("reports.export.folder", "./reports", "STRING", "SYSTEM"));
             add(setting("system.time.format", "HH:mm:ss", "STRING", "SYSTEM"));
             add(setting("system.theme", "LIGHT", "ENUM", "SYSTEM"));
         }

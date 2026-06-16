@@ -22,11 +22,11 @@ public abstract class AbstractReportRow implements ReportTableRow {
         return value == null ? "" : value;
     }
 
-    protected String date(LocalDate value) {
-        return value == null ? "" : value.toString();
+    protected LocalDate date(LocalDate value) {
+        return value;
     }
 
-    protected String dateTime(LocalDateTime value) {
-        return value == null ? "" : value.toString();
+    protected LocalDateTime dateTime(LocalDateTime value) {
+        return value;
     }
 }

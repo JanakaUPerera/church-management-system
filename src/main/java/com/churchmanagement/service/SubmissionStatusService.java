@@ -78,7 +78,7 @@ public class SubmissionStatusService {
     }
 
     public LocalDate defaultWeekStart() {
-        return WeekUtil.getPreviousWeekMonday(LocalDate.now(clock));
+        return WeekUtil.getCurrentWeekMonday(LocalDate.now(clock));
     }
 
     public void logFilterChanged(LocalDate weekStartDate, Long regionId, String regionName, String status) {

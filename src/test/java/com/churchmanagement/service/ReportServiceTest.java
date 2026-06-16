@@ -88,6 +88,14 @@ class ReportServiceTest {
     }
 
     @Test
+    void annualCollectionReportsDefaultFromDateToCurrentYearStart() {
+        assertEquals(LocalDate.of(2026, 1, 1),
+                service.defaultCriteria(ReportType.CHURCH_ANNUAL_COLLECTION).getDateFrom());
+        assertEquals(LocalDate.of(2026, 1, 1),
+                service.defaultCriteria(ReportType.REGION_ANNUAL_COLLECTION).getDateFrom());
+    }
+
+    @Test
     void monthlyCollectionShowsMonthName() {
         ReportResult<? extends ReportTableRow> result = service.loadReport(criteria(ReportType.REGION_MONTHLY_COLLECTION));
 

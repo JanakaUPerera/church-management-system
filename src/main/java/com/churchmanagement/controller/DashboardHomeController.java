@@ -55,7 +55,9 @@ public class DashboardHomeController {
     private static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("#,##0.##");
     private static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("0.#");
     private static final String[] FALLBACK_CHART_COLORS = {
-            "#f59e0b", "#2563eb", "#16a34a", "#7c3aed", "#dc2626", "#0891b2", "#ca8a04", "#4f46e5"
+            "#f59e0b", "#2563eb", "#16a34a", "#7c3aed", "#dc2626", "#0891b2", "#ca8a04", "#4f46e5",
+            "#ea580c", "#0d9488", "#9333ea", "#65a30d", "#db2777", "#0284c7", "#b45309", "#4338ca",
+            "#be123c", "#15803d", "#c026d3", "#0369a1"
     };
 
     private final DashboardService dashboardService = new DashboardService();
@@ -88,8 +90,10 @@ public class DashboardHomeController {
     @FXML private Label lastBackupStatusLabel;
     @FXML private Label lastBackupTimeLabel;
     @FXML private PieChart submittedPendingPieChart;
+    @FXML private PieChart collectionTypeWeeklyPieChart;
     @FXML private VBox regionSubmissionProgressRowsBox;
     @FXML private BarChart<String, Number> regionWeeklyCollectionChart;
+    @FXML private CategoryAxis regionWeeklyXAxis;
     @FXML private NumberAxis regionWeeklyYAxis;
 
     @FXML private DatePicker trendingDateFromPicker;
@@ -205,9 +209,9 @@ public class DashboardHomeController {
     private void configureFilters() {
         DashboardService.DateRange weeklyRange = dashboardService.defaultWeeklyRange();
         DashboardService.DateRange trendingRange = dashboardService.defaultTrendingRange();
-        DatePickerUtil.enableMondaysOnly(weeklyWeekDatePicker);
-        DatePickerUtil.applySystemDateFormat(trendingDateFromPicker);
-        DatePickerUtil.applySystemDateFormat(trendingDateToPicker);
+        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weeklyWeekDatePicker);
+        DatePickerUtil.disableFutureDates(trendingDateFromPicker);
+        DatePickerUtil.disableFutureDates(trendingDateToPicker);
         weeklyWeekDatePicker.setValue(weeklyRange.dateFrom());
         trendingDateFromPicker.setValue(trendingRange.dateFrom());
         trendingDateToPicker.setValue(trendingRange.dateTo());
@@ -217,7 +221,19 @@ public class DashboardHomeController {
 
     private void configureCharts() {
         submittedPendingPieChart.setLegendVisible(true);
+        submittedPendingPieChart.setAnimated(false);
+        submittedPendingPieChart.setLabelsVisible(false);
+        collectionTypeWeeklyPieChart.setLegendVisible(true);
+        collectionTypeWeeklyPieChart.setAnimated(false);
+        collectionTypeWeeklyPieChart.setLabelsVisible(false);
+        regionWeeklyCollectionChart.setAnimated(false);
         regionWeeklyCollectionChart.setLegendVisible(false);
+        regionWeeklyCollectionChart.setHorizontalGridLinesVisible(true);
+        regionWeeklyCollectionChart.setVerticalGridLinesVisible(true);
+        regionWeeklyXAxis.setAnimated(false);
+        regionWeeklyXAxis.setAutoRanging(false);
+        regionWeeklyXAxis.setTickLabelRotation(90);
+        regionWeeklyYAxis.setAnimated(false);
         totalCollectionTrendChart.setLegendVisible(false);
         collectionTypeTrendChart.setLegendVisible(true);
         churchCollectionTrendChart.setLegendVisible(false);
@@ -373,7 +389,8 @@ public class DashboardHomeController {
             weeklyCollectionAmountsBox.getChildren().clear();
         }
         if (weekly.isChartsVisible()) {
-            setTopPerformanceCard(topWeeklyChurchesBox, "Top 3 Churches", weekly.getTopWeeklyChurchCollections());
+            setTopPerformanceCard(topWeeklyChurchesBox, "Top 3 Churches",
+                    weekly.getTopWeeklyChurchCollections().stream().limit(3).toList());
             setTopPerformanceCard(topWeeklyRegionsBox, "Top 3 Regions", weekly.getTopWeeklyRegionCollections());
         } else {
             topWeeklyChurchesBox.getChildren().clear();
@@ -382,8 +399,11 @@ public class DashboardHomeController {
 
         if (weekly.isChartsVisible()) {
             setPieData(submittedPendingPieChart, "Submitted vs Pending Churches", weekly.getSubmittedVsPendingChart());
+            setPieData(collectionTypeWeeklyPieChart, "Collection Type-wise Weekly Collection",
+                    weekly.getCollectionTypeWeeklyTotals());
             setRegionSubmissionProgress(weekly.getRegionSubmissionProgress());
-            setRegionWeeklyCollectionData(regionWeeklyCollectionChart, weekly.getRegionWiseWeeklyCollection());
+            setBarData(regionWeeklyCollectionChart, "Top 20 Church-wise Weekly Collection",
+                    weekly.getTopWeeklyChurchCollections());
         } else {
             clearWeeklyCharts();
         }
@@ -409,7 +429,7 @@ public class DashboardHomeController {
 
     private void setPieData(PieChart chart, String title, List<ChartDataPointDto> points) {
         chart.setTitle(hasPointData(points) ? title : title + " - No data available");
-        List<ChartDataPointDto> visiblePoints = points.stream()
+        List<ChartDataPointDto> visiblePoints = (points == null ? List.<ChartDataPointDto>of() : points).stream()
                 .filter(point -> point.getValue().compareTo(BigDecimal.ZERO) > 0)
                 .toList();
         BigDecimal total = visiblePoints.stream()
@@ -427,7 +447,28 @@ public class DashboardHomeController {
                         tooltip(displayLabel(point.getLabel()) + ": " + NUMBER_FORMAT.format(point.getValue())
                                 + " (" + percentage(point.getValue(), total) + "%)"));
             }
+            stylePieLegendSymbols(chart, visiblePoints);
         });
+    }
+
+    private void stylePieLegendSymbols(PieChart chart, List<ChartDataPointDto> points) {
+        chart.applyCss();
+        for (Node legendItem : chart.lookupAll(".chart-legend-item")) {
+            if (!(legendItem instanceof Label label)) {
+                continue;
+            }
+            for (int index = 0; index < points.size(); index++) {
+                ChartDataPointDto point = points.get(index);
+                if (!label.getText().startsWith(displayLabel(point.getLabel()))) {
+                    continue;
+                }
+                Node symbol = legendItem.lookup(".chart-legend-item-symbol");
+                if (symbol != null) {
+                    symbol.setStyle("-fx-background-color: " + colorForLabel(point.getLabel(), index) + ";");
+                }
+                break;
+            }
+        }
     }
 
     private void setRegionSubmissionProgress(List<RegionSubmissionProgressDto> progressItems) {
@@ -465,18 +506,30 @@ public class DashboardHomeController {
 
     private void setBarData(BarChart<String, Number> chart, String title, List<ChartDataPointDto> points) {
         chart.setTitle(hasPointData(points) ? title : title + " - No data available");
+        chart.setLegendVisible(false);
+        chart.setHorizontalGridLinesVisible(true);
+        chart.setVerticalGridLinesVisible(true);
         XYChart.Series<String, Number> series = new XYChart.Series<>();
-        List<ChartDataPointDto> visiblePoints = points.stream()
+        series.setName("Weekly Collection");
+        List<ChartDataPointDto> visiblePoints = (points == null ? List.<ChartDataPointDto>of() : points).stream()
                 .filter(point -> point.getValue().compareTo(BigDecimal.ZERO) > 0)
                 .toList();
+        regionWeeklyCollectionChart.getData().clear();
+        regionWeeklyXAxis.setCategories(FXCollections.observableArrayList(visiblePoints.stream()
+                .map(point -> displayLabel(point.getLabel()))
+                .toList()));
         for (int index = 0; index < visiblePoints.size(); index++) {
             ChartDataPointDto point = visiblePoints.get(index);
             XYChart.Data<String, Number> data = new XYChart.Data<>(displayLabel(point.getLabel()), point.getValue());
-            applyDataNodeStyle(data, "-fx-bar-fill: " + colorForLabel(point.getLabel(), index) + ";",
+            applyDataNodeStyle(data, "-fx-bar-fill: " + uniqueBarColor(index) + ";",
                     tooltip(displayLabel(point.getLabel()) + ": Rs. " + MONEY_FORMAT.format(point.getValue())));
             series.getData().add(data);
         }
         chart.getData().setAll(series);
+    }
+
+    private String uniqueBarColor(int index) {
+        return FALLBACK_CHART_COLORS[Math.floorMod(index, FALLBACK_CHART_COLORS.length)];
     }
 
     private void setRegionWeeklyCollectionData(BarChart<String, Number> chart,
@@ -592,6 +645,10 @@ public class DashboardHomeController {
             return;
         }
 
+        BigDecimal maxValue = visiblePoints.stream()
+                .map(ChartDataPointDto::getValue)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
         int rank = 1;
         for (ChartDataPointDto point : visiblePoints) {
             HBox row = new HBox(8);
@@ -604,9 +661,25 @@ public class DashboardHomeController {
             amount.getStyleClass().add("dashboard-performance-amount");
             HBox.setHgrow(name, Priority.ALWAYS);
             row.getChildren().setAll(rankBadge, name, amount);
-            card.getChildren().add(row);
+
+            ProgressBar progressBar = new ProgressBar(progressRatio(point.getValue(), maxValue));
+            progressBar.setMaxWidth(Double.MAX_VALUE);
+            progressBar.getStyleClass().addAll("dashboard-performance-progress",
+                    "dashboard-performance-progress-" + Math.min(rank, 3));
+            Tooltip.install(progressBar, tooltip(displayLabel(point.getLabel()) + "\nRs. " + money(point.getValue())));
+
+            VBox item = new VBox(4, row, progressBar);
+            item.getStyleClass().add("dashboard-performance-item");
+            card.getChildren().add(item);
             rank++;
         }
+    }
+
+    private double progressRatio(BigDecimal value, BigDecimal maxValue) {
+        if (value == null || maxValue == null || maxValue.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        return Math.max(0, Math.min(1, value.doubleValue() / maxValue.doubleValue()));
     }
 
     private void addAmountHeader(GridPane grid, boolean weekCollectionVisible) {
@@ -952,8 +1025,10 @@ public class DashboardHomeController {
 
     private void clearWeeklyCharts() {
         submittedPendingPieChart.getData().clear();
+        collectionTypeWeeklyPieChart.getData().clear();
         regionSubmissionProgressRowsBox.getChildren().clear();
         regionWeeklyCollectionChart.getData().clear();
+        regionWeeklyXAxis.getCategories().clear();
     }
 
     private void clearTrendingCharts() {

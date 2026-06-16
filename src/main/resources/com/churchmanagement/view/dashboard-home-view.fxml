@@ -64,13 +64,13 @@
                                 <Label styleClass="dashboard-card-label" text="Late Submissions"/>
                                 <Label fx:id="lateSubmissionsLabel" styleClass="dashboard-card-value" text="0"/>
                             </VBox>
-                            <VBox fx:id="todaysReceiptsSummaryBox" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
-                                <Label styleClass="dashboard-card-label" text="Today's Receipts Total"/>
-                                <Label fx:id="todaysReceiptsTotalLabel" styleClass="dashboard-card-value-small" text="Rs. 0.00"/>
-                            </VBox>
                             <VBox fx:id="weeklySmsCard" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
                                 <Label styleClass="dashboard-card-label" text="SMS Failed Count"/>
                                 <Label fx:id="smsFailedCountLabel" styleClass="dashboard-card-value" text="0"/>
+                            </VBox>
+                            <VBox fx:id="todaysReceiptsSummaryBox" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
+                                <Label styleClass="dashboard-card-label" text="Today's Receipts Total"/>
+                                <Label fx:id="todaysReceiptsTotalLabel" styleClass="dashboard-card-value-small" text="Rs. 0.00"/>
                             </VBox>
                             <VBox fx:id="weeklyBackupCard" maxWidth="Infinity" styleClass="dashboard-summary-card" HBox.hgrow="ALWAYS">
                                 <Label styleClass="dashboard-card-label" text="Last Backup Status"/>
@@ -105,17 +105,18 @@
                         <VBox fx:id="weeklyChartsSection" spacing="12" VBox.vgrow="ALWAYS">
                             <GridPane hgap="12" vgap="12">
                                 <columnConstraints>
-                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
-                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.34"/>
                                 </columnConstraints>
                                 <rowConstraints>
                                     <RowConstraints vgrow="ALWAYS"/>
                                     <RowConstraints vgrow="ALWAYS"/>
                                 </rowConstraints>
-                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                    <PieChart fx:id="submittedPendingPieChart" prefHeight="300" VBox.vgrow="ALWAYS"/>
+                                <VBox minHeight="380" styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <PieChart fx:id="submittedPendingPieChart" minHeight="350" prefHeight="380" VBox.vgrow="ALWAYS"/>
                                 </VBox>
-                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <VBox minHeight="380" styleClass="dashboard-chart-card" GridPane.columnIndex="1" GridPane.rowIndex="0">
                                     <VBox spacing="8" styleClass="dashboard-progress-panel" VBox.vgrow="ALWAYS">
                                         <Label styleClass="dashboard-progress-title" text="Region-wise Submitted Churches"/>
                                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-progress-scroll-pane" VBox.vgrow="ALWAYS">
@@ -125,10 +126,13 @@
                                         </ScrollPane>
                                     </VBox>
                                 </VBox>
-                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
-                                    <BarChart fx:id="regionWeeklyCollectionChart" prefHeight="300" VBox.vgrow="ALWAYS">
+                                <VBox minHeight="380" styleClass="dashboard-chart-card" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                    <PieChart fx:id="collectionTypeWeeklyPieChart" minHeight="350" prefHeight="380" VBox.vgrow="ALWAYS"/>
+                                </VBox>
+                                <VBox styleClass="dashboard-chart-card" GridPane.columnIndex="0" GridPane.columnSpan="3" GridPane.rowIndex="1">
+                                    <BarChart fx:id="regionWeeklyCollectionChart" prefHeight="340" VBox.vgrow="ALWAYS">
                                         <xAxis>
-                                            <CategoryAxis/>
+                                            <CategoryAxis fx:id="regionWeeklyXAxis"/>
                                         </xAxis>
                                         <yAxis>
                                             <NumberAxis fx:id="regionWeeklyYAxis"/>

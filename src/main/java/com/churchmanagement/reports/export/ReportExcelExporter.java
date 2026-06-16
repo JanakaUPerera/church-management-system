@@ -3,6 +3,7 @@ package com.churchmanagement.reports.export;
 import com.churchmanagement.dto.report.ReportSummaryTotals;
 import com.churchmanagement.dto.report.ReportTableRow;
 import com.churchmanagement.dto.report.ReportType;
+import com.churchmanagement.util.SystemDateTimeFormatter;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -31,6 +32,9 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
@@ -50,10 +54,11 @@ public class ReportExcelExporter {
             ReportType.CHURCH_MONTHLY_COLLECTION,
             ReportType.REGION_MONTHLY_COLLECTION
     );
+    private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
 
     public <T extends ReportTableRow> Path export(ReportType reportType, List<T> rows, ReportSummaryTotals totals) {
         try {
-            Path folder = Path.of("./reports");
+            Path folder = ReportExportLocationResolver.exportFolder();
             Files.createDirectories(folder);
             Path output = folder.resolve(reportType.name().toLowerCase() + "-" + System.currentTimeMillis() + ".xlsx");
             try (XSSFWorkbook workbook = new XSSFWorkbook(); OutputStream stream = Files.newOutputStream(output)) {
@@ -175,7 +180,7 @@ public class ReportExcelExporter {
             case "Offertory" -> totals.getOffertoryTotal();
             case "Tithes" -> totals.getTithesTotal();
             case "Other Donations" -> totals.getOtherDonationsTotal();
-            case "Grand Total" -> totals.getGrandTotal();
+            case "Grand Total", "Total Collections" -> totals.getGrandTotal();
             default -> null;
         };
     }
@@ -187,6 +192,12 @@ public class ReportExcelExporter {
             cell.setCellValue(amount.doubleValue());
         } else if (value instanceof Number number) {
             cell.setCellValue(number.doubleValue());
+        } else if (value instanceof LocalDateTime dateTime) {
+            cell.setCellValue(dateTimeFormatter.formatDateTime(dateTime));
+        } else if (value instanceof LocalDate date) {
+            cell.setCellValue(dateTimeFormatter.formatDate(date));
+        } else if (value instanceof LocalTime time) {
+            cell.setCellValue(dateTimeFormatter.formatTime(time));
         } else {
             cell.setCellValue(value.toString());
         }

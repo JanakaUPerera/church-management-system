@@ -15,6 +15,7 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class ReportService {
@@ -47,7 +48,7 @@ public class ReportService {
         AuthenticatedUser user = requireCurrentUser();
         requirePermission(user, "report.view", "You do not have permission to view reports.");
         ReportSearchCriteria safeCriteria = normalizeAndValidate(criteria);
-        List<? extends ReportTableRow> rows = rowsFor(safeCriteria);
+        List<? extends ReportTableRow> rows = collectionColumnFilteredRows(safeCriteria, rowsFor(safeCriteria));
         ReportResult<ReportTableRow> result = new ReportResult<>();
         result.setReportType(safeCriteria.getReportType());
         result.setRows((List<ReportTableRow>) rows);
@@ -100,19 +101,27 @@ public class ReportService {
 
     public ReportSearchCriteria defaultCriteria(ReportType reportType) {
         ReportSearchCriteria criteria = new ReportSearchCriteria();
-        criteria.setReportType(reportType == null ? ReportType.WEEKLY_CHURCH_COLLECTION : reportType);
+        ReportType selectedType = reportType == null ? ReportType.WEEKLY_CHURCH_COLLECTION : reportType;
+        criteria.setReportType(selectedType);
         LocalDate today = LocalDate.now(clock);
-        criteria.setDateFrom(today.withDayOfMonth(1));
+        criteria.setDateFrom(isAnnualCollectionReport(selectedType)
+                ? LocalDate.of(today.getYear(), 1, 1)
+                : today.withDayOfMonth(1));
         criteria.setDateTo(today);
-        criteria.setWeekStartDate(today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+        criteria.setWeekStartDate(WeekUtil.getCurrentWeekMonday(today));
         return criteria;
+    }
+
+    private boolean isAnnualCollectionReport(ReportType reportType) {
+        return reportType == ReportType.CHURCH_ANNUAL_COLLECTION
+                || reportType == ReportType.REGION_ANNUAL_COLLECTION;
     }
 
     public DateRange quickRange(String quickFilter) {
         LocalDate today = LocalDate.now(clock);
         return switch (quickFilter) {
             case "This Week" -> {
-                LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate monday = WeekUtil.getCurrentWeekMonday(today);
                 yield new DateRange(monday, monday.plusDays(6));
             }
             case "Previous Week" -> {
@@ -131,7 +140,7 @@ public class ReportService {
     private ReportResult<? extends ReportTableRow> loadReportWithUser(ReportSearchCriteria criteria, AuthenticatedUser user) {
         requirePermission(user, "report.view", "You do not have permission to view reports.");
         ReportSearchCriteria safeCriteria = normalizeAndValidate(criteria);
-        List<? extends ReportTableRow> rows = rowsFor(safeCriteria);
+        List<? extends ReportTableRow> rows = collectionColumnFilteredRows(safeCriteria, rowsFor(safeCriteria));
         ReportResult<ReportTableRow> result = new ReportResult<>();
         result.setReportType(safeCriteria.getReportType());
         result.setRows((List<ReportTableRow>) rows);
@@ -158,6 +167,44 @@ public class ReportService {
             case USER_ACTIVITY -> reportRepository.getUserActivityReport(criteria);
             case BACKUP_RESTORE_HISTORY -> reportRepository.getBackupRestoreHistoryReport(criteria);
         };
+    }
+
+    private List<ReportTableRow> collectionColumnFilteredRows(ReportSearchCriteria criteria,
+                                                              List<? extends ReportTableRow> rows) {
+        if (!supportsCollectionColumnSelection(criteria.getReportType())) {
+            return (List<ReportTableRow>) rows;
+        }
+        return rows.stream()
+                .map(row -> (ReportTableRow) new CollectionColumnFilteredReportRow(row,
+                        criteria.isOffertoryColumnSelected(),
+                        criteria.isTithesColumnSelected(),
+                        criteria.isOtherDonationsColumnSelected(),
+                        shouldShowGrandTotalColumn(criteria)))
+                .toList();
+    }
+
+    private boolean shouldShowGrandTotalColumn(ReportSearchCriteria criteria) {
+        return criteria.isGrandTotalColumnSelected()
+                || noCollectionTypeColumnSelected(criteria);
+    }
+
+    private boolean noCollectionTypeColumnSelected(ReportSearchCriteria criteria) {
+        return !criteria.isOffertoryColumnSelected()
+                && !criteria.isTithesColumnSelected()
+                && !criteria.isOtherDonationsColumnSelected();
+    }
+
+    private boolean supportsCollectionColumnSelection(ReportType reportType) {
+        return reportType == ReportType.WEEKLY_CHURCH_COLLECTION
+                || reportType == ReportType.WEEKLY_REGION_SUMMARY
+                || reportType == ReportType.SUBMISSION_STATUS
+                || reportType == ReportType.LATE_SUBMISSION
+                || reportType == ReportType.CHURCH_ANNUAL_COLLECTION
+                || reportType == ReportType.REGION_ANNUAL_COLLECTION
+                || reportType == ReportType.CHURCH_MONTHLY_COLLECTION
+                || reportType == ReportType.REGION_MONTHLY_COLLECTION
+                || reportType == ReportType.CHURCH_PROGRESS
+                || reportType == ReportType.REGION_PROGRESS;
     }
 
     private ReportSearchCriteria normalizeAndValidate(ReportSearchCriteria criteria) {
@@ -217,6 +264,10 @@ public class ReportService {
         copy.setReportType(source.getReportType());
         copy.setOffset(source.getOffset());
         copy.setLimit(source.getLimit());
+        copy.setOffertoryColumnSelected(source.isOffertoryColumnSelected());
+        copy.setTithesColumnSelected(source.isTithesColumnSelected());
+        copy.setOtherDonationsColumnSelected(source.isOtherDonationsColumnSelected());
+        copy.setGrandTotalColumnSelected(source.isGrandTotalColumnSelected());
         return copy;
     }
 
@@ -239,7 +290,45 @@ public class ReportService {
                 + ", church_id=" + criteria.getChurchId()
                 + ", status=" + criteria.getStatus()
                 + ", receipt_no=" + criteria.getReceiptNo()
-                + ", user_id=" + criteria.getUserId();
+                + ", user_id=" + criteria.getUserId()
+                + ", collection_columns="
+                + (criteria.isOffertoryColumnSelected() ? "offertory;" : "")
+                + (criteria.isTithesColumnSelected() ? "tithes;" : "")
+                + (criteria.isOtherDonationsColumnSelected() ? "other_donations;" : "")
+                + (criteria.isGrandTotalColumnSelected() ? "grand_total;" : "");
+    }
+
+    private record CollectionColumnFilteredReportRow(ReportTableRow delegate, boolean showOffertory,
+                                                     boolean showTithes, boolean showOtherDonations,
+                                                     boolean showGrandTotal)
+            implements ReportTableRow {
+        @Override
+        public LinkedHashMap<String, Object> columns() {
+            LinkedHashMap<String, Object> visible = new LinkedHashMap<>();
+            delegate.columns().forEach((header, value) -> {
+                if (isHiddenCollectionColumn(header)) {
+                    return;
+                }
+                visible.put(header, value);
+            });
+            return visible;
+        }
+
+        @Override
+        public Long detailId() {
+            return delegate.detailId();
+        }
+
+        private boolean isHiddenCollectionColumn(String header) {
+            return ("Offertory".equals(header) && !showOffertory)
+                    || ("Tithes".equals(header) && !showTithes)
+                    || ("Other Donations".equals(header) && !showOtherDonations)
+                    || (isTotalColumn(header) && !showGrandTotal);
+        }
+
+        private boolean isTotalColumn(String header) {
+            return "Grand Total".equals(header) || "Total Collections".equals(header);
+        }
     }
 
     public record DateRange(LocalDate dateFrom, LocalDate dateTo) {

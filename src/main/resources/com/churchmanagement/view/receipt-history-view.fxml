@@ -33,10 +33,10 @@
             <ColumnConstraints hgrow="ALWAYS" minWidth="90" prefWidth="110"/>
         </columnConstraints>
 
-        <Label text="Church" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <ComboBox fx:id="churchComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-        <Label text="Region" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-        <ComboBox fx:id="regionComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+        <Label text="Region" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="regionComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Church" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="churchComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
         <Label text="Week" GridPane.columnIndex="4" GridPane.rowIndex="0"/>
         <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="0"/>
 

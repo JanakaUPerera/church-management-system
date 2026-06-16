@@ -2,9 +2,9 @@
 <fontFamilies>
     <fontFamily name="Noto Sans">
         <normal>fonts/NotoSans-Regular.ttf</normal>
-        <bold>fonts/NotoSans-Regular.ttf</bold>
+        <bold>fonts/NotoSans-Bold.ttf</bold>
         <italic>fonts/NotoSans-Regular.ttf</italic>
-        <boldItalic>fonts/NotoSans-Regular.ttf</boldItalic>
+        <boldItalic>fonts/NotoSans-Bold.ttf</boldItalic>
         <pdfEncoding>Identity-H</pdfEncoding>
         <pdfEmbedded>true</pdfEmbedded>
     </fontFamily>

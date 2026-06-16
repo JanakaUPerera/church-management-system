@@ -105,7 +105,7 @@ public class DashboardService {
     }
 
     public DateRange defaultWeeklyRange() {
-        LocalDate weekStart = WeekUtil.getPreviousWeekMonday(LocalDate.now(clock));
+        LocalDate weekStart = WeekUtil.getCurrentWeekMonday(LocalDate.now(clock));
         return new DateRange(weekStart, WeekUtil.getSundayForMonday(weekStart));
     }
 
