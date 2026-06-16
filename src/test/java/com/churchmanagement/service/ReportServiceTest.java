@@ -8,6 +8,7 @@ import com.churchmanagement.reports.export.ReportPdfExporter;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFChart;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,8 +62,32 @@ class ReportServiceTest {
     void submissionStatusIncludesMissingChurches() {
         ReportResult<? extends ReportTableRow> result = service.loadReport(criteria(ReportType.SUBMISSION_STATUS));
 
-        assertEquals(2, result.getRows().size());
+        assertEquals(3, result.getRows().size());
         assertTrue(result.getRows().stream().anyMatch(row -> "MISSING".equals(row.columns().get("Status"))));
+    }
+
+    @Test
+    void submissionStatusLateFilterShowsOnlyLateSubmissions() {
+        ReportSearchCriteria criteria = criteria(ReportType.SUBMISSION_STATUS);
+        criteria.setStatus("LATE");
+
+        ReportResult<? extends ReportTableRow> result = service.loadReport(criteria);
+
+        assertEquals(1, result.getRows().size());
+        assertEquals("SUBMITTED", result.getRows().getFirst().columns().get("Status"));
+        assertEquals("Yes", result.getRows().getFirst().columns().get("Late Submission"));
+    }
+
+    @Test
+    void submissionStatusOnTimeFilterShowsOnlyOnTimeSubmissions() {
+        ReportSearchCriteria criteria = criteria(ReportType.SUBMISSION_STATUS);
+        criteria.setStatus("ON_TIME");
+
+        ReportResult<? extends ReportTableRow> result = service.loadReport(criteria);
+
+        assertEquals(1, result.getRows().size());
+        assertEquals("SUBMITTED", result.getRows().getFirst().columns().get("Status"));
+        assertEquals("No", result.getRows().getFirst().columns().get("Late Submission"));
     }
 
     @Test
@@ -111,6 +136,54 @@ class ReportServiceTest {
     }
 
     @Test
+    void exportWeeklyRegionPdfCreatesFile() {
+        Path pdf = service.exportPdf(criteria(ReportType.WEEKLY_REGION_SUMMARY));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(pdf.toString().endsWith(".pdf"));
+    }
+
+    @Test
+    void exportSubmissionStatusPdfCreatesFileWithChart() {
+        Path pdf = service.exportPdf(criteria(ReportType.SUBMISSION_STATUS));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(pdf.toString().endsWith(".pdf"));
+    }
+
+    @Test
+    void exportChurchAnnualPdfCreatesFileWithCharts() {
+        Path pdf = service.exportPdf(criteria(ReportType.CHURCH_ANNUAL_COLLECTION));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(pdf.toString().endsWith(".pdf"));
+    }
+
+    @Test
+    void exportRegionAnnualPdfCreatesFileWithCharts() {
+        Path pdf = service.exportPdf(criteria(ReportType.REGION_ANNUAL_COLLECTION));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(pdf.toString().endsWith(".pdf"));
+    }
+
+    @Test
+    void exportChurchMonthlyPdfCreatesFileWithCharts() {
+        Path pdf = service.exportPdf(criteria(ReportType.CHURCH_MONTHLY_COLLECTION));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(pdf.toString().endsWith(".pdf"));
+    }
+
+    @Test
+    void exportRegionMonthlyPdfCreatesFileWithCharts() {
+        Path pdf = service.exportPdf(criteria(ReportType.REGION_MONTHLY_COLLECTION));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(pdf.toString().endsWith(".pdf"));
+    }
+
+    @Test
     void exportExcelCreatesFile() {
         Path excel = service.exportExcel(criteria(ReportType.WEEKLY_CHURCH_COLLECTION));
 
@@ -124,8 +197,191 @@ class ReportServiceTest {
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
             assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(2, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart barChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(0);
+            XSSFChart pieChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(1);
+            assertTrue(barChart.getCTChart().isSetLegend());
+            assertTrue(barChart.getCTChart().getPlotArea().getValAxArray(0).isSetMajorGridlines());
+            assertEquals(20, barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertTrue(barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0)
+                    .getDPtArray(0).getSpPr().isSetSolidFill());
+            assertFalse(barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0)
+                    .getDPtArray(0).getSpPr().isSetGradFill());
+            assertTrue(pieChart.getCTChart().isSetLegend());
+            assertEquals(3, pieChart.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertTrue(pieChart.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0)
+                    .getDPtArray(0).getSpPr().isSetSolidFill());
+            assertTrue(pieChart.getCTChart().getPlotArea().getPieChartArray(0).isSetDLbls());
+            assertEquals("Top 20 Churches", workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals("Church 25", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Church 06", workbook.getSheet("Charts").getRow(21).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (All Churches)",
+                    workbook.getSheet("Charts").getRow(26).getCell(0).getStringCellValue());
+            assertEquals("Pie chart uses all churches in this report,\nnot only the Top 20.",
+                    workbook.getSheet("Charts").getRow(27).getCell(0).getStringCellValue());
+            assertTrue(workbook.getSheet("Charts").getRow(27).getCell(0).getCellStyle().getWrapText());
+            assertEquals("Offertory", workbook.getSheet("Charts").getRow(29).getCell(0).getStringCellValue());
+            assertEquals(325.00, workbook.getSheet("Charts").getRow(29).getCell(1).getNumericCellValue());
+            assertNull(workbook.getSheet("Charts").getRow(22));
         }
     }
+
+    @Test
+    void excelExportCreatesRegionChartSheetWithCollectionTypePie() throws Exception {
+        Path excel = service.exportExcel(criteria(ReportType.WEEKLY_REGION_SUMMARY));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
+            assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(2, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart barChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(0);
+            XSSFChart pieChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(1);
+            assertEquals(20, barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertEquals(3, pieChart.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertTrue(pieChart.getCTChart().getPlotArea().getPieChartArray(0).isSetDLbls());
+            assertEquals("Top 20 Regions", workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals("Region 25", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (All Regions)",
+                    workbook.getSheet("Charts").getRow(26).getCell(0).getStringCellValue());
+            assertEquals("Pie chart uses all regions in this report,\nnot only the Top 20.",
+                    workbook.getSheet("Charts").getRow(27).getCell(0).getStringCellValue());
+            assertEquals("Offertory", workbook.getSheet("Charts").getRow(29).getCell(0).getStringCellValue());
+            assertEquals(325.00, workbook.getSheet("Charts").getRow(29).getCell(1).getNumericCellValue());
+        }
+    }
+
+    @Test
+    void excelExportCreatesSubmissionStatusPieChart() throws Exception {
+        Path excel = service.exportExcel(criteria(ReportType.SUBMISSION_STATUS));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
+            assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(1, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart pieChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().getFirst();
+            assertEquals(2, pieChart.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertTrue(pieChart.getCTChart().getPlotArea().getPieChartArray(0).isSetDLbls());
+            assertEquals("Submission Status Breakdown",
+                    workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals("Pie chart shows churches grouped by submission status.",
+                    workbook.getSheet("Charts").getRow(1).getCell(0).getStringCellValue());
+            assertEquals("Status", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Church Count", workbook.getSheet("Charts").getRow(2).getCell(1).getStringCellValue());
+        }
+    }
+
+    @Test
+    void excelExportCreatesAnnualChurchGroupedBarAndYearPies() throws Exception {
+        Path excel = service.exportExcel(criteria(ReportType.CHURCH_ANNUAL_COLLECTION));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
+            assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(4, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart barChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(0);
+            XSSFChart typeBarChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(1);
+            XSSFChart firstPie = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(2);
+            assertEquals(2, barChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertTrue(barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0).isSetSpPr());
+            assertEquals(3, typeBarChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertEquals(3, firstPie.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertEquals("Top 20 Churches", workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals(2025.0, workbook.getSheet("Charts").getRow(1).getCell(1).getNumericCellValue());
+            assertEquals(2026.0, workbook.getSheet("Charts").getRow(1).getCell(2).getNumericCellValue());
+            assertEquals("Church 25", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Collection Types by Year (All Churches)",
+                    workbook.getSheet("Charts").getRow(28).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (2026)",
+                    workbook.getSheet("Charts").getRow(52).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (2025)",
+                    workbook.getSheet("Charts").getRow(72).getCell(0).getStringCellValue());
+        }
+    }
+
+    @Test
+    void excelExportCreatesAnnualRegionGroupedBarAndYearPies() throws Exception {
+        Path excel = service.exportExcel(criteria(ReportType.REGION_ANNUAL_COLLECTION));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
+            assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(4, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart barChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(0);
+            XSSFChart typeBarChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(1);
+            XSSFChart firstPie = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(2);
+            assertEquals(2, barChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertTrue(barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0).isSetSpPr());
+            assertEquals(3, typeBarChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertEquals(3, firstPie.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertEquals("Top 20 Regions", workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals(2025.0, workbook.getSheet("Charts").getRow(1).getCell(1).getNumericCellValue());
+            assertEquals(2026.0, workbook.getSheet("Charts").getRow(1).getCell(2).getNumericCellValue());
+            assertEquals("Region 25", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Collection Types by Year (All Regions)",
+                    workbook.getSheet("Charts").getRow(28).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (2026)",
+                    workbook.getSheet("Charts").getRow(52).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (2025)",
+                    workbook.getSheet("Charts").getRow(72).getCell(0).getStringCellValue());
+        }
+    }
+
+    @Test
+    void excelExportCreatesMonthlyChurchGroupedBarAndMonthPies() throws Exception {
+        Path excel = service.exportExcel(criteria(ReportType.CHURCH_MONTHLY_COLLECTION));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
+            assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(5, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart barChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(0);
+            XSSFChart typeBarChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(1);
+            XSSFChart firstPie = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(2);
+            assertEquals(3, barChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertTrue(barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0).isSetSpPr());
+            assertEquals(3, typeBarChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertEquals(3, firstPie.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertEquals("Top 20 Churches", workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals("June 2025", workbook.getSheet("Charts").getRow(1).getCell(1).getStringCellValue());
+            assertEquals("January 2026", workbook.getSheet("Charts").getRow(1).getCell(2).getStringCellValue());
+            assertEquals("February 2026", workbook.getSheet("Charts").getRow(1).getCell(3).getStringCellValue());
+            assertEquals("Church 25", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Collection Types by Month (All Churches)",
+                    workbook.getSheet("Charts").getRow(28).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (February 2026)",
+                    workbook.getSheet("Charts").getRow(52).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (January 2026)",
+                    workbook.getSheet("Charts").getRow(72).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (June 2025)",
+                    workbook.getSheet("Charts").getRow(92).getCell(0).getStringCellValue());
+        }
+    }
+
+    @Test
+    void excelExportCreatesMonthlyRegionGroupedBarAndMonthPies() throws Exception {
+        Path excel = service.exportExcel(criteria(ReportType.REGION_MONTHLY_COLLECTION));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(Files.newInputStream(excel))) {
+            assertNotNull(workbook.getSheet("Charts"));
+            assertEquals(5, workbook.getSheet("Charts").getDrawingPatriarch().getCharts().size());
+            XSSFChart barChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(0);
+            XSSFChart typeBarChart = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(1);
+            XSSFChart firstPie = workbook.getSheet("Charts").getDrawingPatriarch().getCharts().get(2);
+            assertEquals(3, barChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertTrue(barChart.getCTChart().getPlotArea().getBarChartArray(0).getSerArray(0).isSetSpPr());
+            assertEquals(3, typeBarChart.getCTChart().getPlotArea().getBarChartArray(0).sizeOfSerArray());
+            assertEquals(3, firstPie.getCTChart().getPlotArea().getPieChartArray(0).getSerArray(0).sizeOfDPtArray());
+            assertEquals("Top 20 Regions", workbook.getSheet("Charts").getRow(0).getCell(0).getStringCellValue());
+            assertEquals("June 2025", workbook.getSheet("Charts").getRow(1).getCell(1).getStringCellValue());
+            assertEquals("January 2026", workbook.getSheet("Charts").getRow(1).getCell(2).getStringCellValue());
+            assertEquals("February 2026", workbook.getSheet("Charts").getRow(1).getCell(3).getStringCellValue());
+            assertEquals("Region 25", workbook.getSheet("Charts").getRow(2).getCell(0).getStringCellValue());
+            assertEquals("Collection Types by Month (All Regions)",
+                    workbook.getSheet("Charts").getRow(28).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (February 2026)",
+                    workbook.getSheet("Charts").getRow(52).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (January 2026)",
+                    workbook.getSheet("Charts").getRow(72).getCell(0).getStringCellValue());
+            assertEquals("Collection Type-wise (June 2025)",
+                    workbook.getSheet("Charts").getRow(92).getCell(0).getStringCellValue());
+        }
+    }
+
 
     @Test
     void excelExportSkipsChartSheetForLateSubmissionReport() throws Exception {
@@ -249,18 +505,45 @@ class ReportServiceTest {
         @Override
         public List<WeeklyChurchCollectionReportDto> getWeeklyChurchCollectionReport(ReportSearchCriteria criteria) {
             lastCriteria = criteria;
-            WeeklyChurchCollectionReportDto row = new WeeklyChurchCollectionReportDto();
-            row.setReceiptId(10L);
-            row.setRegionName("North");
-            row.setChurchCode("CH001");
-            row.setChurchName("Main Church");
-            row.setWeekStartDate(criteria.getWeekStartDate());
-            row.setReceiptNo("R-1");
-            row.setOffertoryTotal(new BigDecimal("100.00"));
-            row.setTithesTotal(new BigDecimal("25.00"));
-            row.setOtherDonationsTotal(new BigDecimal("15.00"));
-            row.setGrandTotal(new BigDecimal("140.00"));
-            return List.of(row);
+            return java.util.stream.IntStream.rangeClosed(1, 25)
+                    .mapToObj(index -> {
+                        WeeklyChurchCollectionReportDto row = new WeeklyChurchCollectionReportDto();
+                        row.setReceiptId((long) index);
+                        row.setRegionName("North");
+                        row.setChurchCode("CH%03d".formatted(index));
+                        row.setChurchName("Church %02d".formatted(index));
+                        row.setWeekStartDate(criteria.getWeekStartDate());
+                        row.setReceiptNo("R-" + index);
+                        row.setOffertoryTotal(new BigDecimal(index + ".00"));
+                        row.setTithesTotal(new BigDecimal("2.00"));
+                        row.setOtherDonationsTotal(new BigDecimal("3.00"));
+                        row.setGrandTotal(new BigDecimal(index + 5 + ".00"));
+                        return row;
+                    })
+                    .toList();
+        }
+
+        @Override
+        public List<WeeklyRegionSummaryReportDto> getWeeklyRegionSummaryReport(ReportSearchCriteria criteria) {
+            lastCriteria = criteria;
+            return java.util.stream.IntStream.rangeClosed(1, 25)
+                    .mapToObj(index -> {
+                        WeeklyRegionSummaryReportDto row = new WeeklyRegionSummaryReportDto();
+                        row.setRegionId((long) index);
+                        row.setRegionCode("RG%03d".formatted(index));
+                        row.setRegionName("Region %02d".formatted(index));
+                        row.setWeekStartDate(criteria.getWeekStartDate());
+                        row.setTotalChurches(10);
+                        row.setSubmittedChurches(8);
+                        row.setMissingChurches(2);
+                        row.setLateSubmissions(1);
+                        row.setOffertoryTotal(new BigDecimal(index + ".00"));
+                        row.setTithesTotal(new BigDecimal("2.00"));
+                        row.setOtherDonationsTotal(new BigDecimal("3.00"));
+                        row.setGrandTotal(new BigDecimal(index + 5 + ".00"));
+                        return row;
+                    })
+                    .toList();
         }
 
         @Override
@@ -280,6 +563,51 @@ class ReportServiceTest {
         public List<CollectionReportDto> getCollectionReport(ReportSearchCriteria criteria, boolean churchWise,
                                                              boolean monthly) {
             lastCriteria = criteria;
+            if (monthly) {
+                List<int[]> months = List.of(new int[]{2025, 6}, new int[]{2026, 1}, new int[]{2026, 2});
+                return java.util.stream.IntStream.rangeClosed(1, 25)
+                        .boxed()
+                        .flatMap(index -> months.stream().map(period -> {
+                            CollectionReportDto row = new CollectionReportDto();
+                            row.setChurchWise(churchWise);
+                            row.setMonthly(true);
+                            row.setYear(period[0]);
+                            row.setMonth(period[1]);
+                            row.setRegionName("Region %02d".formatted(index));
+                            row.setChurchName("Church %02d".formatted(index));
+                            long offset = switch (period[1]) {
+                                case 6 -> 0L;
+                                case 1 -> 100L;
+                                default -> 200L;
+                            };
+                            BigDecimal base = BigDecimal.valueOf(index + offset);
+                            row.setOffertoryTotal(base);
+                            row.setTithesTotal(new BigDecimal("2.00"));
+                            row.setOtherDonationsTotal(new BigDecimal("3.00"));
+                            row.setGrandTotal(base.add(new BigDecimal("5.00")));
+                            return row;
+                        }))
+                        .toList();
+            }
+            if (!monthly) {
+                return java.util.stream.IntStream.rangeClosed(1, 25)
+                        .boxed()
+                        .flatMap(index -> java.util.stream.Stream.of(2025, 2026).map(year -> {
+                            CollectionReportDto row = new CollectionReportDto();
+                            row.setChurchWise(churchWise);
+                            row.setMonthly(false);
+                            row.setYear(year);
+                            row.setRegionName("Region %02d".formatted(index));
+                            row.setChurchName("Church %02d".formatted(index));
+                            BigDecimal base = BigDecimal.valueOf(index + (year == 2026 ? 100L : 0L));
+                            row.setOffertoryTotal(base);
+                            row.setTithesTotal(new BigDecimal("2.00"));
+                            row.setOtherDonationsTotal(new BigDecimal("3.00"));
+                            row.setGrandTotal(base.add(new BigDecimal("5.00")));
+                            return row;
+                        }))
+                        .toList();
+            }
             CollectionReportDto row = new CollectionReportDto();
             row.setChurchWise(churchWise);
             row.setMonthly(monthly);
@@ -305,6 +633,17 @@ class ReportServiceTest {
             submitted.setLateSubmission(true);
             submitted.setGrandTotal(new BigDecimal("140.00"));
 
+            SubmissionStatusReportDto onTime = new SubmissionStatusReportDto();
+            onTime.setReceiptId(6L);
+            onTime.setRegionName("North");
+            onTime.setChurchCode("CH006");
+            onTime.setChurchName("On Time Church");
+            onTime.setWeekStartDate(criteria.getWeekStartDate());
+            onTime.setStatus("SUBMITTED");
+            onTime.setReceiptNo("R-6");
+            onTime.setLateSubmission(false);
+            onTime.setGrandTotal(new BigDecimal("120.00"));
+
             SubmissionStatusReportDto missing = new SubmissionStatusReportDto();
             missing.setRegionName("North");
             missing.setChurchCode("CH005");
@@ -313,7 +652,23 @@ class ReportServiceTest {
             missing.setStatus("MISSING");
             missing.setLateSubmission(false);
 
-            return List.of(submitted, missing);
+            List<SubmissionStatusReportDto> rows = List.of(submitted, onTime, missing);
+            if ("SUBMITTED".equalsIgnoreCase(criteria.getStatus())) {
+                return rows.stream().filter(row -> "SUBMITTED".equals(row.columns().get("Status"))).toList();
+            }
+            if ("MISSING".equalsIgnoreCase(criteria.getStatus())) {
+                return rows.stream().filter(row -> "MISSING".equals(row.columns().get("Status"))).toList();
+            }
+            if ("LATE".equalsIgnoreCase(criteria.getStatus()) || "LATE_SUBMISSION".equalsIgnoreCase(criteria.getStatus())) {
+                return rows.stream().filter(SubmissionStatusReportDto::isLateSubmission).toList();
+            }
+            if ("ON_TIME".equalsIgnoreCase(criteria.getStatus())) {
+                return rows.stream()
+                        .filter(row -> "SUBMITTED".equals(row.columns().get("Status")))
+                        .filter(row -> !row.isLateSubmission())
+                        .toList();
+            }
+            return rows;
         }
 
         @Override

@@ -257,9 +257,7 @@ public class ReportsController {
         DatePickerUtil.disableFutureDates(dateFromPicker);
         DatePickerUtil.disableFutureDates(dateToPicker);
         DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weekStartDatePicker);
-        statusComboBox.setItems(FXCollections.observableArrayList(ALL, "SUBMITTED", "MISSING", "PRINTED", "UNPRINTED",
-                "SENT", "FAILED", "DELIVERED", "SUCCESS"));
-        statusComboBox.setValue(ALL);
+        updateStatusOptions(ReportType.WEEKLY_CHURCH_COLLECTION);
         quickDateComboBox.setItems(FXCollections.observableArrayList("This Week", "Previous Week", "This Month", "Quarter", "Year"));
         quickDateComboBox.setValue("This Month");
         regionComboBox.setItems(regions);
@@ -411,7 +409,7 @@ public class ReportsController {
             TableColumn<ReportTableRow, Object> column = new TableColumn<>(header);
             column.setCellValueFactory(cell -> new SimpleObjectProperty<>(
                     displayValue(valueAtColumn(cell.getValue(), columnIndex))));
-            if (isAmountColumn(header)) {
+            if (isRightAlignedColumn(header)) {
                 column.setCellFactory(ignored -> rightAlignedCell());
             }
             double preferredWidth = preferredColumnWidth(header, columnIndex, rows);
@@ -436,7 +434,7 @@ public class ReportsController {
         };
     }
 
-    private boolean isAmountColumn(String header) {
+    private boolean isRightAlignedColumn(String header) {
         if (header == null) {
             return false;
         }
@@ -446,7 +444,13 @@ public class ReportsController {
                 || normalized.contains("collection")
                 || normalized.contains("offertory")
                 || normalized.contains("tithes")
-                || normalized.contains("donation");
+                || normalized.contains("donation")
+                || normalized.equals("submitted")
+                || normalized.equals("missing")
+                || normalized.equals("late")
+                || normalized.endsWith(" count")
+                || normalized.endsWith(" churches")
+                || normalized.endsWith(" weeks");
     }
 
     private double preferredColumnWidth(String header, int columnIndex, List<? extends ReportTableRow> rows) {
@@ -537,6 +541,7 @@ public class ReportsController {
         boolean church = !CHURCH_FILTER_EXCLUDED_REPORT_TYPES.contains(reportType);
         boolean status = STATUS_FILTER_REPORT_TYPES.contains(reportType);
         boolean collectionColumns = supportsCollectionColumnSelection(reportType);
+        updateStatusOptions(reportType);
         setVisible(!weekly, dateFromLabel, dateFromPicker, dateToLabel, dateToPicker);
         setVisible(weekly, weekStartLabel, weekStartDatePicker, weekEndLabel, weekEndDateLabel);
         setVisible(region, regionLabel, regionComboBox);
@@ -545,6 +550,20 @@ public class ReportsController {
         setVisible(reportType == ReportType.USER_ACTIVITY, userLabel, userComboBox);
         setVisible(collectionColumns, collectionColumnsLabel, collectionColumnsBox);
         setVisible(!TOTALS_ROW_DISABLED_REPORT_TYPES.contains(reportType), totalsRow);
+    }
+
+    private void updateStatusOptions(ReportType reportType) {
+        String currentValue = statusComboBox.getValue();
+        List<String> options = switch (reportType) {
+            case SUBMISSION_STATUS -> List.of(ALL, "SUBMITTED", "MISSING", "LATE", "ON_TIME");
+            case SMS_DELIVERY -> List.of(ALL, "SUCCESS", "SENT", "FAILED", "DELIVERED", "DELIVERY_UNKNOWN",
+                    "DELIVERY_FAILED");
+            case BACKUP_RESTORE_HISTORY -> List.of(ALL, "SUCCESS", "FAILED");
+            case RECEIPT_PRINT_STATUS -> List.of(ALL, "PRINTED", "UNPRINTED");
+            default -> List.of(ALL);
+        };
+        statusComboBox.setItems(FXCollections.observableArrayList(options));
+        statusComboBox.setValue(currentValue != null && options.contains(currentValue) ? currentValue : ALL);
     }
 
     private boolean supportsCollectionColumnSelection(ReportType reportType) {

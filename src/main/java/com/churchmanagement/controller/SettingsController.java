@@ -94,6 +94,7 @@ public class SettingsController {
     @FXML private TextField timeFormatField;
     @FXML private TextField reportExportFolderField;
     @FXML private Button browseReportExportFolderButton;
+    @FXML private CheckBox pdfReportChartsEnabledCheckBox;
     @FXML private ComboBox<String> themeComboBox;
     @FXML private Label themeErrorLabel;
 
@@ -183,6 +184,7 @@ public class SettingsController {
                 request("system.date.format", dateFormatField.getText()),
                 request("system.time.format", timeFormatField.getText()),
                 request("reports.export.folder", reportExportFolderField.getText()),
+                request("reports.pdf.charts.enabled", String.valueOf(pdfReportChartsEnabledCheckBox.isSelected())),
                 request("system.theme", themeComboBox.getValue())
         ));
     }
@@ -336,6 +338,8 @@ public class SettingsController {
         dateFormatField.setText(values.get("system.date.format"));
         timeFormatField.setText(values.get("system.time.format"));
         reportExportFolderField.setText(defaultValue(values.get("reports.export.folder"), "./reports"));
+        pdfReportChartsEnabledCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
+                values.get("reports.pdf.charts.enabled"), "true")));
         themeComboBox.setValue(defaultValue(values.get("system.theme"), "LIGHT"));
     }
 

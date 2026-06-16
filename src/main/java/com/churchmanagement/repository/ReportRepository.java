@@ -497,6 +497,11 @@ public class ReportRepository {
             sql.append("AND r.id IS NOT NULL ");
         } else if ("MISSING".equalsIgnoreCase(criteria.getStatus())) {
             sql.append("AND r.id IS NULL ");
+        } else if ("LATE".equalsIgnoreCase(criteria.getStatus())
+                || "LATE_SUBMISSION".equalsIgnoreCase(criteria.getStatus())) {
+            sql.append("AND r.id IS NOT NULL AND r.is_late_submission = TRUE ");
+        } else if ("ON_TIME".equalsIgnoreCase(criteria.getStatus())) {
+            sql.append("AND r.id IS NOT NULL AND COALESCE(r.is_late_submission, FALSE) = FALSE ");
         } else {
             sql.append("AND 1 = 0 ");
         }

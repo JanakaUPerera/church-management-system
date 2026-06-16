@@ -102,6 +102,8 @@ public class SystemSettingService {
             case "backup.retention.days" -> requireIntegerBetween(normalized, 1, 365,
                     "Backup retention days must be between 1 and 365.");
             case "reports.export.folder" -> requirePath(normalized, "Report export location is required.");
+            case "reports.pdf.charts.enabled" -> requireBoolean(normalized,
+                    "PDF report charts setting must be true or false.");
             case "system.theme" -> requireOneOf(normalized, "System theme must be LIGHT or DARK.", "LIGHT", "DARK");
             case "receipt.default.language" -> requireOneOf(normalized,
                     "Receipt default language must be ENGLISH, SINHALA, or TAMIL.",
@@ -163,6 +165,13 @@ public class SystemSettingService {
             }
         }
         throw new SystemSettingException(message);
+    }
+
+    private void requireBoolean(String value, String message) {
+        String normalized = value == null ? "" : value.toLowerCase(Locale.ROOT);
+        if (!"true".equals(normalized) && !"false".equals(normalized)) {
+            throw new SystemSettingException(message);
+        }
     }
 
     private void requirePath(String value, String message) {

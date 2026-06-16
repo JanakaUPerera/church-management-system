@@ -31,7 +31,7 @@ class SystemSettingServiceTest {
 
         List<SystemSettingDto> settings = service.loadSettings();
 
-        assertEquals(17, settings.size());
+        assertEquals(18, settings.size());
         assertEquals("organization.name", settings.getFirst().getSettingKey());
     }
 
@@ -68,6 +68,12 @@ class SystemSettingServiceTest {
     void rejectsInvalidLanguage() {
         assertInvalid("receipt.default.language", "FRENCH",
                 "Receipt default language must be ENGLISH, SINHALA, or TAMIL.");
+    }
+
+    @Test
+    void rejectsInvalidPdfChartsEnabledFlag() {
+        assertInvalid("reports.pdf.charts.enabled", "sometimes",
+                "PDF report charts setting must be true or false.");
     }
 
     @Test
@@ -189,6 +195,7 @@ class SystemSettingServiceTest {
             add(setting("backup.retention.days", "30", "INTEGER", "BACKUP"));
             add(setting("system.date.format", "yyyy-MM-dd", "STRING", "SYSTEM"));
             add(setting("reports.export.folder", "./reports", "STRING", "SYSTEM"));
+            add(setting("reports.pdf.charts.enabled", "true", "BOOLEAN", "SYSTEM"));
             add(setting("system.time.format", "HH:mm:ss", "STRING", "SYSTEM"));
             add(setting("system.theme", "LIGHT", "ENUM", "SYSTEM"));
         }
