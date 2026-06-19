@@ -220,7 +220,7 @@ class ReportServiceTest {
             assertEquals("Pie chart uses all churches in this report,\nnot only the Top 20.",
                     workbook.getSheet("Charts").getRow(27).getCell(0).getStringCellValue());
             assertTrue(workbook.getSheet("Charts").getRow(27).getCell(0).getCellStyle().getWrapText());
-            assertEquals("Offertory", workbook.getSheet("Charts").getRow(29).getCell(0).getStringCellValue());
+            assertEquals("Offerings", workbook.getSheet("Charts").getRow(29).getCell(0).getStringCellValue());
             assertEquals(325.00, workbook.getSheet("Charts").getRow(29).getCell(1).getNumericCellValue());
             assertNull(workbook.getSheet("Charts").getRow(22));
         }
@@ -244,7 +244,7 @@ class ReportServiceTest {
                     workbook.getSheet("Charts").getRow(26).getCell(0).getStringCellValue());
             assertEquals("Pie chart uses all regions in this report,\nnot only the Top 20.",
                     workbook.getSheet("Charts").getRow(27).getCell(0).getStringCellValue());
-            assertEquals("Offertory", workbook.getSheet("Charts").getRow(29).getCell(0).getStringCellValue());
+            assertEquals("Offerings", workbook.getSheet("Charts").getRow(29).getCell(0).getStringCellValue());
             assertEquals(325.00, workbook.getSheet("Charts").getRow(29).getCell(1).getNumericCellValue());
         }
     }

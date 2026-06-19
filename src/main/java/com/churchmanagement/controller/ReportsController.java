@@ -128,7 +128,7 @@ public class ReportsController {
     @FXML private Button exportPdfButton;
     @FXML private Button exportExcelButton;
     @FXML private Button printButton;
-    @FXML private Button refreshButton;
+    @FXML private Button searchButton;
     @FXML private Button clearButton;
     @FXML private TextField tableSearchField;
     @FXML private TableView<ReportTableRow> reportTable;
@@ -171,8 +171,15 @@ public class ReportsController {
     }
 
     @FXML
-    private void handleRefresh() {
-        refreshReport(true);
+    private void handleSearch() {
+        ReportSearchCriteria criteria = criteriaForAction();
+        ProcessingDialog.run("Search Report", "Searching report...",
+                () -> {
+                    reportService.logFilterChanged(criteria);
+                    return reportService.loadReport(criteria);
+                },
+                this::applyReportResult,
+                throwable -> showError("Reports", friendly(throwable, "Unable to load reports right now. Please try again later.")));
     }
 
     @FXML
@@ -249,7 +256,7 @@ public class ReportsController {
         ButtonIconUtil.applyIcon(exportPdfButton, "fas-file-pdf");
         ButtonIconUtil.applyIcon(exportExcelButton, "fas-file-excel");
         ButtonIconUtil.applyIcon(printButton, "fas-print");
-        ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
+        ButtonIconUtil.applyIcon(searchButton, "fas-search");
         ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
     }
 
@@ -385,16 +392,20 @@ public class ReportsController {
                 reportService.logFilterChanged(criteria);
             }
             ReportResult<? extends ReportTableRow> result = reportService.loadReport(criteria);
-            rebuildColumns(result.getRows());
-            reportRows.setAll(result.getRows());
-            applyTableSearch();
-            updateTotals(result.getTotals());
-            messageLabel.setText(result.getRows().isEmpty() ? "No data available." : "");
+            applyReportResult(result);
         } catch (ReportService.ReportException exception) {
             showError("Reports", exception.getMessage());
         } catch (RuntimeException exception) {
             showError("Reports", friendly(exception, "Unable to load reports right now. Please try again later."));
         }
+    }
+
+    private void applyReportResult(ReportResult<? extends ReportTableRow> result) {
+        rebuildColumns(result.getRows());
+        reportRows.setAll(result.getRows());
+        applyTableSearch();
+        updateTotals(result.getTotals());
+        messageLabel.setText(result.getRows().isEmpty() ? "No data available." : "");
     }
 
     private void rebuildColumns(List<? extends ReportTableRow> rows) {
@@ -442,7 +453,7 @@ public class ReportsController {
         return normalized.contains("amount")
                 || normalized.contains("total")
                 || normalized.contains("collection")
-                || normalized.contains("offertory")
+                || normalized.contains("Offerings")
                 || normalized.contains("tithes")
                 || normalized.contains("donation")
                 || normalized.equals("submitted")

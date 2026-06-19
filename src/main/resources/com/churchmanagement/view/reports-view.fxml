@@ -88,7 +88,7 @@
                             <Label fx:id="collectionColumnsLabel" styleClass="field-label" text="Columns" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
                             <HBox fx:id="collectionColumnsBox" alignment="CENTER_LEFT" spacing="10" GridPane.columnIndex="5" GridPane.columnSpan="3" GridPane.rowIndex="1">
                                 <CheckBox fx:id="collectionAllCheckBox" onAction="#collectionColumnSelectionChanged" selected="true" text="All"/>
-                                <CheckBox fx:id="offertoryColumnCheckBox" onAction="#collectionColumnSelectionChanged" selected="true" text="Offertory"/>
+                                <CheckBox fx:id="offertoryColumnCheckBox" onAction="#collectionColumnSelectionChanged" selected="true" text="Offerings"/>
                                 <CheckBox fx:id="tithesColumnCheckBox" onAction="#collectionColumnSelectionChanged" selected="true" text="Tithes"/>
                                 <CheckBox fx:id="otherDonationsColumnCheckBox" onAction="#collectionColumnSelectionChanged" selected="true" text="Other Donations"/>
                                 <CheckBox fx:id="grandTotalColumnCheckBox" onAction="#collectionColumnSelectionChanged" selected="true" text="Grand Total"/>
@@ -100,7 +100,7 @@
                     <VBox spacing="8" styleClass="report-results-area" BorderPane.alignment="CENTER">
                         <HBox alignment="CENTER_LEFT" spacing="8">
                             <TextField fx:id="tableSearchField" promptText="Search within table" HBox.hgrow="ALWAYS"/>
-                            <Button fx:id="refreshButton" onAction="#handleRefresh" styleClass="primary-button" text="Refresh"/>
+                            <Button fx:id="searchButton" onAction="#handleSearch" styleClass="primary-button" text="Search"/>
                             <Button fx:id="clearButton" onAction="#handleClear" text="Clear"/>
                             <Label fx:id="messageLabel" managed="false" visible="false"/>
                         </HBox>
@@ -122,7 +122,7 @@
                     <HBox fx:id="totalsRow" alignment="CENTER_LEFT" spacing="14" styleClass="submission-totals-row" BorderPane.alignment="CENTER">
                         <Label styleClass="submission-totals-title" text="TOTALS"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label styleClass="submission-totals-label" text="Offertory"/>
+                        <Label styleClass="submission-totals-label" text="Offerings"/>
                         <Label fx:id="offertoryTotalLabel" styleClass="submission-totals-value"/>
                         <Label styleClass="submission-totals-label" text="Tithes"/>
                         <Label fx:id="tithesTotalLabel" styleClass="submission-totals-value"/>

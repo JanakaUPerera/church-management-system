@@ -292,7 +292,7 @@ public class ReportService {
                 + ", receipt_no=" + criteria.getReceiptNo()
                 + ", user_id=" + criteria.getUserId()
                 + ", collection_columns="
-                + (criteria.isOffertoryColumnSelected() ? "offertory;" : "")
+                + (criteria.isOffertoryColumnSelected() ? "Offertory;" : "")
                 + (criteria.isTithesColumnSelected() ? "tithes;" : "")
                 + (criteria.isOtherDonationsColumnSelected() ? "other_donations;" : "")
                 + (criteria.isGrandTotalColumnSelected() ? "grand_total;" : "");
@@ -320,7 +320,7 @@ public class ReportService {
         }
 
         private boolean isHiddenCollectionColumn(String header) {
-            return ("Offertory".equals(header) && !showOffertory)
+            return ("Offerings".equals(header) && !showOffertory)
                     || ("Tithes".equals(header) && !showTithes)
                     || ("Other Donations".equals(header) && !showOtherDonations)
                     || (isTotalColumn(header) && !showGrandTotal);
