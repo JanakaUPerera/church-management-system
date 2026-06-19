@@ -14,8 +14,9 @@ import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
-import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.ThemeService;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -38,12 +39,15 @@ import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
+import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -64,6 +68,7 @@ public class DashboardController {
     private double windowDragOffsetY;
     private ScheduledExecutorService databaseStatusMonitor;
     private ScheduledExecutorService modemStatusMonitor;
+    private Timeline footerClock;
 
     private static final double SIDEBAR_EXPANDED_WIDTH = 235;
     private static final double SIDEBAR_COLLAPSED_WIDTH = 72;
@@ -71,6 +76,8 @@ public class DashboardController {
     private static final long DATABASE_STATUS_REFRESH_SECONDS = 30;
     private static final long MODEM_STATUS_REFRESH_SECONDS = 30;
     private static final int MODEM_STATUS_PROBE_TIMEOUT_MILLIS = 1_500;
+    private static final DateTimeFormatter FOOTER_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("hh:mm a\nyyyy-MMM-dd", Locale.ENGLISH);
 
     @FXML
     private ImageView brandLogoImageView;
@@ -179,7 +186,7 @@ public class DashboardController {
 
     @FXML
     private void initialize() {
-        dateLabel.setText(new SystemDateTimeFormatter().formatDate(LocalDate.now()));
+        startFooterClock();
         versionLabel.setText("Version " + AppConfig.APPLICATION_VERSION);
 
         Optional<AuthenticatedUser> user = AuthContext.getCurrentUser();
@@ -431,6 +438,25 @@ public class DashboardController {
     private void stopStatusMonitors() {
         stopDatabaseStatusMonitor();
         stopModemStatusMonitor();
+        stopFooterClock();
+    }
+
+    private void startFooterClock() {
+        updateFooterDateTime();
+        footerClock = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateFooterDateTime()));
+        footerClock.setCycleCount(Timeline.INDEFINITE);
+        footerClock.play();
+    }
+
+    private void updateFooterDateTime() {
+        dateLabel.setText(LocalDateTime.now().format(FOOTER_DATE_TIME_FORMATTER));
+    }
+
+    private void stopFooterClock() {
+        if (footerClock != null) {
+            footerClock.stop();
+            footerClock = null;
+        }
     }
 
     private void updateMaximizeIcon(Stage stage) {
