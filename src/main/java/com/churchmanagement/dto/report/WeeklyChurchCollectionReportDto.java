@@ -20,7 +20,7 @@ public class WeeklyChurchCollectionReportDto extends AbstractReportRow {
     @Override
     public LinkedHashMap<String, Object> columns() {
         return columns("Region", text(regionName), "Church Code", text(churchCode), "Church", text(churchName),
-                "Week Start", date(weekStartDate), "Receipt No", text(receiptNo), "Offertory", zero(offertoryTotal),
+                "Week Start", date(weekStartDate), "Receipt No", text(receiptNo), "Offerings", zero(offertoryTotal),
                 "Tithes", zero(tithesTotal), "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
     }
 

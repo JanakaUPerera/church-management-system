@@ -228,7 +228,7 @@ public class ReportPdfExporter {
 
     private BigDecimal totalForHeader(String header, ReportSummaryTotals totals) {
         return switch (header) {
-            case "Offertory" -> totals.getOffertoryTotal();
+            case "Offerings" -> totals.getOffertoryTotal();
             case "Tithes" -> totals.getTithesTotal();
             case "Other Donations" -> totals.getOtherDonationsTotal();
             case "Grand Total", "Total Collections" -> totals.getGrandTotal();
@@ -762,7 +762,7 @@ public class ReportPdfExporter {
         graphics.setFont(new java.awt.Font(BODY_FONT, java.awt.Font.BOLD, 22));
         drawCenteredString(graphics, categoryTitle, plotX, plotY + plotHeight + 88, plotWidth);
         drawVerticalAxisTitle(graphics, "Grand Total", x + 20, plotY, plotHeight);
-        drawSeriesLegend(graphics, List.of("Offertory", "Tithes", "Other Donations"), plotX + 660, y + 12);
+        drawSeriesLegend(graphics, List.of("Offerings", "Tithes", "Other Donations"), plotX + 660, y + 12);
     }
 
     private void drawBarValue(Graphics2D graphics, BigDecimal value, int barX, int barY, int barWidth) {
@@ -1155,7 +1155,7 @@ public class ReportPdfExporter {
 
     private <T extends ReportTableRow> List<ChartPoint> annualCollectionTypePoints(List<T> rows, Integer year) {
         LinkedHashMap<String, BigDecimal> totals = new LinkedHashMap<>();
-        totals.put("Offertory", BigDecimal.ZERO);
+        totals.put("Offerings", BigDecimal.ZERO);
         totals.put("Tithes", BigDecimal.ZERO);
         totals.put("Other Donations", BigDecimal.ZERO);
         for (ReportTableRow row : rows) {
@@ -1177,7 +1177,7 @@ public class ReportPdfExporter {
 
     private <T extends ReportTableRow> List<ChartPoint> monthlyCollectionTypePoints(List<T> rows, MonthPeriod period) {
         LinkedHashMap<String, BigDecimal> totals = new LinkedHashMap<>();
-        totals.put("Offertory", BigDecimal.ZERO);
+        totals.put("Offerings", BigDecimal.ZERO);
         totals.put("Tithes", BigDecimal.ZERO);
         totals.put("Other Donations", BigDecimal.ZERO);
         for (ReportTableRow row : rows) {
@@ -1203,7 +1203,7 @@ public class ReportPdfExporter {
         List<CollectionTypePeriodTotal> totals = new ArrayList<>();
         for (Integer year : years) {
             totals.add(new CollectionTypePeriodTotal(year.toString(),
-                    totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Offertory"),
+                    totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Offerings"),
                     totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Tithes"),
                     totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Other Donations")));
         }
@@ -1215,7 +1215,7 @@ public class ReportPdfExporter {
         List<CollectionTypePeriodTotal> totals = new ArrayList<>();
         for (MonthPeriod period : periods) {
             totals.add(new CollectionTypePeriodTotal(period.label(),
-                    totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Offertory"),
+                    totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Offerings"),
                     totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Tithes"),
                     totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Other Donations")));
         }
@@ -1327,12 +1327,12 @@ public class ReportPdfExporter {
 
     private <T extends ReportTableRow> List<ChartPoint> weeklyCollectionTypePoints(List<T> rows) {
         LinkedHashMap<String, BigDecimal> totals = new LinkedHashMap<>();
-        totals.put("Offertory", BigDecimal.ZERO);
+        totals.put("Offerings", BigDecimal.ZERO);
         totals.put("Tithes", BigDecimal.ZERO);
         totals.put("Other Donations", BigDecimal.ZERO);
         for (ReportTableRow row : rows) {
             LinkedHashMap<String, Object> columns = row.columns();
-            for (String header : List.of("Offertory", "Tithes", "Other Donations")) {
+            for (String header : List.of("Offerings", "Tithes", "Other Donations")) {
                 if (columns.containsKey(header)) {
                     totals.merge(header, amount(columns.get(header)), BigDecimal::add);
                 }
@@ -1608,7 +1608,7 @@ public class ReportPdfExporter {
             case "Submitted At" -> 1.65;
             case "Status" -> 1.25;
             case "Late Submission" -> 0.95;
-            case "Offertory", "Tithes", "Other Donations", "Grand Total" -> 1.20;
+            case "Offerings", "Tithes", "Other Donations", "Grand Total" -> 1.20;
             default -> 1.0;
         };
     }
@@ -1707,7 +1707,7 @@ public class ReportPdfExporter {
         return normalized.contains("amount")
                 || normalized.contains("total")
                 || normalized.contains("collection")
-                || normalized.contains("offertory")
+                || normalized.contains("Offerings")
                 || normalized.contains("tithes")
                 || normalized.contains("donation")
                 || normalized.equals("submitted")

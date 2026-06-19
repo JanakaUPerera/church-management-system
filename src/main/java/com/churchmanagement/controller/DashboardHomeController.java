@@ -796,7 +796,7 @@ public class DashboardHomeController {
                         || trend.getOtherDonationsTotal().compareTo(BigDecimal.ZERO) > 0);
         chart.setTitle(hasData ? "Collection Type-wise Trend" : "Collection Type-wise Trend - No data available");
         XYChart.Series<String, Number> offertory = new XYChart.Series<>();
-        offertory.setName("Offertory");
+        offertory.setName("Offerings");
         XYChart.Series<String, Number> tithes = new XYChart.Series<>();
         tithes.setName("Tithes");
         XYChart.Series<String, Number> other = new XYChart.Series<>();
@@ -891,7 +891,7 @@ public class DashboardHomeController {
             return "-";
         }
         return switch (label) {
-            case "OFFERTORY" -> "Offertory";
+            case "OFFERTORY" -> "Offerings";
             case "TITHES" -> "Tithes";
             case "OTHER_DONATIONS" -> "Other Donations";
             default -> label;

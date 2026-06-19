@@ -197,7 +197,7 @@ public class ReportExcelExporter {
 
     private BigDecimal totalForHeader(String header, ReportSummaryTotals totals) {
         return switch (header) {
-            case "Offertory" -> totals.getOffertoryTotal();
+            case "Offerings" -> totals.getOffertoryTotal();
             case "Tithes" -> totals.getTithesTotal();
             case "Other Donations" -> totals.getOtherDonationsTotal();
             case "Grand Total", "Total Collections" -> totals.getGrandTotal();
@@ -366,7 +366,7 @@ public class ReportExcelExporter {
                         "Year", typeYears);
                 createNamedSeriesBarChart(drawing, chartSheet, annualCollectionTypeBarTitle(reportType), "Year",
                         "Grand Total", comparisonStartRow + 2, comparisonStartRow + 1 + typeYears.size(), 0, 1,
-                        List.of("Offertory", "Tithes", "Other Donations"), 4, comparisonStartRow, 20,
+                        List.of("Offerings", "Tithes", "Other Donations"), 4, comparisonStartRow, 20,
                         comparisonStartRow + 22);
                 pieStartRow = comparisonStartRow + 24;
             }
@@ -418,7 +418,7 @@ public class ReportExcelExporter {
                         "Month", typePeriods);
                 createNamedSeriesBarChart(drawing, chartSheet, monthlyCollectionTypeBarTitle(reportType), "Month",
                         "Grand Total", comparisonStartRow + 2, comparisonStartRow + 1 + typePeriods.size(), 0, 1,
-                        List.of("Offertory", "Tithes", "Other Donations"), 4, comparisonStartRow, 20,
+                        List.of("Offerings", "Tithes", "Other Donations"), 4, comparisonStartRow, 20,
                         comparisonStartRow + 22);
                 pieStartRow = comparisonStartRow + 24;
             }
@@ -452,7 +452,7 @@ public class ReportExcelExporter {
         titleRow.createCell(0).setCellValue(title);
         Row header = chartSheet.createRow(startRow + 1);
         header.createCell(0).setCellValue(periodHeader);
-        header.createCell(1).setCellValue("Offertory");
+        header.createCell(1).setCellValue("Offerings");
         header.createCell(2).setCellValue("Tithes");
         header.createCell(3).setCellValue("Other Donations");
         for (int index = 0; index < totals.size(); index++) {
@@ -1019,12 +1019,12 @@ public class ReportExcelExporter {
             return List.of();
         }
         LinkedHashMap<String, BigDecimal> totals = new LinkedHashMap<>();
-        totals.put("Offertory", BigDecimal.ZERO);
+        totals.put("Offerings", BigDecimal.ZERO);
         totals.put("Tithes", BigDecimal.ZERO);
         totals.put("Other Donations", BigDecimal.ZERO);
         for (ReportTableRow row : rows) {
             LinkedHashMap<String, Object> columns = row.columns();
-            for (String header : List.of("Offertory", "Tithes", "Other Donations")) {
+            for (String header : List.of("Offerings", "Tithes", "Other Donations")) {
                 if (columns.containsKey(header)) {
                     totals.merge(header, amount(columns.get(header)), BigDecimal::add);
                 }
@@ -1041,7 +1041,7 @@ public class ReportExcelExporter {
             return List.of();
         }
         LinkedHashMap<String, BigDecimal> totals = new LinkedHashMap<>();
-        totals.put("Offertory", BigDecimal.ZERO);
+        totals.put("Offerings", BigDecimal.ZERO);
         totals.put("Tithes", BigDecimal.ZERO);
         totals.put("Other Donations", BigDecimal.ZERO);
         for (ReportTableRow row : rows) {
@@ -1066,7 +1066,7 @@ public class ReportExcelExporter {
             return List.of();
         }
         LinkedHashMap<String, BigDecimal> totals = new LinkedHashMap<>();
-        totals.put("Offertory", BigDecimal.ZERO);
+        totals.put("Offerings", BigDecimal.ZERO);
         totals.put("Tithes", BigDecimal.ZERO);
         totals.put("Other Donations", BigDecimal.ZERO);
         for (ReportTableRow row : rows) {
@@ -1092,7 +1092,7 @@ public class ReportExcelExporter {
         List<CollectionTypePeriodTotal> totals = new ArrayList<>();
         for (Integer year : years) {
             totals.add(new CollectionTypePeriodTotal(year.toString(),
-                    totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Offertory"),
+                    totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Offerings"),
                     totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year, "Tithes"),
                     totalForPeriodAndHeader(rows, row -> intValue(row.columns().get("Year")) == year,
                             "Other Donations")));
@@ -1105,7 +1105,7 @@ public class ReportExcelExporter {
         List<CollectionTypePeriodTotal> totals = new ArrayList<>();
         for (MonthPeriod period : periods) {
             totals.add(new CollectionTypePeriodTotal(period.label(),
-                    totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Offertory"),
+                    totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Offerings"),
                     totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())), "Tithes"),
                     totalForPeriodAndHeader(rows, row -> period.equals(monthPeriod(row.columns())),
                             "Other Donations")));

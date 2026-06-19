@@ -22,21 +22,21 @@ public class CollectionReportDto extends AbstractReportRow {
     public LinkedHashMap<String, Object> columns() {
         if (monthly && churchWise) {
             return columns("Year", year, "Month", monthName(), "Region", text(regionName), "Church", text(churchName),
-                    "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                    "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                     "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
         }
         if (monthly) {
             return columns("Year", year, "Month", monthName(), "Region", text(regionName),
-                    "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                    "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                     "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
         }
         if (churchWise) {
             return columns("Year", year, "Region", text(regionName), "Church", text(churchName),
-                    "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                    "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                     "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
         }
         return columns("Year", year, "Region", text(regionName),
-                "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                 "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
     }
 

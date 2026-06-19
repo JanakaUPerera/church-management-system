@@ -25,7 +25,7 @@ public class SubmissionStatusReportDto extends AbstractReportRow {
         return columns("Region", text(regionName), "Church Code", text(churchCode), "Church", text(churchName),
                 "Week Start", date(weekStartDate), "Status", text(status), "Receipt No", text(receiptNo),
                 "Submitted At", dateTime(submittedAt), "Late Submission", lateSubmission ? "Yes" : "No",
-                "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                 "Other Donations", zero(otherDonationsTotal),
                 "Grand Total", zero(grandTotal));
     }

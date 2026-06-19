@@ -20,7 +20,7 @@ public class RegionProgressReportDto extends AbstractReportRow {
     public LinkedHashMap<String, Object> columns() {
         return columns("Region Code", text(regionCode), "Region", text(regionName), "Total Churches", totalChurches,
                 "Submitted Weeks", submittedWeeks, "Missing Weeks", missingWeeks, "Late Count", lateCount,
-                "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                 "Other Donations", zero(otherDonationsTotal),
                 "Total Collections", zero(totalCollections));
     }

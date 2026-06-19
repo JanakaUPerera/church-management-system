@@ -22,7 +22,7 @@ public class WeeklyRegionSummaryReportDto extends AbstractReportRow {
     public LinkedHashMap<String, Object> columns() {
         return columns("Region Code", text(regionCode), "Region", text(regionName), "Week Start", date(weekStartDate),
                 "Total Churches", totalChurches, "Submitted", submittedChurches, "Missing", missingChurches,
-                "Late", lateSubmissions, "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Late", lateSubmissions, "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                 "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
     }
 

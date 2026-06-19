@@ -27,7 +27,7 @@ public class ReceiptLabelTranslationService {
             Map.entry("original_receipt", "Original Receipt"),
             Map.entry("cancelled", "CANCELLED"),
             Map.entry("generated_at", "Generated"),
-            Map.entry("offertory", "Offertory"),
+            Map.entry("Offerings", "Offerings"),
             Map.entry("tithes", "Tithes"),
             Map.entry("other_donations", "Other Donations")
     );
@@ -54,7 +54,7 @@ public class ReceiptLabelTranslationService {
             Map.entry("original_receipt", "මුල් රිසිට්පත"),
             Map.entry("cancelled", "අවලංගුයි"),
             Map.entry("generated_at", "සකස් කළ දිනය"),
-            Map.entry("offertory", "පූජා මුදල්"),
+            Map.entry("Offerings", "පූජා මුදල්"),
             Map.entry("tithes", "දසයෙන් කොටස"),
             Map.entry("other_donations", "වෙනත් පරිත්‍යාග")
     );
@@ -81,7 +81,7 @@ public class ReceiptLabelTranslationService {
             Map.entry("original_receipt", "அசல் ரசீது"),
             Map.entry("cancelled", "ரத்து செய்யப்பட்டது"),
             Map.entry("generated_at", "உருவாக்கப்பட்டது"),
-            Map.entry("offertory", "காணிக்கை"),
+            Map.entry("Offerings", "காணிக்கை"),
             Map.entry("tithes", "தசமபாகம்"),
             Map.entry("other_donations", "மற்ற நன்கொடைகள்")
     );

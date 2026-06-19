@@ -223,7 +223,7 @@ public class ReceiptPdfGenerator {
         }
 
         return switch (item.getCollectionType()) {
-            case OFFERTORY -> label("offertory", receipt);
+            case OFFERTORY -> label("Offerings", receipt);
             case TITHES -> label("tithes", receipt);
             case OTHER_DONATIONS -> label("other_donations", receipt);
         };

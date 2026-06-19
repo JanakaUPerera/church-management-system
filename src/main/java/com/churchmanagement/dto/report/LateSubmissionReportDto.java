@@ -23,7 +23,7 @@ public class LateSubmissionReportDto extends AbstractReportRow {
     public LinkedHashMap<String, Object> columns() {
         return columns("Region", text(regionName), "Church Code", text(churchCode), "Church", text(churchName),
                 "Week Start", date(weekStartDate), "Receipt No", text(receiptNo), "Submitted At", dateTime(submittedAt),
-                "Reason", text(reason), "Offertory", zero(offertoryTotal), "Tithes", zero(tithesTotal),
+                "Reason", text(reason), "Offerings", zero(offertoryTotal), "Tithes", zero(tithesTotal),
                 "Other Donations", zero(otherDonationsTotal), "Grand Total", zero(grandTotal));
     }
 

@@ -1,7 +1,7 @@
 package com.churchmanagement.enums;
 
 public enum CollectionType {
-    OFFERTORY("Offertory"),
+    OFFERTORY("Offerings"),
     TITHES("Tithes"),
     OTHER_DONATIONS("Other Donations");
 
