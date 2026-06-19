@@ -71,7 +71,7 @@
            </columnConstraints>
       <children>
       
-              <Label text="Offertory" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+              <Label text="Offerings" GridPane.columnIndex="0" GridPane.rowIndex="0" />
               <TextField fx:id="offertoryAmountField" alignment="CENTER_RIGHT" promptText="Amount" GridPane.columnIndex="1" GridPane.rowIndex="0" />
               <TextField fx:id="offertoryNoteField" promptText="Note" GridPane.columnIndex="2" GridPane.rowIndex="0" />
       
@@ -96,7 +96,8 @@
    
        <HBox spacing="10">
       <children>
-              <Button fx:id="saveButton" onAction="#handleSave" styleClass="primary-button" text="Generate Receipt" />
+              <Button fx:id="saveAndPrintButton" onAction="#handleGenerateAndPrint" styleClass="primary-button" text="Generate &amp; Print Receipt" />
+              <Button fx:id="saveButton" onAction="#handleGenerate" text="Generate Receipt" />
               <Button fx:id="clearButton" onAction="#handleClear" text="Clear" />
       </children>
        </HBox>

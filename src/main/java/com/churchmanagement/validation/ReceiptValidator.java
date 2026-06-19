@@ -16,7 +16,8 @@ public final class ReceiptValidator {
     private ReceiptValidator() {
     }
 
-    public static List<String> validateForCreate(CreateReceiptRequest request, LocalDate today, boolean lateSubmission) {
+    public static List<String> validateForCreate(CreateReceiptRequest request, LocalDate today, boolean lateSubmission,
+                                                 boolean lateSubmissionReasonRequired) {
         List<String> errors = new ArrayList<>();
 
         if (request == null) {
@@ -27,13 +28,13 @@ public final class ReceiptValidator {
             return errors;
         }
 
-        validateHeader(request, today, lateSubmission, errors);
+        validateHeader(request, today, lateSubmission, lateSubmissionReasonRequired, errors);
         validateItems(request.getItems(), errors);
         return errors;
     }
 
     private static void validateHeader(CreateReceiptRequest request, LocalDate today, boolean lateSubmission,
-                                       List<String> errors) {
+                                       boolean lateSubmissionReasonRequired, List<String> errors) {
         if (request.getChurchId() == null) {
             errors.add("Church is required.");
         }
@@ -63,7 +64,8 @@ public final class ReceiptValidator {
             errors.add("Submitted by name is required.");
         }
 
-        if (lateSubmission && (request.getLateSubmissionReason() == null || request.getLateSubmissionReason().isBlank())) {
+        if (lateSubmission && lateSubmissionReasonRequired
+                && (request.getLateSubmissionReason() == null || request.getLateSubmissionReason().isBlank())) {
             errors.add("Late submission reason is required for back week receipts.");
         }
     }

@@ -11,6 +11,7 @@ import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.ReceiptRepository;
+import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.util.ReceiptNumberFormatter;
@@ -52,6 +53,7 @@ class ReceiptServiceTest {
     private FakeReceiptPrintService receiptPrintService;
     private FakeActivityLogService activityLogService;
     private FakeDataSource dataSource;
+    private FakeSystemConfigurationCache configurationCache;
     private ReceiptService receiptService;
 
     @BeforeEach
@@ -62,8 +64,9 @@ class ReceiptServiceTest {
         receiptPrintService = new FakeReceiptPrintService(receiptRepository);
         activityLogService = new FakeActivityLogService();
         dataSource = new FakeDataSource();
+        configurationCache = new FakeSystemConfigurationCache();
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                activityLogService, fixedClock(), dataSource);
+                null, null, activityLogService, fixedClock(), dataSource, configurationCache);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("receipt.create")));
     }
@@ -88,7 +91,7 @@ class ReceiptServiceTest {
     @Test
     void createReceiptPrintsOriginalAfterSaveWhenPrintServiceIsAvailable() {
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                receiptPrintService, activityLogService, fixedClock(), dataSource);
+                receiptPrintService, null, activityLogService, fixedClock(), dataSource, configurationCache);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
@@ -101,7 +104,7 @@ class ReceiptServiceTest {
     void createReceiptRemainsSavedWhenAutomaticPrintFails() {
         receiptPrintService.failPrint = true;
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                receiptPrintService, activityLogService, fixedClock(), dataSource);
+                receiptPrintService, null, activityLogService, fixedClock(), dataSource, configurationCache);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
@@ -116,7 +119,8 @@ class ReceiptServiceTest {
         FakeReceiptSmsNotificationService smsNotificationService = new FakeReceiptSmsNotificationService();
         smsNotificationService.fail = true;
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                receiptPrintService, smsNotificationService, activityLogService, fixedClock(), dataSource);
+                receiptPrintService, smsNotificationService, activityLogService, fixedClock(), dataSource,
+                configurationCache);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
@@ -126,6 +130,21 @@ class ReceiptServiceTest {
         assertFalse(dataSource.connection.rolledBack);
         assertEquals(100L, smsNotificationService.receiptId);
         assertEquals("Receipt saved, but SMS notification failed.", response.getWarningMessage());
+    }
+
+    @Test
+    void createReceiptWithoutPrintStillSendsSmsNotification() {
+        FakeReceiptSmsNotificationService smsNotificationService = new FakeReceiptSmsNotificationService();
+        receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
+                receiptPrintService, smsNotificationService, activityLogService, fixedClock(), dataSource,
+                configurationCache);
+
+        ReceiptResponseDto response = receiptService.createReceipt(validRequest(), false);
+
+        assertEquals("REC26000001", response.getReceiptNo());
+        assertEquals(0L, receiptPrintService.printedReceiptId);
+        assertFalse(response.isOriginalPrinted());
+        assertEquals(100L, smsNotificationService.receiptId);
     }
 
     @Test
@@ -284,7 +303,20 @@ class ReceiptServiceTest {
     }
 
     @Test
-    void rejectBackWeekReceiptWithoutLateSubmissionReason() {
+    void allowBackWeekReceiptWithoutLateSubmissionReasonByDefault() {
+        CreateReceiptRequest request = validRequest();
+        request.setWeekStartDate(BACK_WEEK_START);
+        request.setWeekEndDate(BACK_WEEK_END);
+
+        ReceiptResponseDto response = receiptService.createReceipt(request);
+
+        assertTrue(response.isLateSubmission());
+        assertEquals(null, response.getLateSubmissionReason());
+    }
+
+    @Test
+    void rejectBackWeekReceiptWithoutLateSubmissionReasonWhenSettingIsEnabled() {
+        configurationCache.put("receipt.late.reason.required", "true");
         CreateReceiptRequest request = validRequest();
         request.setWeekStartDate(BACK_WEEK_START);
         request.setWeekEndDate(BACK_WEEK_END);
@@ -561,6 +593,25 @@ class ReceiptServiceTest {
         @Override
         public void logReceiptCreateFailed(Long userId, CreateReceiptRequest request, Church church,
                                            BigDecimal totalAmount, boolean lateSubmission, String reason) {
+        }
+    }
+
+    private static class FakeSystemConfigurationCache extends SystemConfigurationCache {
+        private final java.util.Map<String, String> values = new java.util.HashMap<>();
+
+        private FakeSystemConfigurationCache() {
+            super(new SystemSettingRepository((DataSource) null));
+            values.put("receipt.allow.back.week", "true");
+            values.put("receipt.late.reason.required", "false");
+        }
+
+        @Override
+        public String getString(String key) {
+            return values.get(key);
+        }
+
+        private void put(String key, String value) {
+            values.put(key, value);
         }
     }
 

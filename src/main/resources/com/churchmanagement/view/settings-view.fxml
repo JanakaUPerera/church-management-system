@@ -63,9 +63,12 @@
                     <Label text="Allow Back Week" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
                     <CheckBox fx:id="receiptAllowBackWeekCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
-                    <Label text="Default Receipt Language" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                    <ComboBox fx:id="receiptLanguageComboBox" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-                    <Label fx:id="receiptLanguageErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                    <Label text="Late Reason Required" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <CheckBox fx:id="receiptLateReasonRequiredCheckBox" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                    <Label text="Default Receipt Language" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                    <ComboBox fx:id="receiptLanguageComboBox" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                    <Label fx:id="receiptLanguageErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
                 </GridPane>
                 <Button onAction="#saveReceiptSettings" styleClass="primary-button" text="Save Receipt"/>
             </VBox>

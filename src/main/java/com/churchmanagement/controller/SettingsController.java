@@ -73,6 +73,7 @@ public class SettingsController {
     @FXML private TextField receiptPrefixField;
     @FXML private TextField receiptPaddingField;
     @FXML private CheckBox receiptAllowBackWeekCheckBox;
+    @FXML private CheckBox receiptLateReasonRequiredCheckBox;
     @FXML private ComboBox<String> receiptLanguageComboBox;
     @FXML private Label receiptPaddingErrorLabel;
     @FXML private Label receiptLanguageErrorLabel;
@@ -122,7 +123,6 @@ public class SettingsController {
         });
         loadSettings();
         loadSmsGatewaySettings();
-        testSmsMessageTextArea.setText("Test SMS from Church Management System.");
     }
 
     @FXML
@@ -140,6 +140,7 @@ public class SettingsController {
                 request("receipt.number.prefix", receiptPrefixField.getText()),
                 request("receipt.sequence.padding", receiptPaddingField.getText()),
                 request("receipt.allow.back.week", String.valueOf(receiptAllowBackWeekCheckBox.isSelected())),
+                request("receipt.late.reason.required", String.valueOf(receiptLateReasonRequiredCheckBox.isSelected())),
                 request("receipt.default.language", receiptLanguageComboBox.getValue())
         ));
     }
@@ -277,7 +278,8 @@ public class SettingsController {
     @FXML
     private void testSms() {
         String mobileNumber = testSmsMobileNumberField.getText();
-        String message = testSmsMessageTextArea.getText();
+        String message = defaultTestSmsMessage();
+        testSmsMessageTextArea.setText(message);
         Integer baudRate = parseBaudRate();
         if (baudRate == null) {
             return;
@@ -316,6 +318,11 @@ public class SettingsController {
                 throwable -> showError("Test SMS failed", processingMessage(throwable)));
     }
 
+    private String defaultTestSmsMessage() {
+        return "Test SMS from " + defaultValue(organizationNameField.getText(),
+                "Gethsemane Prayer Center Church");
+    }
+
     private void loadSettings() {
         applySettings(systemSettingService.loadSettings());
     }
@@ -327,9 +334,12 @@ public class SettingsController {
         organizationNameField.setText(values.get("organization.name"));
         organizationAddressArea.setText(values.get("organization.address"));
         organizationPhoneField.setText(values.get("organization.phone"));
+        testSmsMessageTextArea.setText(defaultTestSmsMessage());
         receiptPrefixField.setText(values.get("receipt.number.prefix"));
         receiptPaddingField.setText(values.get("receipt.sequence.padding"));
         receiptAllowBackWeekCheckBox.setSelected(Boolean.parseBoolean(values.get("receipt.allow.back.week")));
+        receiptLateReasonRequiredCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
+                values.get("receipt.late.reason.required"), "false")));
         receiptLanguageComboBox.setValue(defaultValue(values.get("receipt.default.language"), "ENGLISH"));
         smsEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.enabled")));
         gatewayTypeComboBox.setValue(parseGatewayType(values.get("sms.gateway.type")));

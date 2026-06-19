@@ -82,6 +82,7 @@ public class ReceiptEntryController {
     @FXML private TextField tithesNoteField;
     @FXML private TextField otherDonationsAmountField;
     @FXML private TextField otherDonationsNoteField;
+    @FXML private Button saveAndPrintButton;
     @FXML private Button saveButton;
     @FXML private Button clearButton;
     @FXML private Label totalAmountLabel;
@@ -113,7 +114,16 @@ public class ReceiptEntryController {
     }
 
     @FXML
-    private void handleSave() {
+    private void handleGenerateAndPrint() {
+        saveReceipt(true);
+    }
+
+    @FXML
+    private void handleGenerate() {
+        saveReceipt(false);
+    }
+
+    private void saveReceipt(boolean printOriginal) {
         if (!validateAmountFields()) {
             return;
         }
@@ -128,7 +138,7 @@ public class ReceiptEntryController {
         }
 
         ProcessingDialog.run("Generate Receipt", "Generating receipt...",
-                () -> receiptService.createReceipt(request),
+                () -> receiptService.createReceipt(request, printOriginal),
                 response -> {
                     showReceiptSavedDialog(response);
                     setMessage("Receipt " + response.getReceiptNo() + " created successfully.");
@@ -155,6 +165,7 @@ public class ReceiptEntryController {
     }
 
     private void configureButtonIcons() {
+        ButtonIconUtil.applyIcon(saveAndPrintButton, "fas-print");
         ButtonIconUtil.applyIcon(saveButton, "fas-save");
         ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
     }
@@ -295,7 +306,7 @@ public class ReceiptEntryController {
 
     private boolean validateAmountFields() {
         List<String> errors = new ArrayList<>();
-        validateAmountField("Offertory", offertoryAmountField, errors);
+        validateAmountField("Offerings", offertoryAmountField, errors);
         validateAmountField("Tithes", tithesAmountField, errors);
         validateAmountField("Other Donations", otherDonationsAmountField, errors);
 
@@ -473,6 +484,7 @@ public class ReceiptEntryController {
         tithesNoteField.setDisable(disabled);
         otherDonationsAmountField.setDisable(disabled);
         otherDonationsNoteField.setDisable(disabled);
+        saveAndPrintButton.setDisable(disabled);
         saveButton.setDisable(disabled);
     }
 

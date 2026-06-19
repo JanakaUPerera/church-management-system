@@ -91,6 +91,10 @@ public class ReceiptService {
     }
 
     public ReceiptResponseDto createReceipt(CreateReceiptRequest request) {
+        return createReceipt(request, true);
+    }
+
+    public ReceiptResponseDto createReceipt(CreateReceiptRequest request, boolean printOriginal) {
         AuthenticatedUser currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new ReceiptException("Please sign in to create receipts."));
         new PermissionGuard(currentUser).require("receipt.create");
@@ -133,7 +137,7 @@ public class ReceiptService {
 
             connection.commit();
             receiptCommitted = true;
-            if (receiptPrintService != null) {
+            if (printOriginal && receiptPrintService != null) {
                 try {
                     receiptPrintService.printOriginalReceipt(receiptId);
                 } catch (ReceiptPrintService.ReceiptPrintException exception) {
@@ -198,7 +202,8 @@ public class ReceiptService {
     }
 
     private void validateRequest(CreateReceiptRequest request, LocalDate today, boolean lateSubmission) {
-        List<String> errors = ReceiptValidator.validateForCreate(request, today, lateSubmission);
+        List<String> errors = ReceiptValidator.validateForCreate(request, today, lateSubmission,
+                isLateSubmissionReasonRequired());
         if (!errors.isEmpty()) {
             throw new ReceiptException(String.join("\n", errors));
         }
@@ -210,6 +215,10 @@ public class ReceiptService {
         if (lateSubmission && !backWeekAllowed) {
             throw new ReceiptException("Back-week receipts are disabled in system settings.");
         }
+    }
+
+    private boolean isLateSubmissionReasonRequired() {
+        return Boolean.parseBoolean(configurationCache.getString("receipt.late.reason.required"));
     }
 
     private Church loadActiveChurch(Long churchId) {
@@ -236,10 +245,14 @@ public class ReceiptService {
         receipt.setIssuedByUserId(userId);
         receipt.setStatus(ReceiptStatus.ACTIVE);
         receipt.setLateSubmission(lateSubmission);
-        receipt.setLateSubmissionReason(lateSubmission ? request.getLateSubmissionReason().strip() : null);
+        receipt.setLateSubmissionReason(lateSubmission ? normalizeLateSubmissionReason(request.getLateSubmissionReason()) : null);
         receipt.setCorrectedFromReceiptId(request.getCorrectedFromReceiptId());
         receipt.setCreatedAt(now);
         return receipt;
+    }
+
+    private String normalizeLateSubmissionReason(String reason) {
+        return reason == null || reason.isBlank() ? null : reason.strip();
     }
 
     private void validateCorrectionReceipt(CreateReceiptRequest request, Church church, Connection connection) {
