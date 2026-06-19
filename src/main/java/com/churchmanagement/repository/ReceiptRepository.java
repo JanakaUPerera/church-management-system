@@ -237,6 +237,20 @@ public class ReceiptRepository {
 
     public List<ReceiptResponseDto> searchReceipts(Long churchId, Long regionId, LocalDate weekStartDate,
                                                    String receiptNo, ReceiptStatus status) {
+        return searchReceipts(churchId, regionId, weekStartDate, receiptNo, status, null, null, null);
+    }
+
+    public List<ReceiptResponseDto> searchReceipts(Long churchId, Long regionId, LocalDate weekStartDate,
+                                                   String searchText, ReceiptStatus status,
+                                                   Boolean lateSubmission, Boolean recreatedReceipt) {
+        return searchReceipts(churchId, regionId, weekStartDate, searchText, status, lateSubmission,
+                recreatedReceipt, null);
+    }
+
+    public List<ReceiptResponseDto> searchReceipts(Long churchId, Long regionId, LocalDate weekStartDate,
+                                                   String searchText, ReceiptStatus status,
+                                                   Boolean lateSubmission, Boolean recreatedReceipt,
+                                                   Boolean originalPrinted) {
         StringBuilder sql = new StringBuilder(baseReceiptDetailsSelect()).append(" WHERE 1 = 1 ");
         List<Object> parameters = new ArrayList<>();
 
@@ -252,13 +266,41 @@ public class ReceiptRepository {
             sql.append("AND r.week_start_date = ? ");
             parameters.add(Date.valueOf(weekStartDate));
         }
-        if (receiptNo != null && !receiptNo.isBlank()) {
-            sql.append("AND r.receipt_no LIKE ? ");
-            parameters.add("%" + receiptNo.strip() + "%");
+        if (searchText != null && !searchText.isBlank()) {
+            sql.append("""
+                    AND (
+                        r.receipt_no LIKE ?
+                        OR c.church_code LIKE ?
+                        OR c.church_name LIKE ?
+                        OR rg.region_code LIKE ?
+                        OR rg.region_name LIKE ?
+                        OR r.submitted_by_name LIKE ?
+                    )
+                    """);
+            String term = "%" + searchText.strip() + "%";
+            parameters.add(term);
+            parameters.add(term);
+            parameters.add(term);
+            parameters.add(term);
+            parameters.add(term);
+            parameters.add(term);
         }
         if (status != null) {
             sql.append("AND r.status = ? ");
             parameters.add(status.name());
+        }
+        if (lateSubmission != null) {
+            sql.append("AND r.is_late_submission = ? ");
+            parameters.add(lateSubmission);
+        }
+        if (recreatedReceipt != null) {
+            sql.append(recreatedReceipt
+                    ? "AND r.corrected_from_receipt_id IS NOT NULL "
+                    : "AND r.corrected_from_receipt_id IS NULL ");
+        }
+        if (originalPrinted != null) {
+            sql.append("AND r.original_printed = ? ");
+            parameters.add(originalPrinted);
         }
 
         sql.append(receiptDetailsGroupBy()).append(" ORDER BY r.receipt_datetime DESC");

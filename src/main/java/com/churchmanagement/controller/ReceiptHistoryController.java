@@ -71,6 +71,12 @@ public class ReceiptHistoryController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
     private static final Duration CANCELLATION_WINDOW = Duration.ofDays(7);
     private static final String ALL_OPTION_TEXT = "ALL";
+    private static final String LATE_ONLY_OPTION_TEXT = "Late Only";
+    private static final String ON_TIME_ONLY_OPTION_TEXT = "On Time Only";
+    private static final String RECREATED_ONLY_OPTION_TEXT = "Re-Created Only";
+    private static final String ORIGINAL_ONLY_OPTION_TEXT = "Original Only";
+    private static final String PRINTED_ONLY_OPTION_TEXT = "Printed Only";
+    private static final String NOT_PRINTED_ONLY_OPTION_TEXT = "Not Printed Only";
 
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final ActivityLogRepository activityLogRepository = new ActivityLogRepository();
@@ -90,9 +96,11 @@ public class ReceiptHistoryController {
     @FXML private ComboBox<Church> churchComboBox;
     @FXML private ComboBox<Region> regionComboBox;
     @FXML private DatePicker weekStartDatePicker;
-    @FXML private Label weekEndDateLabel;
-    @FXML private TextField receiptNoField;
+    @FXML private TextField tableSearchField;
     @FXML private ComboBox<ReceiptStatus> statusComboBox;
+    @FXML private ComboBox<String> lateSubmissionComboBox;
+    @FXML private ComboBox<String> receiptTypeComboBox;
+    @FXML private ComboBox<String> printStatusComboBox;
     @FXML private TableView<ReceiptResponseDto> receiptTable;
     @FXML private Pagination receiptPagination;
     @FXML private ComboBox<Integer> receiptItemsPerPageComboBox;
@@ -105,7 +113,6 @@ public class ReceiptHistoryController {
     @FXML private TableColumn<ReceiptResponseDto, String> totalColumn;
     @FXML private TableColumn<ReceiptResponseDto, Void> actionColumn;
     @FXML private Button searchButton;
-    @FXML private Button clearButton;
     @FXML private Button refreshButton;
     @FXML private Label messageLabel;
 
@@ -127,40 +134,36 @@ public class ReceiptHistoryController {
         configureFilters();
         configureTable();
         loadFilters();
-        handleSearch();
+        resetFiltersToDefault();
+        searchReceipts();
     }
 
     @FXML
     private void handleSearch() {
-        try {
-            Church church = churchComboBox.getValue();
-            Region region = regionComboBox.getValue();
-            receipts.setAll(receiptRepository.searchReceipts(
-                    selectedChurchId(church),
-                    selectedRegionId(region),
-                    weekStartDatePicker.getValue(),
-                    receiptNoField.getText(),
-                    statusComboBox.getValue()));
-            setMessage(receipts.size() + " receipt(s) found.");
-        } catch (DatabaseException exception) {
-            showError("Receipt History", "Unable to search receipts right now. Please try again later.");
-        }
-    }
-
-    @FXML
-    private void handleClear() {
-        regionComboBox.getSelectionModel().selectFirst();
-        updateChurchFilter();
-        churchComboBox.getSelectionModel().selectFirst();
-        weekStartDatePicker.setValue(null);
-        receiptNoField.clear();
-        statusComboBox.getSelectionModel().clearSelection();
-        handleSearch();
+        ReceiptSearchCriteria criteria = currentReceiptSearchCriteria();
+        ProcessingDialog.run("Search Receipts", "Searching receipts...",
+                () -> receiptRepository.searchReceipts(criteria.churchId(), criteria.regionId(),
+                        criteria.weekStartDate(), criteria.searchText(), criteria.status(),
+                        criteria.lateSubmission(), criteria.recreated(), criteria.printed()),
+                results -> {
+                    receipts.setAll(results);
+                    setMessage(receipts.size() + " receipt(s) found.");
+                },
+                throwable -> showError("Receipt History", "Unable to search receipts right now. Please try again later."));
     }
 
     @FXML
     private void handleRefresh() {
-        handleClear();
+        regionComboBox.getSelectionModel().selectFirst();
+        updateChurchFilter();
+        churchComboBox.getSelectionModel().selectFirst();
+        weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
+        tableSearchField.clear();
+        statusComboBox.getSelectionModel().clearSelection();
+        lateSubmissionComboBox.getSelectionModel().selectFirst();
+        receiptTypeComboBox.getSelectionModel().selectFirst();
+        printStatusComboBox.getSelectionModel().selectFirst();
+        handleSearch();
     }
 
     private void configureFilters() {
@@ -169,10 +172,39 @@ public class ReceiptHistoryController {
         regionComboBox.setItems(regions);
         ComboBoxUtil.makeSearchable(regionComboBox, this::regionDisplayText);
         statusComboBox.setItems(FXCollections.observableArrayList(ReceiptStatus.ACTIVE, ReceiptStatus.CANCELLED));
-        DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
-        weekStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> updateWeekEndDate());
+        lateSubmissionComboBox.setItems(FXCollections.observableArrayList(
+                ALL_OPTION_TEXT, LATE_ONLY_OPTION_TEXT, ON_TIME_ONLY_OPTION_TEXT));
+        receiptTypeComboBox.setItems(FXCollections.observableArrayList(
+                ALL_OPTION_TEXT, RECREATED_ONLY_OPTION_TEXT, ORIGINAL_ONLY_OPTION_TEXT));
+        printStatusComboBox.setItems(FXCollections.observableArrayList(
+                ALL_OPTION_TEXT, PRINTED_ONLY_OPTION_TEXT, NOT_PRINTED_ONLY_OPTION_TEXT));
+        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weekStartDatePicker);
         regionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateChurchFilter());
-        updateWeekEndDate();
+        tableSearchField.setOnAction(event -> handleSearch());
+    }
+
+    private void searchReceipts() {
+        try {
+            ReceiptSearchCriteria criteria = currentReceiptSearchCriteria();
+            receipts.setAll(receiptRepository.searchReceipts(criteria.churchId(), criteria.regionId(),
+                    criteria.weekStartDate(), criteria.searchText(), criteria.status(),
+                    criteria.lateSubmission(), criteria.recreated(), criteria.printed()));
+            setMessage(receipts.size() + " receipt(s) found.");
+        } catch (DatabaseException exception) {
+            showError("Receipt History", "Unable to search receipts right now. Please try again later.");
+        }
+    }
+
+    private ReceiptSearchCriteria currentReceiptSearchCriteria() {
+        return new ReceiptSearchCriteria(
+                selectedChurchId(churchComboBox.getValue()),
+                selectedRegionId(regionComboBox.getValue()),
+                weekStartDatePicker.getValue(),
+                tableSearchField.getText(),
+                statusComboBox.getValue(),
+                selectedLateSubmissionFilter(),
+                selectedRecreatedFilter(),
+                selectedPrintStatusFilter());
     }
 
     private void configureTable() {
@@ -224,7 +256,6 @@ public class ReceiptHistoryController {
 
     private void configureButtonIcons() {
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
-        ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
         ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
@@ -245,6 +276,15 @@ public class ReceiptHistoryController {
         } catch (RuntimeException exception) {
             showError("Receipt History", "Unable to load filters right now. Please try again later.");
         }
+    }
+
+    private void resetFiltersToDefault() {
+        weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
+        tableSearchField.clear();
+        statusComboBox.getSelectionModel().clearSelection();
+        lateSubmissionComboBox.getSelectionModel().selectFirst();
+        receiptTypeComboBox.getSelectionModel().selectFirst();
+        printStatusComboBox.getSelectionModel().selectFirst();
     }
 
     private void updateChurchFilter() {
@@ -271,6 +311,39 @@ public class ReceiptHistoryController {
 
     private Long selectedChurchId(Church church) {
         return church == null ? null : church.getId();
+    }
+
+    private Boolean selectedLateSubmissionFilter() {
+        String value = lateSubmissionComboBox.getValue();
+        if (LATE_ONLY_OPTION_TEXT.equals(value)) {
+            return true;
+        }
+        if (ON_TIME_ONLY_OPTION_TEXT.equals(value)) {
+            return false;
+        }
+        return null;
+    }
+
+    private Boolean selectedRecreatedFilter() {
+        String value = receiptTypeComboBox.getValue();
+        if (RECREATED_ONLY_OPTION_TEXT.equals(value)) {
+            return true;
+        }
+        if (ORIGINAL_ONLY_OPTION_TEXT.equals(value)) {
+            return false;
+        }
+        return null;
+    }
+
+    private Boolean selectedPrintStatusFilter() {
+        String value = printStatusComboBox.getValue();
+        if (PRINTED_ONLY_OPTION_TEXT.equals(value)) {
+            return true;
+        }
+        if (NOT_PRINTED_ONLY_OPTION_TEXT.equals(value)) {
+            return false;
+        }
+        return null;
     }
 
     private String churchDisplayText(Church church) {
@@ -831,11 +904,6 @@ public class ReceiptHistoryController {
         }
     }
 
-    private void updateWeekEndDate() {
-        LocalDate weekEnd = WeekUtil.getSundayForMonday(weekStartDatePicker.getValue());
-        weekEndDateLabel.setText(formatDate(weekEnd));
-    }
-
     private void showError(String title, String message) {
         Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
         alert.setTitle(title);
@@ -968,5 +1036,10 @@ public class ReceiptHistoryController {
             super.updateItem(region, empty);
             setText(empty || region == null ? null : region.getRegionCode() + " - " + region.getRegionName());
         }
+    }
+
+    private record ReceiptSearchCriteria(Long churchId, Long regionId, LocalDate weekStartDate, String searchText,
+                                         ReceiptStatus status, Boolean lateSubmission, Boolean recreated,
+                                         Boolean printed) {
     }
 }
