@@ -5,7 +5,6 @@ import com.churchmanagement.dto.report.*;
 import com.churchmanagement.exception.DatabaseException;
 
 import javax.sql.DataSource;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -478,13 +477,6 @@ public class ReportRepository {
                 sql.append("AND sl.status = ? ");
                 parameters.add(status);
             }
-        }
-    }
-
-    private void appendStatusTextFilter(StringBuilder sql, List<Object> parameters, ReportSearchCriteria criteria, String expected) {
-        if (criteria.getStatus() != null && !"ALL".equalsIgnoreCase(criteria.getStatus())
-                && !expected.equalsIgnoreCase(criteria.getStatus())) {
-            sql.append("AND 1 = 0 ");
         }
     }
 

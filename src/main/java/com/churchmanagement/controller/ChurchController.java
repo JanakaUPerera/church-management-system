@@ -521,20 +521,6 @@ public class ChurchController {
         }
     }
 
-    private static class RegionListCell extends ListCell<Region> {
-        @Override
-        protected void updateItem(Region region, boolean empty) {
-            super.updateItem(region, empty);
-            if (empty || region == null) {
-                setText(null);
-            } else if (region.getId() == null) {
-                setText(region.getRegionName());
-            } else {
-                setText(region.getRegionCode() + " - " + region.getRegionName());
-            }
-        }
-    }
-
     private static class StatusBadgeCell extends TableCell<ChurchDto, String> {
         private final Label badge = new Label();
 

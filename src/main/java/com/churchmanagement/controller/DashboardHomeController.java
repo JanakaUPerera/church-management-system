@@ -3,7 +3,6 @@ package com.churchmanagement.controller;
 import com.churchmanagement.dto.dashboard.ChartDataPointDto;
 import com.churchmanagement.dto.dashboard.ChurchCollectionTrendDto;
 import com.churchmanagement.dto.dashboard.CollectionTrendDto;
-import com.churchmanagement.dto.dashboard.RegionCollectionTypeTotalDto;
 import com.churchmanagement.dto.dashboard.RegionCollectionTrendDto;
 import com.churchmanagement.dto.dashboard.RegionSubmissionProgressDto;
 import com.churchmanagement.dto.dashboard.TrendingDashboardDto;
@@ -30,7 +29,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tooltip;
@@ -532,45 +530,6 @@ public class DashboardHomeController {
         return FALLBACK_CHART_COLORS[Math.floorMod(index, FALLBACK_CHART_COLORS.length)];
     }
 
-    private void setRegionWeeklyCollectionData(BarChart<String, Number> chart,
-                                               List<RegionCollectionTypeTotalDto> points) {
-        boolean hasData = points != null && points.stream()
-                .anyMatch(point -> point.getAmount().compareTo(BigDecimal.ZERO) > 0);
-        chart.setTitle(hasData ? "Region-wise Weekly Collection" : "Region-wise Weekly Collection - No data available");
-        chart.setLegendVisible(true);
-
-        Map<String, XYChart.Series<String, Number>> seriesByType = new LinkedHashMap<>();
-        for (String type : List.of("OFFERTORY", "TITHES", "OTHER_DONATIONS")) {
-            XYChart.Series<String, Number> series = new XYChart.Series<>();
-            series.setName(displayLabel(type));
-            seriesByType.put(type, series);
-        }
-
-        if (points != null) {
-            for (RegionCollectionTypeTotalDto point : points) {
-                if (point.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                    continue;
-                }
-                String collectionType = point.getCollectionType();
-                XYChart.Series<String, Number> series = seriesByType.computeIfAbsent(collectionType, type -> {
-                    XYChart.Series<String, Number> extraSeries = new XYChart.Series<>();
-                    extraSeries.setName(displayLabel(type));
-                    return extraSeries;
-                });
-                XYChart.Data<String, Number> data = new XYChart.Data<>(point.getRegionName(), point.getAmount());
-                int colorIndex = collectionTypeIndex(collectionType);
-                applyDataNodeStyle(data, "-fx-bar-fill: " + colorForLabel(collectionType, colorIndex) + ";",
-                        tooltip(point.getRegionName() + " - " + displayLabel(collectionType)
-                                + ": Rs. " + MONEY_FORMAT.format(point.getAmount())));
-                series.getData().add(data);
-            }
-        }
-
-        chart.getData().setAll(seriesByType.values().stream()
-                .filter(series -> !series.getData().isEmpty())
-                .toList());
-    }
-
     private void setWeeklyCollectionAmounts(List<ChartDataPointDto> weekReceiptPoints,
                                             List<ChartDataPointDto> weekCollectionPoints,
                                             boolean weekCollectionVisible) {
@@ -1014,15 +973,6 @@ public class DashboardHomeController {
         };
     }
 
-    private int collectionTypeIndex(String collectionType) {
-        return switch (collectionType) {
-            case "OFFERTORY" -> 0;
-            case "TITHES" -> 1;
-            case "OTHER_DONATIONS" -> 2;
-            default -> 3;
-        };
-    }
-
     private void clearWeeklyCharts() {
         submittedPendingPieChart.getData().clear();
         collectionTypeWeeklyPieChart.getData().clear();
@@ -1041,13 +991,5 @@ public class DashboardHomeController {
     private void setVisible(VBox node, boolean visible) {
         node.setVisible(visible);
         node.setManaged(visible);
-    }
-
-    private static class RegionListCell extends ListCell<Region> {
-        @Override
-        protected void updateItem(Region region, boolean empty) {
-            super.updateItem(region, empty);
-            setText(empty || region == null ? null : region.getRegionCode() + " - " + region.getRegionName());
-        }
     }
 }

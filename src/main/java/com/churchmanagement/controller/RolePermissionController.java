@@ -3,7 +3,6 @@ package com.churchmanagement.controller;
 import com.churchmanagement.dto.PermissionDto;
 import com.churchmanagement.dto.RoleDto;
 import com.churchmanagement.dto.RolePermissionUpdateRequest;
-import com.churchmanagement.entity.Role;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;

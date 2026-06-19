@@ -40,7 +40,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -1027,14 +1026,6 @@ public class ReceiptHistoryController {
             lateLabel.setVisible(lateSubmission);
             lateLabel.setManaged(lateSubmission);
             setGraphic(container);
-        }
-    }
-
-    private static class RegionListCell extends ListCell<Region> {
-        @Override
-        protected void updateItem(Region region, boolean empty) {
-            super.updateItem(region, empty);
-            setText(empty || region == null ? null : region.getRegionCode() + " - " + region.getRegionName());
         }
     }
 

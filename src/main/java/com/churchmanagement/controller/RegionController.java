@@ -136,17 +136,6 @@ public class RegionController {
         refreshRegions();
     }
 
-    private void searchRegions() {
-        try {
-            regions.setAll(regionService.search(searchField.getText()).stream()
-                    .map(RegionDto::fromRegion)
-                    .toList());
-            setMessage("Showing " + regions.size() + " region(s).");
-        } catch (RegionService.RegionException exception) {
-            showFriendlyError(exception.getMessage());
-        }
-    }
-
     private void configureTable() {
         codeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getRegionCode()));
         nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getRegionName()));

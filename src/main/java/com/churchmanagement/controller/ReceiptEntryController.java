@@ -41,7 +41,6 @@ import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
 import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;

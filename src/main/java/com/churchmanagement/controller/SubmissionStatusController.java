@@ -25,7 +25,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableCell;
@@ -484,34 +483,6 @@ public class SubmissionStatusController {
             lateBadge.setVisible(lateSubmission);
             lateBadge.setManaged(lateSubmission);
             setGraphic(container);
-        }
-    }
-
-    private static class RegionListCell extends ListCell<Region> {
-        @Override
-        protected void updateItem(Region region, boolean empty) {
-            super.updateItem(region, empty);
-            if (empty || region == null) {
-                setText(null);
-            } else if (region.getId() == null) {
-                setText(ALL_OPTION_TEXT);
-            } else {
-                setText(region.getRegionCode() + " - " + region.getRegionName());
-            }
-        }
-    }
-
-    private static class ChurchListCell extends ListCell<Church> {
-        @Override
-        protected void updateItem(Church church, boolean empty) {
-            super.updateItem(church, empty);
-            if (empty || church == null) {
-                setText(null);
-            } else if (church.getId() == null) {
-                setText(ALL_OPTION_TEXT);
-            } else {
-                setText(church.getChurchCode() + " - " + church.getChurchName());
-            }
         }
     }
 }
