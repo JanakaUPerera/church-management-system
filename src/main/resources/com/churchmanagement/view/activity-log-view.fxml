@@ -46,16 +46,14 @@
         <ComboBox fx:id="actionComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
         <Label text="Module" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
         <ComboBox fx:id="moduleComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-        <Label text="Keyword" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
-        <TextField fx:id="keywordField" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
-
-        <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="3" GridPane.columnSpan="3" GridPane.rowIndex="2">
-            <Button fx:id="searchButton" onAction="#handleSearch" styleClass="primary-button" text="Search"/>
-            <Button fx:id="clearButton" onAction="#handleClear" text="Clear"/>
-            <Button fx:id="viewDetailsButton" onAction="#handleViewDetails" text="View Details"/>
-            <Button fx:id="refreshButton" onAction="#handleRefresh" text="Refresh"/>
-        </HBox>
     </GridPane>
+
+    <HBox alignment="CENTER_RIGHT" spacing="10">
+        <TextField fx:id="keywordField" HBox.hgrow="ALWAYS" onAction="#handleSearch" promptText="Search by keyword"/>
+        <Button fx:id="searchButton" onAction="#handleSearch" styleClass="primary-button" text="Search"/>
+        <Button fx:id="refreshButton" onAction="#handleRefresh" text="Refresh"/>
+        <Button fx:id="viewDetailsButton" onAction="#handleViewDetails" text="View Details"/>
+    </HBox>
 
     <TableView fx:id="activityLogTable" VBox.vgrow="ALWAYS">
         <columns>

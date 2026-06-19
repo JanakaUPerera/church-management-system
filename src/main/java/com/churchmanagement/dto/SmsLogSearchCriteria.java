@@ -14,6 +14,7 @@ public class SmsLogSearchCriteria {
     private SmsDeliveryStatus deliveryStatus;
     private String mobileNumber;
     private String receiptNo;
+    private String searchText;
     private Integer limit;
 
     public LocalDate getDateFrom() {
@@ -98,6 +99,14 @@ public class SmsLogSearchCriteria {
 
     public void setReceiptNo(String receiptNo) {
         this.receiptNo = receiptNo;
+    }
+
+    public String getSearchText() {
+        return searchText;
+    }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText;
     }
 
     public Integer getLimit() {

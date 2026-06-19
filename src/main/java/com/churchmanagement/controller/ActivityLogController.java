@@ -9,6 +9,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -53,7 +54,6 @@ public class ActivityLogController {
     @FXML private ComboBox<String> moduleComboBox;
     @FXML private TextField keywordField;
     @FXML private Button searchButton;
-    @FXML private Button clearButton;
     @FXML private Button viewDetailsButton;
     @FXML private Button refreshButton;
     @FXML private TableView<ActivityLogDto> activityLogTable;
@@ -80,19 +80,18 @@ public class ActivityLogController {
 
     @FXML
     private void handleSearch() {
-        try {
-            ActivityLogSearchCriteria criteria = buildCriteria(1000);
-            activityLogs.setAll(activityLogQueryService.searchLogs(criteria));
-            setMessage(activityLogs.size() + " activity log(s) found.");
-        } catch (ActivityLogQueryService.ActivityLogException exception) {
-            showError("Activity Logs", exception.getMessage());
-        } catch (DatabaseException exception) {
-            showError("Activity Logs", "Unable to load activity logs.");
-        }
+        ActivityLogSearchCriteria criteria = buildCriteria(1000);
+        ProcessingDialog.run("Search Activity Logs", "Searching activity logs...",
+                () -> activityLogQueryService.searchLogs(criteria),
+                results -> {
+                    activityLogs.setAll(results);
+                    setMessage(activityLogs.size() + " activity log(s) found.");
+                },
+                throwable -> showError("Activity Logs", friendlyActivityLogError(throwable)));
     }
 
     @FXML
-    private void handleClear() {
+    private void handleRefresh() {
         dateFromPicker.setValue(null);
         dateToPicker.setValue(null);
         userComboBox.setValue(users.isEmpty() ? null : users.getFirst());
@@ -100,11 +99,6 @@ public class ActivityLogController {
         moduleComboBox.setValue(ALL_MODULES);
         keywordField.clear();
         loadLatestLogs();
-    }
-
-    @FXML
-    private void handleRefresh() {
-        handleClear();
     }
 
     @FXML
@@ -119,14 +113,13 @@ public class ActivityLogController {
 
     private void configureButtonIcons() {
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
-        ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
-        ButtonIconUtil.applyIcon(viewDetailsButton, "fas-eye");
         ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
+        ButtonIconUtil.applyIcon(viewDetailsButton, "fas-eye");
     }
 
     private void configureDateFilters() {
-        DatePickerUtil.applySystemDateFormat(dateFromPicker);
-        DatePickerUtil.applySystemDateFormat(dateToPicker);
+        DatePickerUtil.disableFutureDates(dateFromPicker);
+        DatePickerUtil.disableFutureDates(dateToPicker);
     }
 
     private void configureTable() {
@@ -445,6 +438,16 @@ public class ActivityLogController {
         alert.setContentText(message);
         alert.showAndWait();
         setMessage(message);
+    }
+
+    private String friendlyActivityLogError(Throwable throwable) {
+        if (throwable instanceof ActivityLogQueryService.ActivityLogException) {
+            return throwable.getMessage();
+        }
+        if (throwable instanceof DatabaseException) {
+            return "Unable to load activity logs.";
+        }
+        return "Unable to search activity logs.";
     }
 
     private record UserOption(Long userId, String username, String fullName, boolean allUsers) {

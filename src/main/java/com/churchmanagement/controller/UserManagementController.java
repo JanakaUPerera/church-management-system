@@ -40,6 +40,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -98,7 +100,14 @@ public class UserManagementController {
 
     @FXML
     private void handleSearch() {
-        applyUserFilters();
+        String query = searchField == null || searchField.getText() == null
+                ? ""
+                : searchField.getText().strip().toLowerCase(Locale.ROOT);
+        List<UserDto> source = new ArrayList<>(allUsers);
+        ProcessingDialog.run("Search Users", "Searching users...",
+                () -> filteredUsers(source, query),
+                (List<UserDto> results) -> users.setAll(results),
+                throwable -> showFriendlyError("Unable to search users."));
     }
 
     @FXML
@@ -155,10 +164,14 @@ public class UserManagementController {
         String query = searchField == null || searchField.getText() == null
                 ? ""
                 : searchField.getText().strip().toLowerCase(Locale.ROOT);
-        users.setAll(allUsers.stream()
+        users.setAll(filteredUsers(allUsers, query));
+    }
+
+    private List<UserDto> filteredUsers(List<UserDto> source, String query) {
+        return source.stream()
                 .filter(user -> query.isBlank() || contains(user.getUsername(), query)
                         || contains(user.getFullName(), query) || contains(user.getRoleName(), query))
-                .toList());
+                .toList();
     }
 
     private void loadSelectedUser(UserDto user) {

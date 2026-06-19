@@ -67,10 +67,8 @@ public class SmsLogController {
     @FXML private ComboBox<Church> churchComboBox;
     @FXML private ComboBox<String> statusComboBox;
     @FXML private ComboBox<String> deliveryStatusComboBox;
-    @FXML private TextField mobileNumberField;
-    @FXML private TextField receiptNoField;
+    @FXML private TextField searchField;
     @FXML private Button searchButton;
-    @FXML private Button clearButton;
     @FXML private Button refreshButton;
     @FXML private TableView<SmsLogDto> smsLogTable;
     @FXML private TableColumn<SmsLogDto, String> dateTimeColumn;
@@ -97,31 +95,25 @@ public class SmsLogController {
 
     @FXML
     private void handleSearch() {
-        try {
-            smsLogs.setAll(smsLogService.searchSmsLogs(buildCriteria(500)));
-            setMessage(smsLogs.size() + " SMS log(s) found.");
-        } catch (SmsLogService.SmsLogException exception) {
-            showError("SMS Logs", exception.getMessage());
-        } catch (DatabaseException exception) {
-            showError("SMS Logs", "Unable to load SMS logs.");
-        }
+        SmsLogSearchCriteria criteria = buildCriteria(500);
+        ProcessingDialog.run("Search SMS Logs", "Searching SMS logs...",
+                () -> smsLogService.searchSmsLogs(criteria),
+                results -> {
+                    smsLogs.setAll(results);
+                    setMessage(smsLogs.size() + " SMS log(s) found.");
+                },
+                throwable -> showError("SMS Logs", friendlySmsLogError(throwable)));
     }
 
     @FXML
-    private void handleClear() {
+    private void handleRefresh() {
         dateFromPicker.setValue(null);
         dateToPicker.setValue(null);
         churchComboBox.getSelectionModel().clearSelection();
         statusComboBox.setValue(STATUS_ALL);
         deliveryStatusComboBox.setValue(STATUS_ALL);
-        mobileNumberField.clear();
-        receiptNoField.clear();
+        searchField.clear();
         loadLatestLogs();
-    }
-
-    @FXML
-    private void handleRefresh() {
-        handleClear();
     }
 
     private void configureButtonIcons() {
@@ -129,13 +121,12 @@ public class SmsLogController {
                 .map(user -> new PermissionGuard(user).can("sms.resend"))
                 .orElse(false);
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
-        ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
         ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
     private void configureFilters() {
-        DatePickerUtil.applySystemDateFormat(dateFromPicker);
-        DatePickerUtil.applySystemDateFormat(dateToPicker);
+        DatePickerUtil.disableFutureDates(dateFromPicker);
+        DatePickerUtil.disableFutureDates(dateToPicker);
         ComboBoxUtil.makeChurchSearchable(churchComboBox, churches);
         statusComboBox.setItems(FXCollections.observableArrayList(enumOptions(SmsSendStatus.values())));
         statusComboBox.setValue(STATUS_ALL);
@@ -223,8 +214,7 @@ public class SmsLogController {
         if (deliveryStatusComboBox.getValue() != null && !STATUS_ALL.equals(deliveryStatusComboBox.getValue())) {
             criteria.setDeliveryStatus(SmsDeliveryStatus.valueOf(deliveryStatusComboBox.getValue()));
         }
-        criteria.setMobileNumber(mobileNumberField.getText());
-        criteria.setReceiptNo(receiptNoField.getText());
+        criteria.setSearchText(searchField.getText());
         criteria.setLimit(limit);
         return criteria;
     }
@@ -392,6 +382,16 @@ public class SmsLogController {
         alert.setContentText(message);
         alert.showAndWait();
         setMessage(message);
+    }
+
+    private String friendlySmsLogError(Throwable throwable) {
+        if (throwable instanceof SmsLogService.SmsLogException) {
+            return throwable.getMessage();
+        }
+        if (throwable instanceof DatabaseException) {
+            return "Unable to load SMS logs.";
+        }
+        return "Unable to search SMS logs.";
     }
 
     private void resendSms(SmsLogDto log) {

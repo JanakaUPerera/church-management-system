@@ -103,7 +103,8 @@
             <ProgressBar fx:id="submissionProgressBar" maxWidth="Infinity" progress="0" styleClass="submission-progress-bar" HBox.hgrow="ALWAYS"/>
             <Label fx:id="submissionProgressLabel" minWidth="130" styleClass="submission-progress-value" text="0 / 0      0%"/>
         </HBox>
-        <Button fx:id="refreshButton" onAction="#handleRefresh" styleClass="primary-button" text="Refresh"/>
+        <Button fx:id="searchButton" onAction="#handleSearch" styleClass="primary-button" text="Search"/>
+        <Button fx:id="refreshButton" onAction="#handleRefresh" text="Refresh"/>
     </HBox>
 
     <TableView fx:id="submissionStatusTable" styleClass="receipt-history-table" VBox.vgrow="ALWAYS">
@@ -133,7 +134,7 @@
     <HBox alignment="CENTER_LEFT" spacing="14" styleClass="submission-totals-row">
         <Label styleClass="submission-totals-title" text="TOTALS"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label styleClass="submission-totals-label" text="Offertory"/>
+        <Label styleClass="submission-totals-label" text="Offerings"/>
         <Label fx:id="totalsOffertoryLabel" styleClass="submission-totals-value" text="0.00"/>
         <Label styleClass="submission-totals-label" text="Tithes"/>
         <Label fx:id="totalsTithesLabel" styleClass="submission-totals-value" text="0.00"/>

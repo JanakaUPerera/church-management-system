@@ -114,13 +114,29 @@ public class RegionController {
     }
 
     @FXML
-    private void handleRefresh() {
-        searchField.clear();
-        refreshRegions();
+    private void handleSearch() {
+        String searchText = searchField.getText();
+        ProcessingDialog.run("Search Regions", "Searching regions...",
+                () -> regionService.search(searchText).stream()
+                        .map(RegionDto::fromRegion)
+                        .toList(),
+                results -> {
+                    regions.setAll(results);
+                    setMessage("Showing " + regions.size() + " region(s).");
+                },
+                throwable -> showFriendlyError(throwable instanceof RegionService.RegionException
+                        ? throwable.getMessage()
+                        : "Unable to search regions."));
     }
 
     @FXML
-    private void handleSearch() {
+    private void handleRefresh() {
+        searchField.clear();
+        clearForm();
+        refreshRegions();
+    }
+
+    private void searchRegions() {
         try {
             regions.setAll(regionService.search(searchField.getText()).stream()
                     .map(RegionDto::fromRegion)

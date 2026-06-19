@@ -395,10 +395,10 @@ public class BackupRestoreController {
     }
 
     private void configureFilters() {
-        DatePickerUtil.applySystemDateFormat(backupDateFromPicker);
-        DatePickerUtil.applySystemDateFormat(backupDateToPicker);
-        DatePickerUtil.applySystemDateFormat(restoreDateFromPicker);
-        DatePickerUtil.applySystemDateFormat(restoreDateToPicker);
+        DatePickerUtil.disableFutureDates(backupDateFromPicker);
+        DatePickerUtil.disableFutureDates(backupDateToPicker);
+        DatePickerUtil.disableFutureDates(restoreDateFromPicker);
+        DatePickerUtil.disableFutureDates(restoreDateToPicker);
         backupTypeFilterComboBox.setItems(FXCollections.observableArrayList(FILTER_ALL, "MANUAL", "AUTO", "PRE_RESTORE"));
         backupTypeFilterComboBox.setValue(FILTER_ALL);
         backupStatusFilterComboBox.setItems(FXCollections.observableArrayList(FILTER_ALL, "SUCCESS", "FAILED"));

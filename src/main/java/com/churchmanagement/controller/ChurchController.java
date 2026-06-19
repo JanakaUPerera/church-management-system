@@ -38,6 +38,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Locale;
 
@@ -136,16 +138,29 @@ public class ChurchController {
     }
 
     @FXML
-    private void handleRefresh() {
-        searchField.clear();
-        regionFilterComboBox.getSelectionModel().selectFirst();
-        refreshRegions();
-        refreshChurches();
+    private void handleSearch() {
+        String query = searchField == null || searchField.getText() == null
+                ? ""
+                : searchField.getText().strip().toLowerCase(Locale.ROOT);
+        Region selectedRegion = regionFilterComboBox == null ? null : regionFilterComboBox.getValue();
+        Long selectedRegionId = selectedRegion == null ? null : selectedRegion.getId();
+        List<ChurchDto> source = new ArrayList<>(allChurches);
+        ProcessingDialog.run("Search Churches", "Searching churches...",
+                () -> filteredChurches(source, query, selectedRegionId),
+                results -> {
+                    churches.setAll(results);
+                    setMessage("Showing " + churches.size() + " church(es).");
+                },
+                throwable -> showFriendlyError("Unable to search churches."));
     }
 
     @FXML
-    private void handleSearch() {
-        applyChurchFilters();
+    private void handleRefresh() {
+        searchField.clear();
+        regionFilterComboBox.getSelectionModel().selectFirst();
+        clearForm();
+        refreshRegions();
+        refreshChurches();
     }
 
     private void configureTable() {
@@ -224,11 +239,15 @@ public class ChurchController {
         Region selectedRegion = regionFilterComboBox == null ? null : regionFilterComboBox.getValue();
         Long selectedRegionId = selectedRegion == null ? null : selectedRegion.getId();
 
-        churches.setAll(allChurches.stream()
+        churches.setAll(filteredChurches(allChurches, query, selectedRegionId));
+        setMessage("Showing " + churches.size() + " church(es).");
+    }
+
+    private List<ChurchDto> filteredChurches(List<ChurchDto> source, String query, Long selectedRegionId) {
+        return source.stream()
                 .filter(church -> selectedRegionId == null || selectedRegionId.equals(church.getRegionId()))
                 .filter(church -> query.isBlank() || matchesSearch(church, query))
-                .toList());
-        setMessage("Showing " + churches.size() + " church(es).");
+                .toList();
     }
 
     private boolean matchesSearch(ChurchDto church, String query) {

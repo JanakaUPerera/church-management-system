@@ -219,6 +219,12 @@ public class SmsLogRepository {
             sql.append("AND r.receipt_no LIKE ? ");
             parameters.add("%" + safeCriteria.getReceiptNo().strip() + "%");
         }
+        if (safeCriteria.getSearchText() != null && !safeCriteria.getSearchText().isBlank()) {
+            sql.append("AND (r.receipt_no LIKE ? OR sl.mobile_number LIKE ?) ");
+            String term = "%" + safeCriteria.getSearchText().strip() + "%";
+            parameters.add(term);
+            parameters.add(term);
+        }
         sql.append("ORDER BY sl.created_at DESC LIMIT ?");
         parameters.add(safeCriteria.limitOrDefault(500));
 

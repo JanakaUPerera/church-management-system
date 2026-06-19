@@ -12,6 +12,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -39,6 +40,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SubmissionStatusController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
@@ -61,6 +63,7 @@ public class SubmissionStatusController {
     @FXML private ComboBox<Church> churchComboBox;
     @FXML private ComboBox<String> statusComboBox;
     @FXML private TextField searchField;
+    @FXML private Button searchButton;
     @FXML private Button refreshButton;
     @FXML private Label submittedChurchesLabel;
     @FXML private Label pendingChurchesLabel;
@@ -109,22 +112,53 @@ public class SubmissionStatusController {
     @FXML
     private void handleNextWeek() {
         LocalDate current = weekStartDatePicker.getValue();
-        weekStartDatePicker.setValue((current == null ? submissionStatusService.defaultWeekStart() : current).plusWeeks(1));
+        LocalDate nextWeek = (current == null ? submissionStatusService.defaultWeekStart() : current).plusWeeks(1);
+        if (!nextWeek.isAfter(LocalDate.now())) {
+            weekStartDatePicker.setValue(nextWeek);
+        }
+    }
+
+    @FXML
+    private void handleSearch() {
+        LocalDate weekStart = weekStartDatePicker.getValue();
+        Region region = regionComboBox.getValue();
+        Church church = churchComboBox.getValue();
+        String status = statusComboBox.getValue();
+        Long regionId = selectedRegionId(region);
+        Long churchId = selectedChurchId(church);
+        String regionName = region == null ? ALL_OPTION_TEXT : region.getRegionName();
+        ProcessingDialog.run("Search Submission Status", "Searching submission status...",
+                () -> {
+                    submissionStatusService.logFilterChanged(weekStart, regionId, regionName, status);
+                    return new SubmissionSearchResult(
+                            submissionStatusService.loadWeeklyStatus(weekStart, regionId, churchId, status),
+                            submissionStatusService.loadWeeklySummary(weekStart, regionId, churchId),
+                            submissionStatusService.loadSubmissionTotals(weekStart, regionId, churchId));
+                },
+                this::applySubmissionSearchResult,
+                throwable -> showError("Submission Status", friendlySubmissionStatusError(throwable)));
     }
 
     @FXML
     private void handleRefresh() {
+        weekStartDatePicker.setValue(submissionStatusService.defaultWeekStart());
+        regionComboBox.getSelectionModel().selectFirst();
+        updateChurchFilter();
+        churchComboBox.getSelectionModel().selectFirst();
+        statusComboBox.setValue(SubmissionStatusService.STATUS_ALL);
+        searchField.clear();
         refreshDashboard(true);
     }
 
     private void configureButtons() {
         ButtonIconUtil.applyIcon(previousWeekButton, "fas-chevron-left");
         ButtonIconUtil.applyIcon(nextWeekButton, "fas-chevron-right");
+        ButtonIconUtil.applyIcon(searchButton, "fas-search");
         ButtonIconUtil.applyIcon(refreshButton, "fas-sync-alt");
     }
 
     private void configureFilters() {
-        DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
+        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weekStartDatePicker);
         regionComboBox.setItems(regions);
         ComboBoxUtil.makeSearchable(regionComboBox, this::regionDisplayText);
         churchComboBox.setItems(filteredChurches);
@@ -246,6 +280,20 @@ public class SubmissionStatusController {
         }
     }
 
+    private void applySubmissionSearchResult(SubmissionSearchResult result) {
+        statusRows.setAll(result.rows());
+        applyTableSearch();
+        updateSummary(result.summary());
+        updateTotals(result.totals());
+    }
+
+    private String friendlySubmissionStatusError(Throwable throwable) {
+        if (throwable instanceof SubmissionStatusService.SubmissionStatusException) {
+            return throwable.getMessage();
+        }
+        return "Unable to load submission status right now. Please try again later.";
+    }
+
     private void applyTableSearch() {
         String term = searchField == null || searchField.getText() == null
                 ? ""
@@ -360,6 +408,10 @@ public class SubmissionStatusController {
 
     private String formatDateTime(LocalDateTime dateTime) {
         return dateTimeFormatter.formatDateTime(dateTime);
+    }
+
+    private record SubmissionSearchResult(List<SubmissionStatusDto> rows, SubmissionSummaryDto summary,
+                                          SubmissionTotalsDto totals) {
     }
 
     private String nullToDash(String value) {

@@ -28,7 +28,7 @@
         <TextField fx:id="searchField" HBox.hgrow="ALWAYS" onAction="#handleSearch" promptText="Search by church code, church name, or region name"/>
         <Label text="Region"/>
         <ComboBox fx:id="regionFilterComboBox" prefWidth="220" promptText="All regions"/>
-        <Button fx:id="searchButton" onAction="#handleSearch" text="Search"/>
+        <Button fx:id="searchButton" onAction="#handleSearch" styleClass="primary-button" text="Search"/>
         <Button fx:id="refreshButton" onAction="#handleRefresh" text="Refresh"/>
     </HBox>
 
