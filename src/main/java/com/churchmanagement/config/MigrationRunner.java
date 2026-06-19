@@ -16,6 +16,7 @@ public final class MigrationRunner {
                     .dataSource(DatabaseConfig.getDataSource())
                     .locations(DatabaseConfig.getProperty("flyway.locations"))
                     .baselineOnMigrate(true)
+                    .ignoreMigrationPatterns("*:missing")
                     .load();
 
             flyway.migrate();

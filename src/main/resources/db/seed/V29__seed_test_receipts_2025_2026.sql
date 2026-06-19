@@ -12,7 +12,7 @@ WITH RECURSIVE weeks AS (
     UNION ALL
     SELECT DATE_ADD(week_start_date, INTERVAL 7 DAY), week_index + 1
     FROM weeks
-    WHERE week_start_date < DATE('2026-02-23')
+    WHERE week_start_date < DATE('2026-06-15')
 )
 SELECT week_start_date, week_index
 FROM weeks;

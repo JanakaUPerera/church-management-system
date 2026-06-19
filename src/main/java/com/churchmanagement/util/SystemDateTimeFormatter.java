@@ -8,9 +8,9 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class SystemDateTimeFormatter {
-    private static final String DEFAULT_DATE_PATTERN = "yyyy-MM-dd";
-    private static final String DEFAULT_TIME_PATTERN = "HH:mm:ss";
-    private static final String DEFAULT_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm";
+    private static final String DEFAULT_DATE_PATTERN = "yyyy-MMM-dd";
+    private static final String DEFAULT_TIME_PATTERN = "HH:mm";
+    private static final String DEFAULT_DATE_TIME_PATTERN = "yyyy-MMM-dd HH:mm";
 
     private final SystemConfigurationCache configurationCache;
 

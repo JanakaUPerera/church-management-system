@@ -104,6 +104,10 @@ public class SystemSettingService {
             case "reports.export.folder" -> requirePath(normalized, "Report export location is required.");
             case "reports.pdf.charts.enabled" -> requireBoolean(normalized,
                     "PDF report charts setting must be true or false.");
+            case "receipt.allow.back.week" -> requireBoolean(normalized,
+                    "Allow back week setting must be true or false.");
+            case "receipt.late.reason.required" -> requireBoolean(normalized,
+                    "Late submission reason required setting must be true or false.");
             case "system.theme" -> requireOneOf(normalized, "System theme must be LIGHT or DARK.", "LIGHT", "DARK");
             case "receipt.default.language" -> requireOneOf(normalized,
                     "Receipt default language must be ENGLISH, SINHALA, or TAMIL.",
