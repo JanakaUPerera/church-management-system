@@ -7,6 +7,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -69,6 +71,22 @@ public final class DatabaseConfig {
     }
 
     private static Properties loadProperties() {
+        // When installed via jpackage, $APPDIR is passed as -Dapp.home and an external
+        // application.properties sits next to the app JARs so clients can edit DB credentials.
+        String appHome = System.getProperty("app.home");
+        if (appHome != null) {
+            Path externalConfig = Path.of(appHome, "application.properties");
+            if (Files.exists(externalConfig)) {
+                try (InputStream inputStream = Files.newInputStream(externalConfig)) {
+                    Properties properties = new Properties();
+                    properties.load(inputStream);
+                    return properties;
+                } catch (IOException exception) {
+                    throw new DatabaseException("Unable to load external application.properties from: " + externalConfig, exception);
+                }
+            }
+        }
+
         try (InputStream inputStream = DatabaseConfig.class.getResourceAsStream(PROPERTIES_FILE)) {
             if (inputStream == null) {
                 throw new DatabaseException("Missing " + PROPERTIES_FILE);
