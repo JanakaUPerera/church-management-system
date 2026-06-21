@@ -43,3 +43,9 @@ user_uploads/
 
 # claude code
 .claude/
+
+# installer
+/installer/
+
+# Java build files
+build-installer.bat
