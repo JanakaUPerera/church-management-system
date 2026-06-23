@@ -19,6 +19,9 @@ public final class MigrationRunner {
                     .ignoreMigrationPatterns("*:missing")
                     .load();
 
+            // Remove any FAILED migration entries left by a previous failed run
+            // so the corrected migration is retried automatically on next startup.
+            flyway.repair();
             flyway.migrate();
         } catch (FlywayException | DatabaseException exception) {
             throw new DatabaseException("Database migration failed.", exception);
