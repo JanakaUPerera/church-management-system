@@ -108,7 +108,7 @@ public class SystemSettingService {
                     "Allow back week setting must be true or false.");
             case "receipt.late.reason.required" -> requireBoolean(normalized,
                     "Late submission reason required setting must be true or false.");
-            case "system.theme" -> requireOneOf(normalized, "System theme must be LIGHT or DARK.", "LIGHT", "DARK");
+            case "system.theme" -> requireOneOf(normalized, "System theme must be ORCHID, LIGHT or DARK.", "ORCHID", "LIGHT", "DARK");
             case "receipt.default.language" -> requireOneOf(normalized,
                     "Receipt default language must be ENGLISH, SINHALA, or TAMIL.",
                     "ENGLISH", "SINHALA", "TAMIL");

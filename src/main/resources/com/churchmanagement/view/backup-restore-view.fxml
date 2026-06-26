@@ -84,9 +84,9 @@
                                             </GridPane>
                                             <TableView fx:id="backupScheduleTable" prefHeight="160">
                                                 <columns>
-                                                    <TableColumn fx:id="scheduleNameColumn" prefWidth="220" text="Schedule"/>
+                                                    <TableColumn fx:id="scheduleNameColumn" prefWidth="600" text="Schedule"/>
                                                     <TableColumn fx:id="scheduleTimeColumn" prefWidth="100" text="Time"/>
-                                                    <TableColumn fx:id="scheduleEnabledColumn" prefWidth="120" text="Status"/>
+                                                    <TableColumn fx:id="scheduleEnabledColumn" prefWidth="100" text="Status"/>
                                                 </columns>
                                             </TableView>
                                             <HBox spacing="8">

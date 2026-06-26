@@ -2,61 +2,38 @@ package com.churchmanagement;
 
 import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
-import com.churchmanagement.config.MigrationRunner;
-import com.churchmanagement.exception.DatabaseException;
+import com.churchmanagement.controller.StartupController;
 import com.churchmanagement.service.AutoBackupScheduler;
-import com.churchmanagement.service.SystemConfigurationCache;
-import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ApplicationRestartUtil;
 import com.churchmanagement.util.ThemeService;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.IOException;
 
 public class MainApplication extends Application {
-    private DatabaseException startupException;
 
     @Override
-    public void init() {
-        try {
-            MigrationRunner.runMigrations();
-            SystemConfigurationCache.getInstance().loadSettings();
-        } catch (DatabaseException exception) {
-            startupException = exception;
-        }
-    }
+    public void start(Stage primaryStage) throws IOException {
+        primaryStage.initStyle(StageStyle.TRANSPARENT);
+        primaryStage.setTitle(AppConfig.APPLICATION_NAME);
 
-    @Override
-    public void start(Stage stage) throws IOException {
-        if (startupException != null) {
-            showStartupError(startupException);
-            Platform.exit();
-            return;
-        }
-
-        FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.LOGIN_VIEW));
-        Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
-        new ThemeService().applyConfiguredTheme(scene.getRoot());
-        scene.setFill(Color.TRANSPARENT);
-
-        stage.initStyle(StageStyle.TRANSPARENT);
-        stage.setTitle(AppConfig.APPLICATION_NAME);
-        stage.setScene(scene);
-        stage.setMinWidth(AppConfig.LOGIN_WIDTH);
-        stage.setMinHeight(AppConfig.LOGIN_HEIGHT);
-        stage.show();
+        showStartupScreen(primaryStage);
     }
 
     @Override
     public void stop() {
-        AutoBackupScheduler.getInstance().cancel();
+        try {
+            AutoBackupScheduler.getInstance().cancel();
+        } catch (Exception ignored) {
+        }
         DatabaseConfig.closeDataSource();
         ApplicationRestartUtil.restartIfRequested();
     }
@@ -69,11 +46,35 @@ public class MainApplication extends Application {
         launch(args);
     }
 
-    private void showStartupError(DatabaseException exception) {
-        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
-        alert.setTitle("Database Startup Error");
-        alert.setHeaderText("Unable to start the database layer");
-        alert.setContentText(exception.getMessage());
-        alert.showAndWait();
+    private void showStartupScreen(Stage stage) throws IOException {
+        FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.STARTUP_VIEW));
+        StackPane root = loader.load();
+        StartupController controller = loader.getController();
+
+        Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+        Scene scene = new Scene(root, screen.getWidth(), screen.getHeight());
+        scene.setFill(Color.TRANSPARENT);
+        stage.setScene(scene);
+        stage.setX(screen.getMinX());
+        stage.setY(screen.getMinY());
+        stage.show();
+
+        controller.setOnReady(() -> transitionToLogin(stage));
+        controller.startChecks();
+    }
+
+    private void transitionToLogin(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.LOGIN_VIEW));
+            Scene scene = new Scene(loader.load(), AppConfig.LOGIN_WIDTH, AppConfig.LOGIN_HEIGHT);
+            new ThemeService().applyConfiguredTheme(scene.getRoot());
+            scene.setFill(Color.TRANSPARENT);
+            stage.setScene(scene);
+            stage.setMinWidth(AppConfig.LOGIN_WIDTH);
+            stage.setMinHeight(AppConfig.LOGIN_HEIGHT);
+            stage.centerOnScreen();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load login view.", e);
+        }
     }
 }

@@ -106,7 +106,7 @@ public class SettingsController {
         new PermissionGuard(currentUser).require("settings.menu.view");
 
         receiptLanguageComboBox.getItems().setAll("ENGLISH", "SINHALA", "TAMIL");
-        themeComboBox.getItems().setAll("LIGHT", "DARK");
+        themeComboBox.getItems().setAll("ORCHID", "LIGHT", "DARK");
         gatewayTypeComboBox.getItems().setAll(SmsSettings.GatewayType.values());
         baudRateComboBox.getItems().setAll(9600, 19200, 38400, 115200);
         configureButtonIcons();
@@ -350,7 +350,7 @@ public class SettingsController {
         reportExportFolderField.setText(defaultValue(values.get("reports.export.folder"), "./reports"));
         pdfReportChartsEnabledCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
                 values.get("reports.pdf.charts.enabled"), "true")));
-        themeComboBox.setValue(defaultValue(values.get("system.theme"), "LIGHT"));
+        themeComboBox.setValue(defaultValue(values.get("system.theme"), "ORCHID"));
     }
 
     private void configureButtonIcons() {

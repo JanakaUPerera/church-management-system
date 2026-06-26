@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+  Full-screen transparent overlay (ProcessingDialog aesthetic).
+  The outer StackPane fills the entire stage (set to screen size in MainApplication).
+  All content floats in a centered amber card.
+-->
+<StackPane fx:id="startupRoot" styleClass="startup-overlay" stylesheets="@app.css"
+           xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.churchmanagement.controller.StartupController">
+
+    <!--
+      Card starts with no visible background/border during the spinner phase.
+      The "startup-card" style class is added programmatically once check
+      results are ready (see StartupController.revealChecks).
+    -->
+    <VBox fx:id="startupCard" alignment="CENTER"
+          spacing="14" prefWidth="380" maxWidth="380">
+
+        <!-- Spinner — visible during active checks -->
+        <ProgressIndicator fx:id="spinner" prefWidth="40" prefHeight="40"/>
+
+        <!-- Current step text -->
+        <Label fx:id="statusLabel" text="Initializing..." styleClass="startup-status-label"/>
+
+        <!-- ── Service check rows (shown once first check starts) ── -->
+        <VBox fx:id="checkContainer" spacing="8" visible="false" managed="false">
+            <VBox.margin>
+                <Insets top="4"/>
+            </VBox.margin>
+
+            <!-- Database (mandatory) -->
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="startup-check-row">
+                <Label fx:id="dbIcon" text="●" styleClass="startup-check-icon-pending"/>
+                <VBox spacing="2">
+                    <Label text="Database connection" styleClass="startup-check-label"/>
+                    <Label fx:id="dbDetail" styleClass="startup-check-detail"/>
+                </VBox>
+            </HBox>
+
+            <!-- Modem (optional) -->
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="startup-check-row">
+                <Label fx:id="modemIcon" text="●" styleClass="startup-check-icon-pending"/>
+                <VBox spacing="2">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <Label text="Modem connection" styleClass="startup-check-label"/>
+                        <Label text="(optional)" styleClass="startup-optional-label"/>
+                    </HBox>
+                    <Label fx:id="modemDetail" styleClass="startup-check-detail"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- ── Fatal error — only when DB check fails ── -->
+        <Label fx:id="errorLabel" wrapText="true" textAlignment="CENTER"
+               styleClass="startup-error-message" visible="false" managed="false">
+            <VBox.margin>
+                <Insets top="4"/>
+            </VBox.margin>
+        </Label>
+
+        <!-- ── Action buttons — appear after first check run ── -->
+        <HBox fx:id="buttonBar" alignment="CENTER" spacing="10"
+              visible="false" managed="false">
+            <VBox.margin>
+                <Insets top="6"/>
+            </VBox.margin>
+
+            <Button fx:id="checkNowButton" text="Check Now" onAction="#handleCheckNow"
+                    styleClass="startup-check-now-button" prefWidth="120" prefHeight="34"/>
+
+            <!-- Exit only shown when DB fails -->
+            <Button fx:id="exitButton" text="Exit" onAction="#handleExit"
+                    styleClass="startup-exit-button" prefWidth="90" prefHeight="34"
+                    visible="false" managed="false"/>
+        </HBox>
+
+    </VBox>
+</StackPane>

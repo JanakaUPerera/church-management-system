@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class SystemConfigurationCache {
+    private static volatile SystemConfigurationCache instance;
+
     private final SystemSettingRepository systemSettingRepository;
     private final Map<String, String> values = new ConcurrentHashMap<>();
 
@@ -15,8 +17,11 @@ public class SystemConfigurationCache {
         this.systemSettingRepository = systemSettingRepository;
     }
 
-    public static SystemConfigurationCache getInstance() {
-        return Holder.INSTANCE;
+    public static synchronized SystemConfigurationCache getInstance() {
+        if (instance == null) {
+            instance = new SystemConfigurationCache(new SystemSettingRepository());
+        }
+        return instance;
     }
 
     public synchronized void loadSettings() {
@@ -50,8 +55,4 @@ public class SystemConfigurationCache {
         return value == null ? "" : value;
     }
 
-    private static class Holder {
-        private static final SystemConfigurationCache INSTANCE =
-                new SystemConfigurationCache(new SystemSettingRepository());
-    }
 }

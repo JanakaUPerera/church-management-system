@@ -29,7 +29,7 @@
                            <Circle centerX="60" centerY="60" radius="60" />
                        </clip>
                    </ImageView>
-                   <Label style="-fx-text-fill: #fde68a; -fx-font-size: 15px; -fx-font-weight: bold;" text="Sign in to continue" />
+                   <Label styleClass="login-subtitle" text="Sign in to continue" />
    
                    <VBox maxWidth="Infinity" spacing="6">
           <children>
@@ -55,7 +55,7 @@
                            <Insets bottom="4" />
                        </VBox.margin>
                    </Button>
-                   <Label fx:id="errorLabel" maxWidth="Infinity" minHeight="32" style="-fx-text-fill: #ffb4ab;" wrapText="true" />
+                   <Label fx:id="errorLabel" maxWidth="Infinity" minHeight="32" styleClass="login-error-label" wrapText="true" />
                </children>
             </VBox>
         </center>

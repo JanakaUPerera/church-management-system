@@ -103,7 +103,7 @@
 
 .theme-dark.app-dialog-pane {
     -fx-background-color: #111827;
-    -fx-border-color: #f59e0b;
+    -fx-border-color: #4b5563;
 }
 
 .theme-dark.app-dialog-pane > .content,
@@ -112,7 +112,7 @@
 }
 
 .theme-dark.app-dialog-pane .dialog-title-bar {
-    -fx-background-color: #451a03;
+    -fx-background-color: #1f2937;
 }
 
 .theme-dark.app-dialog-pane .label,
@@ -165,6 +165,128 @@
 
 .theme-dark.processing-dialog-overlay {
     -fx-background-color: rgba(17, 24, 39, 0.58);
+}
+
+.theme-orchid.processing-dialog-overlay {
+    -fx-background-color: rgba(61, 14, 63, 0.28);
+}
+
+/* ── Startup overlay — dark theme ── */
+.theme-dark.startup-overlay {
+    -fx-background-color: rgba(17, 24, 39, 0.75);
+}
+
+.theme-dark .startup-card {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #374151;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 24, 0.22, 0, 6);
+}
+
+.theme-dark .startup-status-label {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .startup-check-row {
+    -fx-background-color: #263244;
+    -fx-border-color: #374151;
+}
+
+.theme-dark .startup-check-label {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .startup-optional-label {
+    -fx-text-fill: #6b7280;
+}
+
+.theme-dark .startup-check-detail {
+    -fx-text-fill: #9ca3af;
+}
+
+.theme-dark .startup-error-message {
+    -fx-text-fill: #fca5a5;
+    -fx-background-color: rgba(239, 68, 68, 0.18);
+    -fx-border-color: rgba(239, 68, 68, 0.32);
+}
+
+.theme-dark .startup-check-now-button {
+    -fx-background-color: #d97706;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+
+.theme-dark .startup-check-now-button:hover {
+    -fx-background-color: #b45309;
+}
+
+.theme-dark .startup-exit-button {
+    -fx-background-color: #7f1d1d;
+    -fx-text-fill: #fca5a5;
+    -fx-border-color: #991b1b;
+}
+
+.theme-dark .startup-exit-button:hover {
+    -fx-background-color: #991b1b;
+    -fx-text-fill: #fee2e2;
+}
+
+/* ── Startup overlay — orchid theme ── */
+.theme-orchid.startup-overlay {
+    -fx-background-color: rgba(61, 14, 63, 0.30);
+}
+
+.theme-orchid .startup-card {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #d85fdd;
+    -fx-effect: dropshadow(gaussian, rgba(61, 14, 63, 0.28), 24, 0.20, 0, 6);
+}
+
+.theme-orchid .startup-status-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .startup-check-row {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .startup-check-label {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .startup-optional-label {
+    -fx-text-fill: #8c239a;
+}
+
+.theme-orchid .startup-check-detail {
+    -fx-text-fill: #78716c;
+}
+
+.theme-orchid .startup-error-message {
+    -fx-text-fill: #991b1b;
+    -fx-background-color: #fee2e2;
+    -fx-border-color: #fca5a5;
+}
+
+.theme-orchid .startup-check-now-button {
+    -fx-background-color: #bb29c1;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+
+.theme-orchid .startup-check-now-button:hover {
+    -fx-background-color: #9c1fa6;
+}
+
+.theme-orchid .startup-exit-button {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+    -fx-border-color: #fca5a5;
+}
+
+.theme-orchid .startup-exit-button:hover {
+    -fx-background-color: #fca5a5;
+    -fx-text-fill: #7f1d1d;
 }
 
 .processing-dialog-card {
@@ -827,10 +949,20 @@
     -fx-border-radius: 16;
 }
 
+.login-subtitle {
+    -fx-text-fill: #fde68a;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
 .login-field-label {
     -fx-text-fill: #fde68a;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
+}
+
+.login-error-label {
+    -fx-text-fill: #ffb4ab;
 }
 
 .login-close-button {
@@ -2078,6 +2210,37 @@
     -fx-padding: 12;
 }
 
+/* ── General check-box (settings page, etc.) ── */
+.check-box {
+    -fx-text-fill: #451a03;
+}
+
+.check-box .text {
+    -fx-fill: #451a03;
+}
+
+.check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.check-box:hover .box {
+    -fx-background-color: #fef3c7;
+    -fx-border-color: #f59e0b;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #d97706;
+    -fx-border-color: #d97706;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
 .permission-checklist {
     -fx-background-color: white;
 }
@@ -2118,6 +2281,158 @@
 .success-label {
     -fx-text-fill: #15803d;
     -fx-font-weight: bold;
+}
+
+/* ═══════════════════════════════════════════════
+   STARTUP / CONNECTIVITY SCREEN
+   Fullscreen transparent overlay (ProcessingDialog
+   aesthetic). Theme is not known at this point so
+   all colours are hardcoded in the amber palette.
+   ═══════════════════════════════════════════════ */
+
+/* Fullscreen dim overlay — reuses processing-dialog-overlay tint */
+.startup-overlay {
+    -fx-background-color: rgba(69, 26, 3, 0.30);
+}
+
+/* Floating card — amber-cream, rounded, shadow */
+.startup-card {
+    -fx-background-color: #fffbeb;
+    -fx-background-radius: 12;
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 12;
+    -fx-padding: 28 30 24 30;
+    -fx-effect: dropshadow(gaussian, rgba(69, 26, 3, 0.30), 24, 0.20, 0, 6);
+}
+
+.startup-status-label {
+    -fx-text-fill: #78350f;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* Check rows */
+.startup-check-row {
+    -fx-background-color: #fef3c7;
+    -fx-background-radius: 8;
+    -fx-border-color: #fde68a;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 10 14;
+}
+
+.startup-check-label {
+    -fx-text-fill: #451a03;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.startup-optional-label {
+    -fx-text-fill: #92400e;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+
+.startup-check-detail {
+    -fx-text-fill: #78716c;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+
+/* Service status icons */
+.startup-check-icon-pending {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 16px;
+    -fx-min-width: 22;
+    -fx-alignment: CENTER;
+}
+
+.startup-check-icon-success {
+    -fx-text-fill: #16a34a;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-width: 22;
+    -fx-alignment: CENTER;
+}
+
+.startup-check-icon-error {
+    -fx-text-fill: #dc2626;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-width: 22;
+    -fx-alignment: CENTER;
+}
+
+.startup-check-icon-warning {
+    -fx-text-fill: #d97706;
+    -fx-font-size: 16px;
+    -fx-min-width: 22;
+    -fx-alignment: CENTER;
+}
+
+.startup-check-icon-neutral {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 16px;
+    -fx-min-width: 22;
+    -fx-alignment: CENTER;
+}
+
+/* DB failure error box */
+.startup-error-message {
+    -fx-text-fill: #991b1b;
+    -fx-font-size: 13px;
+    -fx-background-color: #fee2e2;
+    -fx-background-radius: 8;
+    -fx-border-color: #fca5a5;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 10 14;
+}
+
+/* Check Now button — same amber-primary style */
+.startup-check-now-button {
+    -fx-background-color: #d97706;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.startup-check-now-button:hover {
+    -fx-background-color: #b45309;
+}
+
+.startup-check-now-button:pressed {
+    -fx-background-color: #92400e;
+}
+
+.startup-check-now-button:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+/* Exit button — subdued danger style */
+.startup-exit-button {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+    -fx-font-weight: bold;
+    -fx-border-color: #fca5a5;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.startup-exit-button:hover {
+    -fx-background-color: #fca5a5;
+    -fx-text-fill: #7f1d1d;
+}
+
+.startup-exit-button:pressed {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
 }
 
 /* Dark theme applied by system.theme = DARK */
@@ -2173,6 +2488,17 @@
     -fx-border-radius: 5;
 }
 
+/* Header avatar — must be explicitly dark; base CSS cream shows through otherwise */
+.theme-dark .header-avatar,
+.theme-dark .profile-picture-frame {
+    -fx-background-color: #263244;
+    -fx-border-color: #4b5563;
+}
+
+.theme-dark .header-avatar-initials {
+    -fx-text-fill: #f9fafb;
+}
+
 .theme-dark .app-header,
 .theme-dark .status-bar,
 .theme-dark .table-view,
@@ -2224,6 +2550,9 @@
 
 .theme-dark .dashboard-tab-pane .tab-header-background {
     -fx-border-color: #374151;
+    -fx-border-width: 1.5 1.5 0 1.5;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-radius: 6 6 0 0;
 }
 
 .theme-dark .dashboard-tab-pane .tab {
@@ -2238,6 +2567,8 @@
 .theme-dark .dashboard-tab-pane .tab:selected {
     -fx-background-color: #1f2937;
     -fx-border-color: #f59e0b #f59e0b transparent #f59e0b;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 5 5 0 0;
 }
 
 .theme-dark .dashboard-tab-pane .tab .tab-label {
@@ -2251,6 +2582,9 @@
 .theme-dark .dashboard-tab-pane .tab-content-area {
     -fx-background-color: #111827;
     -fx-border-color: #374151;
+    -fx-border-width: 0 1.5 1.5 1.5;
+    -fx-background-radius: 0 0 6 6;
+    -fx-border-radius: 0 0 6 6;
 }
 
 .theme-dark .receipt-detail-tabs,
@@ -2261,6 +2595,9 @@
 
 .theme-dark .receipt-detail-tabs .tab-header-background {
     -fx-border-color: #374151;
+    -fx-border-width: 1.5 1.5 0 1.5;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-radius: 6 6 0 0;
 }
 
 .theme-dark .receipt-detail-tabs .tab {
@@ -2275,6 +2612,8 @@
 .theme-dark .receipt-detail-tabs .tab:selected {
     -fx-background-color: #1f2937;
     -fx-border-color: #f59e0b #f59e0b transparent #f59e0b;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 5 5 0 0;
 }
 
 .theme-dark .receipt-detail-tabs .tab .tab-label {
@@ -2288,6 +2627,9 @@
 .theme-dark .receipt-detail-tabs .tab-content-area {
     -fx-background-color: #111827;
     -fx-border-color: #374151;
+    -fx-border-width: 0 1.5 1.5 1.5;
+    -fx-background-radius: 0 0 6 6;
+    -fx-border-radius: 0 0 6 6;
 }
 
 .theme-dark .receipt-detail-card {
@@ -2329,9 +2671,34 @@
     -fx-background-color: #0f172a;
 }
 
-.theme-dark .menu-button,
+/* menu-button must be transparent; active-menu-button keeps its own bg */
+.theme-dark .menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f9fafb;
+}
+
 .theme-dark .active-menu-button {
     -fx-text-fill: #f9fafb;
+}
+
+/* Buttons that must stay transparent in dark theme */
+.theme-dark .header-profile-button {
+    -fx-background-color: transparent;
+}
+
+.theme-dark .window-control-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-dark .password-toggle-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-dark .dialog-close-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 
 .theme-dark .table-view .column-header-background,
@@ -2397,6 +2764,38 @@
     -fx-border-color: transparent;
 }
 
+/* ── General check-box — dark theme ── */
+.theme-dark .check-box {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .check-box .text {
+    -fx-fill: #f9fafb;
+}
+
+.theme-dark .check-box .box {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #4b5563;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.theme-dark .check-box:hover .box {
+    -fx-background-color: #263244;
+    -fx-border-color: #fcd34d;
+}
+
+.theme-dark .check-box:selected .box {
+    -fx-background-color: #d97706;
+    -fx-border-color: #f59e0b;
+}
+
+.theme-dark .check-box:selected .mark {
+    -fx-background-color: #111827;
+}
+
+/* permission-checklist overrides (inherits all of the above) */
 .theme-dark .permission-checklist .check-box {
     -fx-text-fill: #f9fafb;
 }
@@ -2482,13 +2881,13 @@
 
 .theme-dark .combo-box .arrow-button,
 .theme-dark .date-picker .arrow-button {
-    -fx-background-color: #f9d976;
+    -fx-background-color: #374151;
     -fx-background-radius: 0 4 4 0;
 }
 
 .theme-dark .combo-box .arrow,
 .theme-dark .date-picker .arrow {
-    -fx-background-color: #78350f;
+    -fx-background-color: #d1d5db;
 }
 
 .theme-dark .combo-box-popup .list-view .list-cell:filled:selected,
@@ -2639,4 +3038,901 @@
 
 .theme-dark .scroll-bar .thumb {
     -fx-background-color: #f9d976;
+}
+
+/* ═══════════════════════════════════════════════
+   Orchid theme applied by system.theme = ORCHID
+   Palette — hue 298°, orchid pink derived from flag
+   ═══════════════════════════════════════════════ */
+
+.theme-orchid.dashboard-root,
+.theme-orchid.login-root,
+.theme-orchid {
+    -fx-background-color: #fdf5fe;
+}
+
+/* ── Page / scroll surfaces ── */
+.theme-orchid .content-wrap,
+.theme-orchid .dashboard-home-root,
+.theme-orchid .dashboard-tab-pane,
+.theme-orchid .receipt-detail-tab-body,
+.theme-orchid .settings-page,
+.theme-orchid .settings-tab-body,
+.theme-orchid .tab-content-area,
+.theme-orchid .scroll-pane,
+.theme-orchid .scroll-pane > .viewport {
+    -fx-background-color: #fdf5fe;
+}
+
+/* ── Body text ── */
+.theme-orchid .label,
+.theme-orchid .value-label,
+.theme-orchid .receipt-detail-label,
+.theme-orchid .dashboard-card-value,
+.theme-orchid .dashboard-card-value-small,
+.theme-orchid .dashboard-amount-value,
+.theme-orchid .dashboard-amount-total-label,
+.theme-orchid .dashboard-amount-total-value,
+.theme-orchid .table-view .table-cell,
+.theme-orchid .combo-box .list-cell {
+    -fx-text-fill: #3d0e3f;
+}
+
+/* ── Muted / secondary text ── */
+.theme-orchid .form-message,
+.theme-orchid .dashboard-card-label,
+.theme-orchid .dashboard-card-time,
+.theme-orchid .dashboard-progress-title,
+.theme-orchid .dashboard-progress-region,
+.theme-orchid .dashboard-amount-header,
+.theme-orchid .dashboard-chart-card .chart-title,
+.theme-orchid .dashboard-chart-card .axis-label,
+.theme-orchid .dashboard-chart-card .chart-legend-item,
+.theme-orchid .pagination-label,
+.theme-orchid .pagination-summary {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .dashboard-chart-card .chart-legend {
+    -fx-background-color: white;
+    -fx-background-radius: 5;
+    -fx-border-color: #f3cdf4;
+    -fx-border-radius: 5;
+}
+
+/* ── Cards and panels (white on orchid-tinted page) ── */
+.theme-orchid .dashboard-filter-bar,
+.theme-orchid .dashboard-menu-button,
+.theme-orchid .dashboard-summary-card,
+.theme-orchid .dashboard-summary-card-wide,
+.theme-orchid .dashboard-chart-card,
+.theme-orchid .settings-form-card,
+.theme-orchid .settings-action-bar,
+.theme-orchid .receipt-detail-card,
+.theme-orchid .permission-module-pane,
+.theme-orchid .submission-progress-band,
+.theme-orchid .submission-totals-row,
+.theme-orchid .table-view {
+    -fx-background-color: white;
+    -fx-border-color: #f3cdf4;
+    -fx-text-fill: #3d0e3f;
+}
+
+/* ── Settings cards ── */
+.theme-orchid .settings-form-card,
+.theme-orchid .settings-action-bar,
+.theme-orchid .settings-output-area {
+    -fx-background-color: white;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .settings-form-card > .label,
+.theme-orchid .settings-page .field-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .settings-output-area .content {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .settings-output-area {
+    -fx-text-fill: #3d0e3f;
+}
+
+/* ── Dashboard tab pane ── */
+.theme-orchid .dashboard-tab-pane .tab-header-area,
+.theme-orchid .dashboard-tab-pane .tab-header-background {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .dashboard-tab-pane .tab-header-background {
+    -fx-border-color: #d85fdd;
+    -fx-border-width: 1.5 1.5 0 1.5;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-radius: 6 6 0 0;
+}
+
+.theme-orchid .dashboard-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-focus-color: #bb29c1;
+    -fx-faint-focus-color: transparent;
+}
+
+.theme-orchid .dashboard-tab-pane .tab:hover {
+    -fx-background-color: #f3cdf4;
+}
+
+.theme-orchid .dashboard-tab-pane .tab:selected {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #bb29c1 #bb29c1 transparent #bb29c1;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 5 5 0 0;
+}
+
+.theme-orchid .dashboard-tab-pane .tab .tab-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .dashboard-tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #3d0e3f;
+    -fx-font-weight: bold;
+}
+
+.theme-orchid .dashboard-tab-pane .tab-content-area {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #d85fdd;
+    -fx-border-width: 0 1.5 1.5 1.5;
+    -fx-background-radius: 0 0 6 6;
+    -fx-border-radius: 0 0 6 6;
+}
+
+/* ── Receipt detail tabs ── */
+.theme-orchid .receipt-detail-tabs,
+.theme-orchid .receipt-detail-tabs .tab-header-area,
+.theme-orchid .receipt-detail-tabs .tab-header-background {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .receipt-detail-tabs .tab-header-background {
+    -fx-border-color: #d85fdd;
+    -fx-border-width: 1.5 1.5 0 1.5;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-radius: 6 6 0 0;
+}
+
+.theme-orchid .receipt-detail-tabs .tab {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-focus-color: #bb29c1;
+    -fx-faint-focus-color: transparent;
+}
+
+.theme-orchid .receipt-detail-tabs .tab:hover {
+    -fx-background-color: #f3cdf4;
+}
+
+.theme-orchid .receipt-detail-tabs .tab:selected {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #bb29c1 #bb29c1 transparent #bb29c1;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 5 5 0 0;
+}
+
+.theme-orchid .receipt-detail-tabs .tab .tab-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .receipt-detail-tabs .tab:selected .tab-label {
+    -fx-text-fill: #3d0e3f;
+    -fx-font-weight: bold;
+}
+
+.theme-orchid .receipt-detail-tabs .tab-content-area {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #d85fdd;
+    -fx-border-width: 0 1.5 1.5 1.5;
+    -fx-background-radius: 0 0 6 6;
+    -fx-border-radius: 0 0 6 6;
+}
+
+.theme-orchid .receipt-detail-card {
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .receipt-detail-card-header {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: transparent transparent #e8a3eb transparent;
+}
+
+.theme-orchid .receipt-detail-card-title {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .receipt-detail-card-body {
+    -fx-background-color: white;
+}
+
+/* ── Buttons ── */
+.theme-orchid .button {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #f3cdf4;
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .button:hover {
+    -fx-background-color: #f3cdf4;
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .primary-button,
+.theme-orchid .button:default {
+    -fx-background-color: #bb29c1;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+}
+
+.theme-orchid .button-icon {
+    -fx-icon-color: #6e1871;
+}
+
+.theme-orchid .button:hover .button-icon {
+    -fx-icon-color: #3d0e3f;
+}
+
+/* ── Header (dark orchid chrome) ── */
+.theme-orchid .app-header {
+    -fx-background-color: #3d0e3f;
+}
+
+.theme-orchid .app-name {
+    -fx-text-fill: #e8a3eb;
+}
+
+.theme-orchid .organization-name {
+    -fx-text-fill: #fbeefb;
+}
+
+.theme-orchid .header-user-name {
+    -fx-text-fill: #fbeefb;
+}
+
+.theme-orchid .header-user-role {
+    -fx-text-fill: #e8a3eb;
+}
+
+.theme-orchid .header-avatar,
+.theme-orchid .profile-picture-frame {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .header-avatar-initials {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .header-profile-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #fbeefb;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .header-profile-button .button-icon {
+    -fx-icon-color: #fbeefb;
+}
+
+.theme-orchid .header-profile-button:hover,
+.theme-orchid .header-profile-button.active-menu-button {
+    -fx-background-color: #3d0e3f;
+}
+
+.theme-orchid .header-profile-button:hover .button-icon,
+.theme-orchid .header-profile-button.active-menu-button .button-icon {
+    -fx-icon-color: #e8a3eb;
+}
+
+.theme-orchid .logout-button {
+    -fx-background-color: #d85fdd;
+    -fx-text-fill: #3d0e3f;
+    -fx-border-color: transparent;
+}
+
+.theme-orchid .logout-button:hover {
+    -fx-background-color: #e8a3eb;
+}
+
+.theme-orchid .logout-button:pressed {
+    -fx-background-color: #bb29c1;
+    -fx-text-fill: white;
+}
+
+.theme-orchid .logout-button .button-icon {
+    -fx-icon-color: #3d0e3f;
+}
+
+.theme-orchid .window-control-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-orchid .window-control-button:hover {
+    -fx-background-color: rgba(251, 238, 251, 0.16);
+}
+
+.theme-orchid .window-control-button:pressed {
+    -fx-background-color: rgba(251, 238, 251, 0.26);
+}
+
+.theme-orchid .window-control-button .button-icon {
+    -fx-icon-color: #fbeefb;
+}
+
+/* ── Sidebar (dark orchid) ── */
+.theme-orchid .sidebar {
+    -fx-background-color: #6e1871;
+}
+
+.theme-orchid .menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f3cdf4;
+}
+
+.theme-orchid .menu-icon {
+    -fx-icon-color: #f3cdf4;
+}
+
+.theme-orchid .sidebar-toggle-button {
+    -fx-background-color: #7d1e83;
+}
+
+.theme-orchid .sidebar-toggle-button:hover {
+    -fx-background-color: #8c23a0;
+}
+
+.theme-orchid .menu-button:hover {
+    -fx-background-color: #7d1e83;
+    -fx-text-fill: #fbeefb;
+}
+
+.theme-orchid .menu-button:hover .menu-icon,
+.theme-orchid .sidebar-toggle-button:hover .menu-icon {
+    -fx-icon-color: #fbeefb;
+}
+
+.theme-orchid .active-menu-button {
+    -fx-background-color: #d85fdd;
+    -fx-text-fill: #3d0e3f;
+    -fx-font-weight: bold;
+}
+
+.theme-orchid .active-menu-button .menu-icon {
+    -fx-icon-color: #3d0e3f;
+}
+
+/* ── Login screen ── */
+/* login-root background comes from .theme-orchid.login-root (light orchid).
+   The descendant selector below applies the orchid border and decorates
+   any inner login-root used inside modals (unlikely but safe to keep). */
+.theme-orchid.login-root {
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .login-subtitle {
+    -fx-text-fill: #6e1871;
+}
+
+/* Dark on light-orchid background */
+.theme-orchid .login-field-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .login-error-label {
+    -fx-text-fill: #dc2626;
+}
+
+.theme-orchid .login-close-button {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .login-close-button:hover {
+    -fx-background-color: #d85fdd;
+}
+
+.theme-orchid .login-close-button:pressed {
+    -fx-background-color: #bb29c1;
+}
+
+.theme-orchid .login-close-button .button-icon {
+    -fx-icon-color: #6e1871;
+}
+
+.theme-orchid .login-close-button:hover .button-icon,
+.theme-orchid .login-close-button:pressed .button-icon {
+    -fx-icon-color: white;
+}
+
+.theme-orchid .password-toggle-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-orchid .password-toggle-button:hover {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .password-toggle-icon {
+    -fx-icon-color: #7d1e83;
+}
+
+.theme-orchid .password-toggle-button:hover .password-toggle-icon {
+    -fx-icon-color: #3d0e3f;
+}
+
+/* ── Dialogs ──
+   theme-orchid is applied TO the dialog pane itself (same element as
+   app-dialog-pane), so combined selectors are required for the pane and
+   its direct children; descendant selectors work for everything deeper. */
+.theme-orchid.app-dialog-pane {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid.app-dialog-pane > .content,
+.theme-orchid.app-dialog-pane > .button-bar {
+    -fx-background-color: #fdf5fe;
+}
+
+.theme-orchid.app-dialog-pane .label,
+.theme-orchid.app-dialog-pane .content.label,
+.theme-orchid.app-dialog-pane .content .label {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid.app-dialog-pane .dialog-field-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid.app-dialog-pane .text-field,
+.theme-orchid.app-dialog-pane .password-field,
+.theme-orchid.app-dialog-pane .text-area,
+.theme-orchid.app-dialog-pane .text-area .content,
+.theme-orchid.app-dialog-pane .combo-box-base {
+    -fx-background-color: white;
+    -fx-border-color: #e8a3eb;
+    -fx-text-fill: #3d0e3f;
+    -fx-prompt-text-fill: #bb29c1;
+}
+
+.theme-orchid.app-dialog-pane .combo-box .list-cell {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid.app-dialog-pane .combo-box .arrow-button {
+    -fx-background-color: #f3cdf4;
+}
+
+.theme-orchid.app-dialog-pane .combo-box .arrow {
+    -fx-background-color: #6e1871;
+}
+
+/* Title bar and close button are descendants — descendant selectors work */
+.theme-orchid .dialog-title-bar {
+    -fx-background-color: #3d0e3f;
+}
+
+.theme-orchid .dialog-close-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-orchid .dialog-close-button:hover {
+    -fx-background-color: rgba(251, 238, 251, 0.16);
+}
+
+.theme-orchid .dialog-close-button:pressed {
+    -fx-background-color: rgba(251, 238, 251, 0.26);
+}
+
+.theme-orchid .dialog-close-button .button-icon,
+.theme-orchid .dialog-close-button:hover .button-icon,
+.theme-orchid .dialog-close-button:pressed .button-icon {
+    -fx-icon-color: #fbeefb;
+}
+
+/* ── Page / module titles ── */
+.theme-orchid .page-title {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .module-title {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .section-title {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .profile-picture-initials {
+    -fx-text-fill: #6e1871;
+}
+
+/* ── Table view ── */
+.theme-orchid .table-view {
+    -fx-border-color: #f3cdf4;
+}
+
+.theme-orchid .table-view .column-header-background,
+.theme-orchid .table-view .filler,
+.theme-orchid .table-view .corner {
+    -fx-background-color: #3d0e3f;
+    -fx-background-radius: 5 5 0 0;
+}
+
+.theme-orchid .table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent #6e1871 transparent transparent;
+}
+
+/* Specificity 0-4-0 beats base .table-view .column-header .label (0-3-0) */
+.theme-orchid .table-view .column-header .label {
+    -fx-text-fill: #fbeefb;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.theme-orchid .table-view .column-header .arrow {
+    -fx-background-color: #e8a3eb;
+}
+
+.theme-orchid .table-view .table-row-cell,
+.theme-orchid .combo-box-popup .list-view,
+.theme-orchid .combo-box-popup .list-view .list-cell {
+    -fx-background-color: white;
+}
+
+.theme-orchid .table-view .table-row-cell:odd,
+.theme-orchid .dashboard-amount-row {
+    -fx-background-color: #fdf5fe;
+}
+
+.theme-orchid .table-view .table-row-cell:hover,
+.theme-orchid .table-view .table-row-cell:selected,
+.theme-orchid .combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #fbeefb;
+}
+
+/* ── Table action buttons ── */
+.theme-orchid .table-action-button {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .table-action-button .table-action-icon {
+    -fx-icon-color: #bb29c1;
+}
+
+.theme-orchid .table-action-icon {
+    -fx-icon-color: #6e1871;
+}
+
+.theme-orchid .table-action-button:hover .table-action-icon {
+    -fx-icon-color: #3d0e3f;
+}
+
+/* ── Module / backup / placeholder pages ── */
+.theme-orchid .module-page,
+.theme-orchid .backup-restore-card,
+.theme-orchid .placeholder-page,
+.theme-orchid .permission-scroll-pane,
+.theme-orchid .permission-module-pane > .content,
+.theme-orchid .permission-checklist {
+    -fx-background-color: white;
+    -fx-border-color: #f3cdf4;
+}
+
+.theme-orchid .permission-scroll-pane,
+.theme-orchid .permission-module-pane {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .permission-module-pane > .title {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #e8a3eb transparent;
+}
+
+.theme-orchid .permission-module-pane > .title:hover {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .permission-module-pane > .title > .text,
+.theme-orchid .permission-module-pane > .title .label {
+    -fx-fill: #3d0e3f;
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .permission-module-pane > .title > .arrow-button .arrow {
+    -fx-background-color: #bb29c1;
+}
+
+.theme-orchid .permission-module-pane > .content {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+}
+
+/* ── General check-box — orchid theme ── */
+.theme-orchid .check-box {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .check-box .text {
+    -fx-fill: #3d0e3f;
+}
+
+.theme-orchid .check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #bb29c1;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.theme-orchid .check-box:hover .box {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .check-box:selected .box {
+    -fx-background-color: #bb29c1;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* permission-checklist overrides (inherits all of the above) */
+.theme-orchid .permission-checklist .check-box {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .permission-checklist .check-box .text {
+    -fx-fill: #3d0e3f;
+}
+
+.theme-orchid .permission-checklist .check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #bb29c1;
+}
+
+.theme-orchid .permission-checklist .check-box:hover .box {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .permission-checklist .check-box:selected .box {
+    -fx-background-color: #bb29c1;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .permission-checklist .check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* ── Section / field labels ── */
+.theme-orchid .field-label,
+.theme-orchid .section-title,
+.theme-orchid .module-title,
+.theme-orchid .report-card-title,
+.theme-orchid .backup-card-title,
+.theme-orchid .submission-totals-label,
+.theme-orchid .submission-progress-title,
+.theme-orchid .muted-label,
+.theme-orchid .warning-label {
+    -fx-text-fill: #6e1871;
+}
+
+/* ── Reports ── */
+.theme-orchid .report-card-scroll,
+.theme-orchid .report-card-scroll > .viewport,
+.theme-orchid .report-card-grid,
+.theme-orchid .report-dialog-content {
+    -fx-background-color: #fdf5fe;
+}
+
+.theme-orchid .report-card {
+    -fx-background-color: white;
+    -fx-border-color: #e8a3eb;
+    -fx-effect: dropshadow(gaussian, rgba(110, 24, 113, 0.12), 10, 0.12, 0, 3);
+}
+
+.theme-orchid .report-card:hover {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #bb29c1;
+}
+
+.theme-orchid .report-card:pressed {
+    -fx-background-color: #f3cdf4;
+}
+
+.theme-orchid .report-card-icon {
+    -fx-icon-color: #bb29c1;
+}
+
+.theme-orchid .report-card-action {
+    -fx-text-fill: #3d0e3f;
+}
+
+/* ── Text inputs ── */
+.theme-orchid .text-field,
+.theme-orchid .password-field,
+.theme-orchid .text-area,
+.theme-orchid .text-area .content,
+.theme-orchid .combo-box-base,
+.theme-orchid .date-picker,
+.theme-orchid .date-picker .text-field,
+.theme-orchid .items-per-page-combo {
+    -fx-background-color: white;
+    -fx-border-color: #e8a3eb;
+    -fx-text-fill: #3d0e3f;
+    -fx-prompt-text-fill: #bb29c1;
+}
+
+.theme-orchid .combo-box .arrow-button,
+.theme-orchid .date-picker .arrow-button {
+    -fx-background-color: #f3cdf4;
+    -fx-background-radius: 0 4 4 0;
+}
+
+.theme-orchid .combo-box .arrow,
+.theme-orchid .date-picker .arrow {
+    -fx-background-color: #6e1871;
+}
+
+.theme-orchid .combo-box-popup .list-view .list-cell:filled:selected,
+.theme-orchid .combo-box-popup .list-view .list-cell:filled:selected:hover {
+    -fx-background-color: #bb29c1;
+    -fx-text-fill: white;
+}
+
+/* ── Date picker popup ── */
+.theme-orchid .date-picker-popup,
+.theme-orchid .date-picker-popup .month-year-pane,
+.theme-orchid .date-picker-popup .calendar-grid {
+    -fx-background-color: white;
+}
+
+.theme-orchid .date-picker-popup .day-cell {
+    -fx-background-color: white;
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .date-picker-popup .day-cell:hover,
+.theme-orchid .date-picker-popup .selected {
+    -fx-background-color: #bb29c1;
+    -fx-text-fill: white;
+}
+
+/* ── Pagination ── */
+.theme-orchid .table-pagination-bar {
+    -fx-background-color: #fdf5fe;
+}
+
+.theme-orchid .pagination .pagination-control .button,
+.theme-orchid .pagination .pagination-control .number-button,
+.theme-orchid .pagination .pagination-control .left-arrow-button,
+.theme-orchid .pagination .pagination-control .right-arrow-button {
+    -fx-background-color: white;
+    -fx-border-color: #e8a3eb;
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .pagination .pagination-control .number-button:selected {
+    -fx-background-color: #bb29c1;
+    -fx-border-color: #bb29c1;
+    -fx-text-fill: white;
+}
+
+/* ── Status badges ── */
+.theme-orchid .status-badge {
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+}
+
+.theme-orchid .status-active {
+    -fx-background-color: #dcfce7;
+    -fx-border-color: #16a34a;
+    -fx-text-fill: #14532d;
+}
+
+.theme-orchid .status-inactive {
+    -fx-background-color: #fee2e2;
+    -fx-border-color: #dc2626;
+    -fx-text-fill: #7f1d1d;
+}
+
+.theme-orchid .status-skipped,
+.theme-orchid .status-warning {
+    -fx-background-color: #fef3c7;
+    -fx-border-color: #f59e0b;
+    -fx-text-fill: #78350f;
+}
+
+.theme-orchid .status-auto {
+    -fx-background-color: #ede9fe;
+    -fx-border-color: #7c3aed;
+    -fx-text-fill: #4c1d95;
+}
+
+.theme-orchid .status-correction-note {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1e3a8a;
+}
+
+.theme-orchid .status-value-badge-checking {
+    -fx-background-color: #fef3c7;
+    -fx-border-color: #f59e0b;
+    -fx-text-fill: #78350f;
+}
+
+.theme-orchid .status-value-badge-connected {
+    -fx-background-color: #dcfce7;
+    -fx-border-color: #16a34a;
+    -fx-text-fill: #14532d;
+}
+
+.theme-orchid .status-value-badge-disconnected {
+    -fx-background-color: #fee2e2;
+    -fx-border-color: #dc2626;
+    -fx-text-fill: #7f1d1d;
+}
+
+/* ── Late submission rows ── */
+.theme-orchid .late-submission-row {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .late-submission-row:selected {
+    -fx-background-color: #f3cdf4;
+}
+
+/* ── Submission bands ── */
+.theme-orchid .submission-progress-band,
+.theme-orchid .submission-totals-row {
+    -fx-background-color: white;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .submission-progress-bar .track {
+    -fx-background-color: #e8a3eb;
+}
+
+.theme-orchid .submission-totals-title {
+    -fx-background-color: #bb29c1;
+    -fx-text-fill: white;
+}
+
+.theme-orchid .submission-totals-value {
+    -fx-background-color: white;
+    -fx-border-color: #d85fdd;
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .submission-totals-value-grand {
+    -fx-background-color: #dcfce7;
+    -fx-border-color: #16a34a;
+    -fx-text-fill: #14532d;
+}
+
+/* ── Scroll bars ── */
+.theme-orchid .scroll-bar,
+.theme-orchid .scroll-bar .track,
+.theme-orchid .scroll-bar .increment-button,
+.theme-orchid .scroll-bar .decrement-button {
+    -fx-background-color: #fdf5fe;
+}
+
+.theme-orchid .scroll-bar .thumb {
+    -fx-background-color: #e8a3eb;
 }
