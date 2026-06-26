@@ -204,7 +204,7 @@ class SystemSettingServiceTest {
             add(setting("reports.export.folder", "./reports", "STRING", "SYSTEM"));
             add(setting("reports.pdf.charts.enabled", "true", "BOOLEAN", "SYSTEM"));
             add(setting("system.time.format", "HH:mm:ss", "STRING", "SYSTEM"));
-            add(setting("system.theme", "LIGHT", "ENUM", "SYSTEM"));
+            add(setting("system.theme", "ORCHID", "ENUM", "SYSTEM"));
         }
 
         @Override

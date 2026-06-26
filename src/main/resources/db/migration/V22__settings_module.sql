@@ -31,7 +31,7 @@ FROM (
     UNION ALL SELECT 'backup.retention.days', '30', 'INTEGER', 'BACKUP', 'Backup retention period in days', TRUE
     UNION ALL SELECT 'system.date.format', 'yyyy-MM-dd', 'STRING', 'SYSTEM', 'System date format', TRUE
     UNION ALL SELECT 'system.time.format', 'HH:mm:ss', 'STRING', 'SYSTEM', 'System time format', TRUE
-    UNION ALL SELECT 'system.theme', 'LIGHT', 'ENUM', 'SYSTEM', 'Application theme', TRUE
+    UNION ALL SELECT 'system.theme', 'ORCHID', 'ENUM', 'SYSTEM', 'Application theme', TRUE
 ) defaults
 WHERE NOT EXISTS (
     SELECT 1 FROM system_settings s WHERE s.setting_key = defaults.setting_key
