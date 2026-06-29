@@ -1916,6 +1916,46 @@
     -fx-font-weight: normal;
 }
 
+/* ═══════════════════════════════════════════════
+   FOOTER STATUS STATES + DEVELOPER CREDIT
+   ═══════════════════════════════════════════════ */
+
+.status-ready {
+    -fx-text-fill: #16a34a;
+    -fx-font-weight: normal;
+}
+
+.status-error {
+    -fx-text-fill: #dc2626;
+    -fx-font-weight: normal;
+}
+
+.status-warning {
+    -fx-text-fill: #d97706;
+    -fx-font-weight: normal;
+}
+
+.status-info {
+    -fx-text-fill: #78350f;
+    -fx-font-weight: normal;
+}
+
+.status-separator {
+    -fx-text-fill: #b45309;
+    -fx-font-weight: normal;
+}
+
+.footer-developer-label {
+    -fx-text-fill: #92400e;
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+}
+
+.footer-contact-icon {
+    -fx-icon-color: #92400e;
+    -fx-icon-size: 11px;
+}
+
 .report-card-scroll,
 .report-card-scroll > .viewport {
     -fx-background-color: transparent;
@@ -2030,6 +2070,82 @@
     -fx-border-width: 0;
     -fx-effect: none;
     -fx-background-color: transparent;
+}
+
+/* Dark theme — popup VBox gets theme-dark class directly via ThemeService */
+.theme-dark.combo-search-popup {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #374151;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.40), 12, 0.18, 0, 4);
+}
+
+.theme-dark.combo-search-popup .combo-search-field {
+    -fx-background-color: #111827;
+    -fx-border-color: #4b5563;
+    -fx-text-fill: #f9fafb;
+    -fx-prompt-text-fill: #9ca3af;
+}
+
+.theme-dark.combo-search-popup .combo-search-field:focused {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #f59e0b;
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.22), 6, 0, 0, 0);
+}
+
+.theme-dark.combo-search-popup > .list-view {
+    -fx-background-color: transparent;
+}
+
+.theme-dark.combo-search-popup > .list-view .list-cell {
+    -fx-background-color: #1f2937;
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark.combo-search-popup > .list-view .list-cell:hover {
+    -fx-background-color: #263244;
+}
+
+.theme-dark.combo-search-popup > .list-view .list-cell:selected {
+    -fx-background-color: #d97706;
+    -fx-text-fill: #111827;
+}
+
+/* Orchid theme — popup VBox gets theme-orchid class directly via ThemeService */
+.theme-orchid.combo-search-popup {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #d85fdd;
+    -fx-effect: dropshadow(gaussian, rgba(61, 14, 63, 0.22), 10, 0, 0, 3);
+}
+
+.theme-orchid.combo-search-popup .combo-search-field {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #e8a3eb;
+    -fx-text-fill: #3d0e3f;
+    -fx-prompt-text-fill: #bb29c1;
+}
+
+.theme-orchid.combo-search-popup .combo-search-field:focused {
+    -fx-background-color: white;
+    -fx-border-color: #bb29c1;
+    -fx-effect: dropshadow(gaussian, rgba(187, 41, 193, 0.22), 6, 0, 0, 0);
+}
+
+.theme-orchid.combo-search-popup > .list-view {
+    -fx-background-color: transparent;
+}
+
+.theme-orchid.combo-search-popup > .list-view .list-cell {
+    -fx-background-color: #fdf5fe;
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid.combo-search-popup > .list-view .list-cell:hover {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid.combo-search-popup > .list-view .list-cell:selected {
+    -fx-background-color: #bb29c1;
+    -fx-text-fill: white;
 }
 
 .receipt-history-table .table-cell.receipt-center-cell,
@@ -3040,6 +3156,72 @@
     -fx-background-color: #f9d976;
 }
 
+/* ── MenuButton arrow + label (dashboard filter) ── */
+.theme-dark .dashboard-menu-button .arrow-button {
+    -fx-background-color: #374151;
+    -fx-background-radius: 0 4 4 0;
+}
+
+.theme-dark .dashboard-menu-button .arrow {
+    -fx-background-color: #d1d5db;
+}
+
+.theme-dark .dashboard-menu-button .label {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .dashboard-menu-button:hover {
+    -fx-background-color: #263244;
+    -fx-border-color: #4b5563;
+}
+
+/* ── Context menu popup (MenuButton dropdown) ── */
+.theme-dark .context-menu {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #374151;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 12, 0.18, 0, 4);
+}
+
+.theme-dark .context-menu .menu-item {
+    -fx-background-color: transparent;
+}
+
+.theme-dark .context-menu .menu-item .label {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .context-menu .menu-item:hover,
+.theme-dark .context-menu .menu-item:focused {
+    -fx-background-color: #263244;
+}
+
+.theme-dark .context-menu .menu-item:checked,
+.theme-dark .context-menu .menu-item:selected {
+    -fx-background-color: #d97706;
+}
+
+.theme-dark .context-menu .menu-item:checked .label,
+.theme-dark .context-menu .menu-item:selected .label {
+    -fx-text-fill: #111827;
+}
+
+/* ── Combo-box popup border ── */
+.theme-dark .combo-box-popup .list-view {
+    -fx-border-color: #374151;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 12, 0.18, 0, 4);
+}
+
+/* ── Footer status states — dark theme ── */
+.theme-dark .status-ready    { -fx-text-fill: #4ade80; }
+.theme-dark .status-error    { -fx-text-fill: #f87171; }
+.theme-dark .status-warning  { -fx-text-fill: #fbbf24; }
+.theme-dark .status-info     { -fx-text-fill: #d1d5db; }
+.theme-dark .status-separator { -fx-text-fill: #4b5563; }
+.theme-dark .footer-developer-label { -fx-text-fill: #6b7280; }
+.theme-dark .footer-contact-icon    { -fx-icon-color: #6b7280; }
+
 /* ═══════════════════════════════════════════════
    Orchid theme applied by system.theme = ORCHID
    Palette — hue 298°, orchid pink derived from flag
@@ -3112,7 +3294,8 @@
 .theme-orchid .permission-module-pane,
 .theme-orchid .submission-progress-band,
 .theme-orchid .submission-totals-row,
-.theme-orchid .table-view {
+.theme-orchid .table-view,
+.theme-orchid .status-bar {
     -fx-background-color: white;
     -fx-border-color: #f3cdf4;
     -fx-text-fill: #3d0e3f;
@@ -3936,3 +4119,69 @@
 .theme-orchid .scroll-bar .thumb {
     -fx-background-color: #e8a3eb;
 }
+
+/* ── MenuButton arrow + label (dashboard filter) ── */
+.theme-orchid .dashboard-menu-button .arrow-button {
+    -fx-background-color: #f3cdf4;
+    -fx-background-radius: 0 4 4 0;
+}
+
+.theme-orchid .dashboard-menu-button .arrow {
+    -fx-background-color: #6e1871;
+}
+
+.theme-orchid .dashboard-menu-button .label {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .dashboard-menu-button:hover {
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #d85fdd;
+}
+
+/* ── Context menu popup (MenuButton dropdown) ── */
+.theme-orchid .context-menu {
+    -fx-background-color: #fdf5fe;
+    -fx-border-color: #d85fdd;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(61, 14, 63, 0.22), 12, 0.18, 0, 4);
+}
+
+.theme-orchid .context-menu .menu-item {
+    -fx-background-color: transparent;
+}
+
+.theme-orchid .context-menu .menu-item .label {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .context-menu .menu-item:hover,
+.theme-orchid .context-menu .menu-item:focused {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .context-menu .menu-item:checked,
+.theme-orchid .context-menu .menu-item:selected {
+    -fx-background-color: #bb29c1;
+}
+
+.theme-orchid .context-menu .menu-item:checked .label,
+.theme-orchid .context-menu .menu-item:selected .label {
+    -fx-text-fill: white;
+}
+
+/* ── Combo-box popup border ── */
+.theme-orchid .combo-box-popup .list-view {
+    -fx-border-color: #e8a3eb;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(61, 14, 63, 0.18), 10, 0, 0, 3);
+}
+
+/* ── Footer status states — orchid theme ── */
+.theme-orchid .status-ready    { -fx-text-fill: #16a34a; }
+.theme-orchid .status-error    { -fx-text-fill: #dc2626; }
+.theme-orchid .status-warning  { -fx-text-fill: #d97706; }
+.theme-orchid .status-info     { -fx-text-fill: #6e1871; }
+.theme-orchid .status-separator { -fx-text-fill: #bb29c1; }
+.theme-orchid .footer-developer-label { -fx-text-fill: #8c239a; }
+.theme-orchid .footer-contact-icon    { -fx-icon-color: #8c239a; }

@@ -1,5 +1,6 @@
 package com.churchmanagement.util;
 
+import com.churchmanagement.util.ThemeService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -68,6 +69,13 @@ public class SearchableComboBoxSkin<T> extends ComboBoxListViewSkin<T> {
         comboBox.showingProperty().addListener((obs, wasShowing, isShowing) -> {
             if (isShowing) {
                 Platform.runLater(() -> {
+                    // Apply the active theme directly to the popup content because
+                    // it lives in a separate PopupWindow — the scene root's theme
+                    // class is not an ancestor here, so descendant selectors won't
+                    // reach it without this explicit application.
+                    if (popupContent != null) {
+                        new ThemeService().applyConfiguredTheme(popupContent);
+                    }
                     searchField.clear();
                     listView.getSelectionModel().select(comboBox.getValue());
                     listView.scrollTo(comboBox.getValue());

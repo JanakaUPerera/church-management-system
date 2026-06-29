@@ -191,13 +191,13 @@ public class DashboardController {
 
         Optional<AuthenticatedUser> user = AuthContext.getCurrentUser();
         if (user.isEmpty()) {
-            statusLabel.setText("Please sign in to continue.");
+            setStatus("Please sign in to continue.", "status-warning");
             return;
         }
 
         currentUser = user.get();
         if (currentUser.isForcePasswordChange()) {
-            statusLabel.setText("Password change required before accessing the dashboard.");
+            setStatus("Password change required before accessing the dashboard.", "status-warning");
             Platform.runLater(this::openForcePasswordChange);
             return;
         }
@@ -654,11 +654,11 @@ public class DashboardController {
             Parent view = FXMLLoader.load(getClass().getResource(menuDefinition.viewPath()));
             contentPane.getChildren().setAll(view);
             pageTitleLabel.setText(menuDefinition.title());
-            statusLabel.setText("Ready");
+            setStatus("Ready", "status-ready");
             highlightMenu(menuDefinition.button());
             logNavigation(menuDefinition);
         } catch (IOException | RuntimeException exception) {
-            statusLabel.setText("Could not load " + menuDefinition.title() + ".");
+            setStatus("Could not load " + menuDefinition.title() + ".", "status-error");
             showError("Unable to load page", "Please try again or contact your administrator.");
         }
     }
@@ -705,7 +705,7 @@ public class DashboardController {
             stage.show();
             dashboardStage.close();
         } catch (IOException exception) {
-            statusLabel.setText("Unable to open password change screen.");
+            setStatus("Unable to open password change screen.", "status-error");
         }
     }
 
@@ -768,6 +768,13 @@ public class DashboardController {
         imageView.setFitHeight(size);
         imageView.setPreserveRatio(false);
         imageView.setImage(image);
+    }
+
+    private void setStatus(String text, String cssClass) {
+        statusLabel.setText(text);
+        statusLabel.getStyleClass().removeAll(
+                "status-ready", "status-error", "status-warning", "status-info");
+        statusLabel.getStyleClass().add(cssClass);
     }
 
     private String initials(String fullName) {
