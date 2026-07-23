@@ -1,5 +1,6 @@
 DROP TEMPORARY TABLE IF EXISTS seed_receipt_weeks;
 DROP TEMPORARY TABLE IF EXISTS seed_receipt_rows;
+DROP TEMPORARY TABLE IF EXISTS seed_churches;
 
 CREATE TEMPORARY TABLE seed_receipt_weeks (
     week_start_date DATE NOT NULL PRIMARY KEY,
@@ -16,6 +17,24 @@ WITH RECURSIVE weeks AS (
 )
 SELECT week_start_date, week_index
 FROM weeks;
+
+DROP TEMPORARY TABLE IF EXISTS seed_churches;
+
+CREATE TEMPORARY TABLE seed_churches (
+    church_id BIGINT NOT NULL PRIMARY KEY,
+    church_code VARCHAR(20) NOT NULL,
+    region_id BIGINT NOT NULL,
+    church_number INT NOT NULL
+) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO seed_churches (church_id, church_code, region_id, church_number)
+SELECT
+    church.id,
+    church.church_code,
+    church.region_id,
+    ROW_NUMBER() OVER (ORDER BY church.id) AS church_number
+FROM churches church
+WHERE church.status = 'ACTIVE';
 
 CREATE TEMPORARY TABLE seed_receipt_rows (
     receipt_no VARCHAR(20) NOT NULL PRIMARY KEY,
@@ -50,30 +69,28 @@ INSERT INTO seed_receipt_rows (
     late_submission_reason
 )
 SELECT
-    CONCAT('TST', DATE_FORMAT(seed_week.week_start_date, '%y%m%d'), LPAD(CAST(SUBSTRING(church.church_code, 4) AS UNSIGNED), 3, '0')) AS receipt_no,
-    church.id AS church_id,
+    CONCAT('TST', DATE_FORMAT(seed_week.week_start_date, '%y%m%d'), LPAD(church.church_number, 3, '0')) AS receipt_no,
+    church.church_id AS church_id,
     church.church_code,
-    CAST(SUBSTRING(church.church_code, 4) AS UNSIGNED) AS church_number,
+    church.church_number,
     church.region_id,
     seed_week.week_start_date,
     DATE_ADD(seed_week.week_start_date, INTERVAL 6 DAY) AS week_end_date,
     seed_week.week_index,
     DATE_ADD(
         DATE_ADD(seed_week.week_start_date, INTERVAL 6 DAY),
-        INTERVAL (10 + (CAST(SUBSTRING(church.church_code, 4) AS UNSIGNED) MOD 7)) HOUR
+        INTERVAL (10 + (church.church_number MOD 7)) HOUR
     ) AS receipt_datetime,
-    CONCAT('Seed Treasurer ', LPAD(CAST(SUBSTRING(church.church_code, 4) AS UNSIGNED), 3, '0')) AS submitted_by_name,
+    CONCAT('Seed Treasurer ', LPAD(church.church_number, 3, '0')) AS submitted_by_name,
     admin_user.id AS issued_by_user_id,
-    CASE WHEN (seed_week.week_index + CAST(SUBSTRING(church.church_code, 4) AS UNSIGNED)) MOD 11 = 0 THEN TRUE ELSE FALSE END AS is_late_submission,
+    CASE WHEN (seed_week.week_index + church.church_number) MOD 11 = 0 THEN TRUE ELSE FALSE END AS is_late_submission,
     CASE
-        WHEN (seed_week.week_index + CAST(SUBSTRING(church.church_code, 4) AS UNSIGNED)) MOD 11 = 0
+        WHEN (seed_week.week_index + church.church_number) MOD 11 = 0
             THEN 'Seeded late submission.'
         ELSE NULL
     END AS late_submission_reason
 FROM seed_receipt_weeks seed_week
-JOIN churches church
-    ON church.church_code LIKE 'TCH%'
-   AND church.status = 'ACTIVE'
+CROSS JOIN seed_churches church
 JOIN users admin_user
     ON admin_user.username = 'admin';
 
@@ -139,3 +156,4 @@ WHERE existing_item.id IS NULL;
 
 DROP TEMPORARY TABLE IF EXISTS seed_receipt_rows;
 DROP TEMPORARY TABLE IF EXISTS seed_receipt_weeks;
+DROP TEMPORARY TABLE IF EXISTS seed_churches;
