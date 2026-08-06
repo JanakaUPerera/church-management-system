@@ -7,6 +7,7 @@ import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.exception.DatabaseException;
+import com.churchmanagement.reports.ReceiptPdfGenerator;
 import com.churchmanagement.repository.ActivityLogRepository;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.security.AuthContext;
@@ -28,6 +29,7 @@ import com.churchmanagement.util.WeekUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -41,6 +43,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Pagination;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -50,6 +53,7 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -57,6 +61,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -81,6 +86,7 @@ public class ReceiptHistoryController {
     private final ActivityLogRepository activityLogRepository = new ActivityLogRepository();
     private final ReceiptCancellationService receiptCancellationService = new ReceiptCancellationService();
     private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
+    private final ReceiptPdfGenerator receiptPdfGenerator = new ReceiptPdfGenerator();
     private final ReceiptSmsNotificationService receiptSmsNotificationService = new ReceiptSmsNotificationService();
     private final ChurchService churchService = new ChurchService();
     private final RegionService regionService = new RegionService();
@@ -390,10 +396,14 @@ public class ReceiptHistoryController {
             dialog.setTitle("Receipt Details");
             dialog.setHeaderText("Receipt " + details.getReceiptNo());
             ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType previewButton = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
             ButtonType openPdfButton = new ButtonType("Open PDF", ButtonBar.ButtonData.LEFT);
             ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
             ButtonType cancelReceiptButton = new ButtonType("Cancel Receipt", ButtonBar.ButtonData.LEFT);
             ButtonType recreateButton = new ButtonType("Re-create Receipt", ButtonBar.ButtonData.LEFT);
+            if (ReceiptPdfGenerator.PREVIEW_FEATURE_ENABLED) {
+                dialog.getDialogPane().getButtonTypes().add(previewButton);
+            }
             dialog.getDialogPane().getButtonTypes().add(openPdfButton);
             if (canPrintOriginal(details)) {
                 dialog.getDialogPane().getButtonTypes().add(printOriginalButton);
@@ -409,7 +419,9 @@ public class ReceiptHistoryController {
             dialog.getDialogPane().setPrefWidth(980);
 
             Optional<ButtonType> result = dialog.showAndWait();
-            if (result.filter(openPdfButton::equals).isPresent()) {
+            if (result.filter(previewButton::equals).isPresent()) {
+                previewReceipt(details);
+            } else if (result.filter(openPdfButton::equals).isPresent()) {
                 openPdf(details);
             } else if (result.filter(printOriginalButton::equals).isPresent()) {
                 printOriginal(details);
@@ -746,6 +758,30 @@ public class ReceiptHistoryController {
 
     private void recreateReceipt(ReceiptResponseDto receipt) {
         DashboardController.openReceiptCorrection(receipt.getId());
+    }
+
+    private void previewReceipt(ReceiptResponseDto receipt) {
+        ProcessingDialog.run("Preview Receipt", "Rendering receipt preview...",
+                () -> receiptPdfGenerator.renderReceiptPreview(receipt.getId()),
+                this::showPreviewDialog,
+                throwable -> showProcessingError("Preview Receipt", throwable));
+    }
+
+    private void showPreviewDialog(BufferedImage image) {
+        ImageView imageView = new ImageView(SwingFXUtils.toFXImage(image, null));
+        imageView.setPreserveRatio(true);
+        imageView.setFitWidth(380);
+
+        ScrollPane scrollPane = new ScrollPane(imageView);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(520);
+
+        Dialog<Void> dialog = DialogStyler.apply(new Dialog<>());
+        dialog.setTitle("Receipt Preview");
+        dialog.setHeaderText("Receipt Preview");
+        dialog.getDialogPane().setContent(scrollPane);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        dialog.showAndWait();
     }
 
     private void openPdf(ReceiptResponseDto receipt) {

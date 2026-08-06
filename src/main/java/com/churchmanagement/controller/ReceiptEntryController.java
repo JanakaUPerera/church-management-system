@@ -6,6 +6,7 @@ import com.churchmanagement.dto.ReceiptResponseDto;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.enums.ReceiptStatus;
+import com.churchmanagement.reports.ReceiptPdfGenerator;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
@@ -22,6 +23,7 @@ import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.WeekUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -30,9 +32,13 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -40,6 +46,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -56,6 +63,7 @@ public class ReceiptEntryController {
     private final ChurchService churchService = new ChurchService();
     private final ReceiptService receiptService = new ReceiptService();
     private final ReceiptPrintService receiptPrintService = new ReceiptPrintService();
+    private final ReceiptPdfGenerator receiptPdfGenerator = new ReceiptPdfGenerator();
     private final ReceiptRepository receiptRepository = new ReceiptRepository();
     private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final ObservableList<Church> activeChurches = FXCollections.observableArrayList();
@@ -69,6 +77,7 @@ public class ReceiptEntryController {
     @FXML private Label regionLabel;
     @FXML private DatePicker weekStartDatePicker;
     @FXML private Label weekEndDateLabel;
+    @FXML private DatePicker churchServiceDatePicker;
     @FXML private Label lateSubmissionLabel;
     @FXML private Label lateReasonLabel;
     @FXML private TextArea lateSubmissionReasonArea;
@@ -154,6 +163,8 @@ public class ReceiptEntryController {
     private void configureControls() {
         ComboBoxUtil.makeChurchSearchable(churchComboBox, activeChurches);
         DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
+        DatePickerUtil.restrictToRange(churchServiceDatePicker, weekStartDatePicker::getValue,
+                () -> WeekUtil.getSundayForMonday(weekStartDatePicker.getValue()));
         churchComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateSelectedRegion());
         weekStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> updateWeekState());
         offertoryAmountField.textProperty().addListener((observable, oldValue, newValue) -> updateTotalAmount());
@@ -187,6 +198,12 @@ public class ReceiptEntryController {
         LocalDate end = WeekUtil.getSundayForMonday(start);
         weekEndDateLabel.setText(dateTimeFormatter.formatDate(end));
 
+        LocalDate serviceDate = churchServiceDatePicker.getValue();
+        if (start != null && end != null
+                && (serviceDate == null || serviceDate.isBefore(start) || serviceDate.isAfter(end))) {
+            churchServiceDatePicker.setValue(end);
+        }
+
         boolean late = start != null && WeekUtil.isBackWeek(start, LocalDate.now());
         lateSubmissionLabel.setText(late ? "YES" : "NO");
         lateSubmissionLabel.getStyleClass().removeAll("status-active", "status-inactive");
@@ -208,6 +225,7 @@ public class ReceiptEntryController {
         request.setChurchId(selectedChurch == null ? null : selectedChurch.getId());
         request.setWeekStartDate(weekStart);
         request.setWeekEndDate(WeekUtil.getSundayForMonday(weekStart));
+        request.setChurchServiceDate(churchServiceDatePicker.getValue());
         request.setSubmittedByName(submittedByNameField.getText());
         request.setLateSubmissionReason(lateSubmissionReasonArea.getText());
         request.setCorrectedFromReceiptId(correctedFromReceiptId);
@@ -240,6 +258,7 @@ public class ReceiptEntryController {
         correctedFromValueLabel.setText(receipt.getReceiptNo());
         selectChurch(receipt);
         weekStartDatePicker.setValue(receipt.getWeekStartDate());
+        churchServiceDatePicker.setValue(receipt.getChurchServiceDate());
         submittedByNameField.setText(receipt.getSubmittedByName());
         lateSubmissionReasonArea.setText(receipt.getLateSubmissionReason());
         clearItemFields();
@@ -373,6 +392,7 @@ public class ReceiptEntryController {
         container.getChildren().addAll(
                 summaryRow("Church:", church == null ? "" : church.getChurchCode() + " - " + church.getChurchName()),
                 summaryRow("Week:", formatWeek(request.getWeekStartDate(), request.getWeekEndDate())),
+                summaryRow("Date of church service:", dateTimeFormatter.formatDate(request.getChurchServiceDate())),
                 summaryRow("Submitted by:", nullToDash(request.getSubmittedByName()))
         );
         if (correctedFromReceiptId != null) {
@@ -475,6 +495,7 @@ public class ReceiptEntryController {
     private void setFormDisabled(boolean disabled) {
         churchComboBox.setDisable(disabled);
         weekStartDatePicker.setDisable(disabled);
+        churchServiceDatePicker.setDisable(disabled);
         submittedByNameField.setDisable(disabled);
         lateSubmissionReasonArea.setDisable(disabled);
         offertoryAmountField.setDisable(disabled);
@@ -515,18 +536,50 @@ public class ReceiptEntryController {
         alert.setContentText(savedReceiptMessage(receipt));
         ButtonType viewPdfButton = new ButtonType("View PDF", ButtonBar.ButtonData.LEFT);
         ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
-        if (canPrintOriginal(receipt)) {
-            alert.getButtonTypes().setAll(viewPdfButton, printOriginalButton, ButtonType.OK);
-        } else {
-            alert.getButtonTypes().setAll(viewPdfButton, ButtonType.OK);
+        ButtonType previewButton = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
+        List<ButtonType> buttonTypes = new ArrayList<>();
+        if (ReceiptPdfGenerator.PREVIEW_FEATURE_ENABLED) {
+            buttonTypes.add(previewButton);
         }
+        buttonTypes.add(viewPdfButton);
+        if (canPrintOriginal(receipt)) {
+            buttonTypes.add(printOriginalButton);
+        }
+        buttonTypes.add(ButtonType.OK);
+        alert.getButtonTypes().setAll(buttonTypes);
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.filter(viewPdfButton::equals).isPresent()) {
+        if (result.filter(previewButton::equals).isPresent()) {
+            previewReceipt(receipt);
+        } else if (result.filter(viewPdfButton::equals).isPresent()) {
             openPdf(receipt);
         } else if (result.filter(printOriginalButton::equals).isPresent()) {
             printOriginal(receipt);
         }
+    }
+
+    private void previewReceipt(ReceiptResponseDto receipt) {
+        ProcessingDialog.run("Preview Receipt", "Rendering receipt preview...",
+                () -> receiptPdfGenerator.renderReceiptPreview(receipt.getId()),
+                this::showPreviewDialog,
+                this::showProcessingError);
+    }
+
+    private void showPreviewDialog(BufferedImage image) {
+        ImageView imageView = new ImageView(SwingFXUtils.toFXImage(image, null));
+        imageView.setPreserveRatio(true);
+        imageView.setFitWidth(380);
+
+        ScrollPane scrollPane = new ScrollPane(imageView);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(520);
+
+        Dialog<Void> dialog = DialogStyler.apply(new Dialog<>());
+        dialog.setTitle("Receipt Preview");
+        dialog.setHeaderText("Receipt Preview");
+        dialog.getDialogPane().setContent(scrollPane);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        dialog.showAndWait();
     }
 
     private String savedReceiptMessage(ReceiptResponseDto receipt) {
