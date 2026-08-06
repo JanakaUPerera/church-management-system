@@ -197,6 +197,17 @@ class ReceiptServiceTest {
     }
 
     @Test
+    void rejectChurchServiceDateOutsideSelectedWeek() {
+        CreateReceiptRequest request = validRequest();
+        request.setChurchServiceDate(NORMAL_WEEK_START.minusDays(1));
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(request));
+
+        assertTrue(exception.getMessage().contains("Date of the church service must be within the selected week."));
+    }
+
+    @Test
     void rejectMissingSubmittedByName() {
         CreateReceiptRequest request = validRequest();
         request.setSubmittedByName(" ");
@@ -294,6 +305,7 @@ class ReceiptServiceTest {
         CreateReceiptRequest request = validRequest();
         request.setWeekStartDate(BACK_WEEK_START);
         request.setWeekEndDate(BACK_WEEK_END);
+        request.setChurchServiceDate(BACK_WEEK_END);
         request.setLateSubmissionReason("Submitted after treasurer travel.");
 
         ReceiptResponseDto response = receiptService.createReceipt(request);
@@ -307,6 +319,7 @@ class ReceiptServiceTest {
         CreateReceiptRequest request = validRequest();
         request.setWeekStartDate(BACK_WEEK_START);
         request.setWeekEndDate(BACK_WEEK_END);
+        request.setChurchServiceDate(BACK_WEEK_END);
 
         ReceiptResponseDto response = receiptService.createReceipt(request);
 
@@ -399,6 +412,7 @@ class ReceiptServiceTest {
         request.setChurchId(10L);
         request.setWeekStartDate(NORMAL_WEEK_START);
         request.setWeekEndDate(NORMAL_WEEK_END);
+        request.setChurchServiceDate(NORMAL_WEEK_END);
         request.setSubmittedByName("Treasurer");
         request.setItems(List.of(
                 item(CollectionType.OFFERTORY, "100.00"),

@@ -18,6 +18,7 @@ public class ReceiptPrintRepository {
     public Optional<Receipt> lockReceiptForPrint(long receiptId, Connection connection) {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
+                       church_service_date,
                        receipt_datetime, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
@@ -113,6 +114,8 @@ public class ReceiptPrintRepository {
         Date weekEnd = resultSet.getDate("week_end_date");
         receipt.setWeekStartDate(weekStart == null ? null : weekStart.toLocalDate());
         receipt.setWeekEndDate(weekEnd == null ? null : weekEnd.toLocalDate());
+        Date churchServiceDate = resultSet.getDate("church_service_date");
+        receipt.setChurchServiceDate(churchServiceDate == null ? null : churchServiceDate.toLocalDate());
         Timestamp receiptDateTime = resultSet.getTimestamp("receipt_datetime");
         receipt.setReceiptDateTime(receiptDateTime == null ? null : receiptDateTime.toLocalDateTime());
         receipt.setSubmittedByName(resultSet.getString("submitted_by_name"));

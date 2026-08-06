@@ -240,6 +240,7 @@ public class ReceiptService {
         receipt.setRegionId(church.getRegionId());
         receipt.setWeekStartDate(request.getWeekStartDate());
         receipt.setWeekEndDate(request.getWeekEndDate());
+        receipt.setChurchServiceDate(request.getChurchServiceDate());
         receipt.setReceiptDateTime(now);
         receipt.setSubmittedByName(request.getSubmittedByName().strip());
         receipt.setIssuedByUserId(userId);

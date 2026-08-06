@@ -7,6 +7,7 @@ import javafx.util.StringConverter;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.function.Supplier;
 
 public final class DatePickerUtil {
     private DatePickerUtil() {
@@ -58,6 +59,26 @@ public final class DatePickerUtil {
                 datePicker.setValue(oldValue);
             }
         });
+    }
+
+    public static void restrictToRange(DatePicker datePicker, Supplier<LocalDate> minDate, Supplier<LocalDate> maxDate) {
+        applySystemDateFormat(datePicker);
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setDisable(empty || isOutsideRange(date, minDate.get(), maxDate.get()));
+            }
+        });
+        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && isOutsideRange(newValue, minDate.get(), maxDate.get())) {
+                datePicker.setValue(oldValue);
+            }
+        });
+    }
+
+    private static boolean isOutsideRange(LocalDate date, LocalDate minDate, LocalDate maxDate) {
+        return (minDate != null && date.isBefore(minDate)) || (maxDate != null && date.isAfter(maxDate));
     }
 
     public static void applySystemDateFormat(DatePicker datePicker) {

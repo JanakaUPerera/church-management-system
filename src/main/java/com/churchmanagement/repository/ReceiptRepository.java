@@ -59,6 +59,7 @@ public class ReceiptRepository {
                                                                         Connection connection) {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
+                       church_service_date,
                        receipt_datetime, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
@@ -85,6 +86,7 @@ public class ReceiptRepository {
     public Optional<Receipt> findReceiptByIdForUpdate(long receiptId, Connection connection) {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
+                       church_service_date,
                        receipt_datetime, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
@@ -110,6 +112,7 @@ public class ReceiptRepository {
     public Optional<Receipt> findReceiptById(long receiptId) {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
+                       church_service_date,
                        receipt_datetime, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
@@ -153,11 +156,11 @@ public class ReceiptRepository {
     public long insertReceipt(Receipt receipt, Connection connection) {
         String sql = """
                 INSERT INTO receipts (
-                    receipt_no, church_id, region_id, week_start_date, week_end_date,
+                    receipt_no, church_id, region_id, week_start_date, week_end_date, church_service_date,
                     receipt_datetime, submitted_by_name, issued_by_user_id, status,
                     is_late_submission, late_submission_reason, corrected_from_receipt_id, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -166,14 +169,15 @@ public class ReceiptRepository {
             statement.setLong(3, receipt.getRegionId());
             statement.setDate(4, Date.valueOf(receipt.getWeekStartDate()));
             statement.setDate(5, Date.valueOf(receipt.getWeekEndDate()));
-            statement.setTimestamp(6, Timestamp.valueOf(receipt.getReceiptDateTime()));
-            statement.setString(7, receipt.getSubmittedByName());
-            statement.setLong(8, receipt.getIssuedByUserId());
-            statement.setString(9, receipt.getStatus().name());
-            statement.setBoolean(10, receipt.isLateSubmission());
-            setNullableString(statement, 11, receipt.getLateSubmissionReason());
-            setNullableLong(statement, 12, receipt.getCorrectedFromReceiptId());
-            statement.setTimestamp(13, Timestamp.valueOf(receipt.getCreatedAt()));
+            statement.setDate(6, Date.valueOf(receipt.getChurchServiceDate()));
+            statement.setTimestamp(7, Timestamp.valueOf(receipt.getReceiptDateTime()));
+            statement.setString(8, receipt.getSubmittedByName());
+            statement.setLong(9, receipt.getIssuedByUserId());
+            statement.setString(10, receipt.getStatus().name());
+            statement.setBoolean(11, receipt.isLateSubmission());
+            setNullableString(statement, 12, receipt.getLateSubmissionReason());
+            setNullableLong(statement, 13, receipt.getCorrectedFromReceiptId());
+            statement.setTimestamp(14, Timestamp.valueOf(receipt.getCreatedAt()));
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -401,6 +405,8 @@ public class ReceiptRepository {
                 dto.setRegionName(resultSet.getString("region_name"));
                 dto.setWeekStartDate(resultSet.getDate("week_start_date").toLocalDate());
                 dto.setWeekEndDate(resultSet.getDate("week_end_date").toLocalDate());
+                Date churchServiceDate = resultSet.getDate("church_service_date");
+                dto.setChurchServiceDate(churchServiceDate == null ? null : churchServiceDate.toLocalDate());
                 dto.setReceiptDateTime(resultSet.getTimestamp("receipt_datetime").toLocalDateTime());
                 dto.setSubmittedByName(resultSet.getString("submitted_by_name"));
                 dto.setIssuedByFullName(resultSet.getString("issued_by_full_name"));
@@ -440,6 +446,8 @@ public class ReceiptRepository {
         receipt.setRegionId(resultSet.getLong("region_id"));
         receipt.setWeekStartDate(resultSet.getDate("week_start_date").toLocalDate());
         receipt.setWeekEndDate(resultSet.getDate("week_end_date").toLocalDate());
+        Date churchServiceDate = resultSet.getDate("church_service_date");
+        receipt.setChurchServiceDate(churchServiceDate == null ? null : churchServiceDate.toLocalDate());
         receipt.setReceiptDateTime(resultSet.getTimestamp("receipt_datetime").toLocalDateTime());
         receipt.setSubmittedByName(resultSet.getString("submitted_by_name"));
         receipt.setIssuedByUserId(resultSet.getLong("issued_by_user_id"));
@@ -463,7 +471,8 @@ public class ReceiptRepository {
         return """
                 SELECT r.id, r.receipt_no, c.church_code, c.church_name, c.receipt_language,
                        rg.region_code, rg.region_name,
-                       r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
+                       r.week_start_date, r.week_end_date, r.church_service_date,
+                       r.receipt_datetime, r.submitted_by_name,
                        u.full_name AS issued_by_full_name, r.status, r.is_late_submission,
                        r.late_submission_reason, r.corrected_from_receipt_id,
                        r.pdf_file_path, r.original_printed, r.original_printed_at,
@@ -500,7 +509,8 @@ public class ReceiptRepository {
         return """
                  GROUP BY r.id, r.receipt_no, c.church_code, c.church_name, c.receipt_language,
                           rg.region_code, rg.region_name,
-                          r.week_start_date, r.week_end_date, r.receipt_datetime, r.submitted_by_name,
+                          r.week_start_date, r.week_end_date, r.church_service_date,
+                          r.receipt_datetime, r.submitted_by_name,
                           u.full_name, r.status, r.is_late_submission, r.late_submission_reason,
                           r.corrected_from_receipt_id, r.pdf_file_path, r.original_printed,
                           r.original_printed_at, r.print_attempt_count, printed_by.full_name,

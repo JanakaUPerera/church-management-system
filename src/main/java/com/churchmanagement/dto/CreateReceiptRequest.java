@@ -8,6 +8,7 @@ public class CreateReceiptRequest {
     private Long churchId;
     private LocalDate weekStartDate;
     private LocalDate weekEndDate;
+    private LocalDate churchServiceDate;
     private String submittedByName;
     private String lateSubmissionReason;
     private Long correctedFromReceiptId;
@@ -35,6 +36,14 @@ public class CreateReceiptRequest {
 
     public void setWeekEndDate(LocalDate weekEndDate) {
         this.weekEndDate = weekEndDate;
+    }
+
+    public LocalDate getChurchServiceDate() {
+        return churchServiceDate;
+    }
+
+    public void setChurchServiceDate(LocalDate churchServiceDate) {
+        this.churchServiceDate = churchServiceDate;
     }
 
     public String getSubmittedByName() {

@@ -23,6 +23,7 @@ public final class ReceiptValidator {
         if (request == null) {
             errors.add("Church is required.");
             errors.add("Week start date is required.");
+            errors.add("Date of the church service is required.");
             errors.add("Submitted by name is required.");
             errors.add("At least one collection item is required.");
             return errors;
@@ -58,6 +59,16 @@ public final class ReceiptValidator {
 
         if (weekStart != null && weekEnd != null && !weekEnd.equals(weekStart.plusDays(6))) {
             errors.add("Week end date must be 6 days after week start date.");
+        }
+
+        LocalDate churchServiceDate = request.getChurchServiceDate();
+        if (churchServiceDate == null) {
+            errors.add("Date of the church service is required.");
+        } else if (churchServiceDate.isAfter(today)) {
+            errors.add("Date of the church service cannot be in the future.");
+        } else if (weekStart != null && weekEnd != null
+                && (churchServiceDate.isBefore(weekStart) || churchServiceDate.isAfter(weekEnd))) {
+            errors.add("Date of the church service must be within the selected week.");
         }
 
         if (request.getSubmittedByName() == null || request.getSubmittedByName().isBlank()) {

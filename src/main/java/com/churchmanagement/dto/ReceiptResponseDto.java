@@ -19,6 +19,7 @@ public class ReceiptResponseDto {
     private String regionName;
     private LocalDate weekStartDate;
     private LocalDate weekEndDate;
+    private LocalDate churchServiceDate;
     private LocalDateTime receiptDateTime;
     private String submittedByName;
     private String issuedByFullName;
@@ -114,6 +115,14 @@ public class ReceiptResponseDto {
 
     public void setWeekEndDate(LocalDate weekEndDate) {
         this.weekEndDate = weekEndDate;
+    }
+
+    public LocalDate getChurchServiceDate() {
+        return churchServiceDate;
+    }
+
+    public void setChurchServiceDate(LocalDate churchServiceDate) {
+        this.churchServiceDate = churchServiceDate;
     }
 
     public LocalDateTime getReceiptDateTime() {
