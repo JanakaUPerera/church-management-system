@@ -2,14 +2,13 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.dto.DatabaseSetupDto;
 import com.churchmanagement.exception.DatabaseException;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Properties;
 
 public class DatabaseSetupService {
@@ -92,27 +91,25 @@ public class DatabaseSetupService {
 
     /**
      * Tests the credentials in {@code dto} without touching the application's
-     * singleton DataSource.  A temporary single-connection pool is created,
-     * validated, and immediately torn down.
+     * singleton DataSource.
+     *
+     * <p>Uses a plain {@link DriverManager} call so MySQL errors (Access denied,
+     * Unknown database, etc.) surface immediately instead of timing out inside a
+     * HikariCP retry loop.  TCP connect and socket timeouts are embedded in the
+     * URL so an unreachable host still fails within ~8 seconds.</p>
      *
      * @throws DatabaseException with a user-friendly message on failure.
      */
     public void testConnection(DatabaseSetupDto dto) {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(buildJdbcUrl(dto));
-        config.setUsername(dto.getUsername());
-        config.setPassword(dto.getPassword());
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        config.setConnectionTimeout(8_000);
-        config.setMaximumPoolSize(1);
-        config.setPoolName("SetupTestPool");
-        // -1 = start pool without validating; the explicit getConnection() below is the test.
-        config.setInitializationFailTimeout(-1);
-
-        try (HikariDataSource ds = new HikariDataSource(config);
-             Connection conn = ds.getConnection()) {
-            if (!conn.isValid(5)) {
-                throw new DatabaseException("Connection validation failed — server responded but the connection is not usable.");
+        // connectTimeout / socketTimeout are MySQL Connector/J URL params (milliseconds).
+        // They ensure an unreachable host fails quickly without HikariCP retries.
+        String testUrl = buildJdbcUrl(dto) + "&connectTimeout=8000&socketTimeout=10000";
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            try (Connection conn = DriverManager.getConnection(testUrl, dto.getUsername(), dto.getPassword())) {
+                if (!conn.isValid(5)) {
+                    throw new DatabaseException("Connection validation failed — server responded but the connection is not usable.");
+                }
             }
         } catch (DatabaseException e) {
             throw e;
