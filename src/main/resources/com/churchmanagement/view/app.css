@@ -4185,3 +4185,189 @@
 .theme-orchid .status-separator { -fx-text-fill: #bb29c1; }
 .theme-orchid .footer-developer-label { -fx-text-fill: #8c239a; }
 .theme-orchid .footer-contact-icon    { -fx-icon-color: #8c239a; }
+
+/* ═══════════════════════════════════════════════
+   DATABASE SETUP WIZARD
+   ═══════════════════════════════════════════════ */
+
+/* ── Default (amber) theme ── */
+
+.db-setup-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #451a03;
+}
+
+.db-setup-subtitle {
+    -fx-font-size: 13px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #78716c;
+}
+
+.db-setup-field-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #78350f;
+}
+
+.db-setup-checkbox {
+    -fx-font-size: 13px;
+    -fx-text-fill: #451a03;
+}
+
+.db-setup-hint {
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #78716c;
+}
+
+.db-setup-status {
+    -fx-font-size: 13px;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 8 12;
+}
+
+.db-setup-status-success {
+    -fx-text-fill: #166534;
+    -fx-background-color: #dcfce7;
+    -fx-border-color: #86efac;
+}
+
+.db-setup-status-error {
+    -fx-text-fill: #991b1b;
+    -fx-background-color: #fee2e2;
+    -fx-border-color: #fca5a5;
+}
+
+.db-setup-status-info {
+    -fx-text-fill: #92400e;
+    -fx-background-color: #fef3c7;
+    -fx-border-color: #fde68a;
+}
+
+/* Configure Database button — amber outline, secondary feel */
+.startup-configure-button {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #78350f;
+    -fx-font-weight: bold;
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 1.5;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.startup-configure-button:hover {
+    -fx-background-color: #fde68a;
+    -fx-border-color: #d97706;
+}
+
+.startup-configure-button:pressed {
+    -fx-background-color: #fcd34d;
+    -fx-border-color: #b45309;
+}
+
+/* ── Dark theme overrides ── */
+
+.theme-dark .db-setup-title {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .db-setup-subtitle {
+    -fx-text-fill: #9ca3af;
+}
+
+.theme-dark .db-setup-field-label {
+    -fx-text-fill: #fef3c7;
+}
+
+.theme-dark .db-setup-checkbox {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .db-setup-hint {
+    -fx-text-fill: #6b7280;
+}
+
+.theme-dark .db-setup-status-success {
+    -fx-text-fill: #bbf7d0;
+    -fx-background-color: rgba(22, 101, 52, 0.30);
+    -fx-border-color: rgba(134, 239, 172, 0.40);
+}
+
+.theme-dark .db-setup-status-error {
+    -fx-text-fill: #fca5a5;
+    -fx-background-color: rgba(239, 68, 68, 0.18);
+    -fx-border-color: rgba(239, 68, 68, 0.32);
+}
+
+.theme-dark .db-setup-status-info {
+    -fx-text-fill: #fde68a;
+    -fx-background-color: rgba(245, 158, 11, 0.15);
+    -fx-border-color: rgba(245, 158, 11, 0.30);
+}
+
+.theme-dark .startup-configure-button {
+    -fx-background-color: #1f2937;
+    -fx-text-fill: #fde68a;
+    -fx-border-color: #4b5563;
+}
+
+.theme-dark .startup-configure-button:hover {
+    -fx-background-color: #263244;
+    -fx-border-color: #d97706;
+}
+
+/* ── Orchid theme overrides ── */
+
+.theme-orchid .db-setup-title {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .db-setup-subtitle {
+    -fx-text-fill: #78716c;
+}
+
+.theme-orchid .db-setup-field-label {
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .db-setup-checkbox {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .db-setup-hint {
+    -fx-text-fill: #8c239a;
+}
+
+.theme-orchid .db-setup-status-success {
+    -fx-text-fill: #166534;
+    -fx-background-color: #dcfce7;
+    -fx-border-color: #86efac;
+}
+
+.theme-orchid .db-setup-status-error {
+    -fx-text-fill: #991b1b;
+    -fx-background-color: #fee2e2;
+    -fx-border-color: #fca5a5;
+}
+
+.theme-orchid .db-setup-status-info {
+    -fx-text-fill: #6e1871;
+    -fx-background-color: #fbeefb;
+    -fx-border-color: #e8a3eb;
+}
+
+.theme-orchid .startup-configure-button {
+    -fx-background-color: #fbeefb;
+    -fx-text-fill: #6e1871;
+    -fx-border-color: #d85fdd;
+}
+
+.theme-orchid .startup-configure-button:hover {
+    -fx-background-color: #f3d8f5;
+    -fx-border-color: #9c1fa6;
+}
+

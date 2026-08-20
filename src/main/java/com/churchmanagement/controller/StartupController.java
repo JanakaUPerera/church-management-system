@@ -34,9 +34,11 @@ public class StartupController {
     @FXML private Label errorLabel;
     @FXML private HBox buttonBar;
     @FXML private Button checkNowButton;
+    @FXML private Button configureDbButton;
     @FXML private Button exitButton;
 
     private Runnable onReady;
+    private Runnable onConfigure;
 
     /** True while a check sequence is running — blocks duplicate runs. */
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -66,6 +68,11 @@ public class StartupController {
         this.onReady = onReady;
     }
 
+    /** Called by MainApplication to open the DB setup wizard when connection fails. */
+    public void setOnConfigure(Runnable onConfigure) {
+        this.onConfigure = onConfigure;
+    }
+
     /** Called by MainApplication after the stage is shown. */
     public void startChecks() {
         runChecksAsync();
@@ -75,6 +82,13 @@ public class StartupController {
     private void handleCheckNow() {
         cancelTransition.set(true);
         runChecksAsync();
+    }
+
+    @FXML
+    private void handleConfigureDatabase() {
+        if (onConfigure != null) {
+            onConfigure.run();
+        }
     }
 
     @FXML
@@ -204,6 +218,8 @@ public class StartupController {
         checkContainer.setManaged(false);
         errorLabel.setVisible(false);
         errorLabel.setManaged(false);
+        configureDbButton.setVisible(false);
+        configureDbButton.setManaged(false);
         exitButton.setVisible(false);
         exitButton.setManaged(false);
         buttonBar.setVisible(false);
@@ -237,6 +253,8 @@ public class StartupController {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
         errorLabel.setManaged(true);
+        configureDbButton.setVisible(true);
+        configureDbButton.setManaged(true);
         exitButton.setVisible(true);
         exitButton.setManaged(true);
         checkNowButton.setDisable(false);

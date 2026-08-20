@@ -78,7 +78,11 @@
             <Button fx:id="checkNowButton" text="Check Now" onAction="#handleCheckNow"
                     styleClass="startup-check-now-button" prefWidth="120" prefHeight="34"/>
 
-            <!-- Exit only shown when DB fails -->
+            <!-- Configure Database and Exit — only shown when DB fails -->
+            <Button fx:id="configureDbButton" text="Configure Database"
+                    onAction="#handleConfigureDatabase"
+                    styleClass="startup-configure-button" prefWidth="160" prefHeight="34"
+                    visible="false" managed="false"/>
             <Button fx:id="exitButton" text="Exit" onAction="#handleExit"
                     styleClass="startup-exit-button" prefWidth="90" prefHeight="34"
                     visible="false" managed="false"/>
