@@ -82,22 +82,23 @@ public final class DatabaseConfig {
     }
 
     private static Properties loadProperties() {
-        // When installed via jpackage, $APPDIR is passed as -Dapp.home and an external
-        // application.properties sits next to the app JARs so clients can edit DB credentials.
-        String appHome = System.getProperty("app.home");
-        if (appHome != null) {
-            Path externalConfig = Path.of(appHome, "application.properties");
-            if (Files.exists(externalConfig)) {
-                try (InputStream inputStream = Files.newInputStream(externalConfig)) {
-                    Properties properties = new Properties();
-                    properties.load(inputStream);
-                    return properties;
-                } catch (IOException exception) {
-                    throw new DatabaseException("Unable to load external application.properties from: " + externalConfig, exception);
-                }
+        // In production (app.home set) prefer the user-writable external config
+        // file resolved by AppHome — stored in %APPDATA% on Windows so that
+        // normal (non-admin) users can write it without elevated privileges.
+        Path externalConfig = AppHome.configFile();
+        if (externalConfig != null && Files.exists(externalConfig)) {
+            try (InputStream inputStream = Files.newInputStream(externalConfig)) {
+                Properties properties = new Properties();
+                properties.load(inputStream);
+                return properties;
+            } catch (IOException exception) {
+                throw new DatabaseException(
+                        "Unable to load external application.properties from: " + externalConfig,
+                        exception);
             }
         }
 
+        // Dev mode or first launch before wizard saves — fall back to bundled classpath file.
         try (InputStream inputStream = DatabaseConfig.class.getResourceAsStream(PROPERTIES_FILE)) {
             if (inputStream == null) {
                 throw new DatabaseException("Missing " + PROPERTIES_FILE);
