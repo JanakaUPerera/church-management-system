@@ -93,6 +93,10 @@ public class MainApplication extends Application {
             stage.show();
 
             controller.setOnComplete(onComplete);
+            // Closing the wizard always goes to the startup screen.
+            // On first launch the startup screen will fail and re-offer the button;
+            // from the startup error screen it just returns the user there.
+            controller.setOnCancel(() -> showStartupScreen(stage));
         } catch (IOException e) {
             throw new RuntimeException("Failed to load database setup view.", e);
         }

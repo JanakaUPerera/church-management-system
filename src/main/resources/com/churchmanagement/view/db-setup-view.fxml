@@ -19,6 +19,14 @@
            xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.churchmanagement.controller.DatabaseSetupController">
 
+    <!-- Close button — top-right corner, same pattern as login-view -->
+    <Button fx:id="closeButton" onAction="#handleClose"
+            styleClass="login-close-button" StackPane.alignment="TOP_RIGHT">
+        <StackPane.margin>
+            <Insets right="14" top="14"/>
+        </StackPane.margin>
+    </Button>
+
     <VBox alignment="CENTER_LEFT" spacing="0"
           prefWidth="440" maxWidth="440"
           styleClass="startup-card">

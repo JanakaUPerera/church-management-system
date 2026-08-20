@@ -14,11 +14,14 @@ import java.util.Properties;
 
 public class DatabaseSetupService {
 
-    // These query params match the bundled application.properties exactly so
-    // backup / restore commands and character-set handling continue to work.
+    // createDatabaseIfNotExist is intentionally omitted: in a multi-machine
+    // deployment the database is created by the DBA before first use, and the
+    // app user typically has no CREATE privilege at server level.  Including
+    // that flag causes MySQL Connector/J to issue "CREATE DATABASE IF NOT
+    // EXISTS" on every connection, which MySQL rejects with "Access denied"
+    // even when the user's credentials are correct.
     private static final String URL_OPTIONS =
-            "createDatabaseIfNotExist=true"
-            + "&useUnicode=true"
+            "useUnicode=true"
             + "&characterEncoding=utf8"
             + "&connectionCollation=utf8mb4_unicode_ci"
             + "&serverTimezone=UTC";
@@ -185,6 +188,9 @@ public class DatabaseSetupService {
 
         if (combined.contains("Communications link failure") || combined.contains("Connection refused")) {
             return "Cannot reach the server. Check the host and port.";
+        }
+        if (combined.contains("CREATE command denied") || combined.contains("create command denied")) {
+            return "The database user lacks CREATE privilege. Grant the necessary privileges, or ask your DBA to create the database manually before connecting.";
         }
         if (combined.contains("Access denied")) {
             return "Access denied — check the username and password.";

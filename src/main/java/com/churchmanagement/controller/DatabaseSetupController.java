@@ -35,15 +35,30 @@ public class DatabaseSetupController {
     @FXML private Button testButton;
     @FXML private Button saveButton;
 
+    @FXML private Button closeButton;
+
     private final DatabaseSetupService setupService = new DatabaseSetupService();
     private final AtomicBoolean testing = new AtomicBoolean(false);
     private boolean passwordVisible;
     private boolean testPassed;
     private Runnable onComplete;
+    private Runnable onCancel;
 
     /** Called by MainApplication after the scene is shown. */
     public void setOnComplete(Runnable onComplete) {
         this.onComplete = onComplete;
+    }
+
+    /** Called by MainApplication; invoked when the user closes the wizard without saving. */
+    public void setOnCancel(Runnable onCancel) {
+        this.onCancel = onCancel;
+    }
+
+    @FXML
+    private void handleClose() {
+        if (onCancel != null) {
+            onCancel.run();
+        }
     }
 
     @FXML
@@ -51,6 +66,8 @@ public class DatabaseSetupController {
         applyPersistedTheme();
         visiblePasswordField.textProperty().bindBidirectional(passwordField.textProperty());
         setPasswordVisible(false);
+        ButtonIconUtil.applyIcon(closeButton, "fas-times");
+        closeButton.setText("");
         ButtonIconUtil.applyIcon(testButton, "fas-plug");
         ButtonIconUtil.applyIcon(saveButton, "fas-save");
         saveButton.setDisable(true);
