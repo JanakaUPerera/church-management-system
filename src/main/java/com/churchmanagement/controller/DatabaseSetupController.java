@@ -36,6 +36,7 @@ public class DatabaseSetupController {
     @FXML private Button saveButton;
 
     @FXML private Button closeButton;
+    @FXML private Label rawDetailLabel;
 
     private final DatabaseSetupService setupService = new DatabaseSetupService();
     private final AtomicBoolean testing = new AtomicBoolean(false);
@@ -75,6 +76,8 @@ public class DatabaseSetupController {
         testSpinner.setManaged(false);
         statusLabel.setVisible(false);
         statusLabel.setManaged(false);
+        rawDetailLabel.setVisible(false);
+        rawDetailLabel.setManaged(false);
         prefillForm();
     }
 
@@ -102,14 +105,21 @@ public class DatabaseSetupController {
                 setupService.testConnection(dto);
                 Platform.runLater(() -> {
                     showStatus("Connection successful.", Status.SUCCESS);
+                    hideRawDetail();
                     testPassed = true;
                     saveButton.setDisable(false);
                     showSpinner(false);
                     setFormDisabled(false);
                 });
             } catch (DatabaseException e) {
+                String rawDetail = extractRawDetail(e);
                 Platform.runLater(() -> {
                     showStatus(e.getMessage(), Status.ERROR);
+                    if (rawDetail != null) {
+                        showRawDetail(rawDetail);
+                    } else {
+                        hideRawDetail();
+                    }
                     showSpinner(false);
                     setFormDisabled(false);
                 });
@@ -210,6 +220,35 @@ public class DatabaseSetupController {
         });
         statusLabel.setVisible(true);
         statusLabel.setManaged(true);
+    }
+
+    private void showRawDetail(String detail) {
+        rawDetailLabel.setText(detail);
+        rawDetailLabel.setVisible(true);
+        rawDetailLabel.setManaged(true);
+    }
+
+    private void hideRawDetail() {
+        rawDetailLabel.setVisible(false);
+        rawDetailLabel.setManaged(false);
+    }
+
+    /**
+     * Walks the exception cause chain to find the deepest non-null message
+     * that differs from the friendly top-level message.  Returns null when
+     * there is nothing more specific to show.
+     */
+    private String extractRawDetail(DatabaseException e) {
+        String friendly = e.getMessage();
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            String msg = cause.getMessage();
+            if (msg != null && !msg.isBlank() && !msg.equals(friendly)) {
+                return msg;
+            }
+            cause = cause.getCause();
+        }
+        return null;
     }
 
     private void showSpinner(boolean visible) {

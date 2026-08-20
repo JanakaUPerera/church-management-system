@@ -97,7 +97,11 @@
 
         <!-- ── Status label (test / save feedback) ────────────────────────── -->
         <Label fx:id="statusLabel" wrapText="true" maxWidth="Infinity"
-               styleClass="db-setup-status" visible="false" managed="false">
+               styleClass="db-setup-status" visible="false" managed="false"/>
+
+        <!-- ── Raw error detail — full MySQL message, shown below status ──── -->
+        <Label fx:id="rawDetailLabel" wrapText="true" maxWidth="Infinity"
+               styleClass="db-setup-error-detail" visible="false" managed="false">
             <VBox.margin><Insets bottom="12"/></VBox.margin>
         </Label>
 
