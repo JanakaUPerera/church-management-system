@@ -89,11 +89,18 @@ public class DatabaseSetupService {
 
     /**
      * Writes a complete {@code application.properties} to {@code $app.home}.
+     *
+     * <p>When {@code app.home} is not set the application is running in
+     * development / IDE mode and the bundled classpath properties are already
+     * the active configuration source.  In that case the save is a deliberate
+     * no-op — nothing is written, and the caller may proceed normally.</p>
      */
     public void save(DatabaseSetupDto dto) {
         String appHome = System.getProperty("app.home");
         if (appHome == null) {
-            throw new DatabaseException("Cannot save: app.home system property is not set.");
+            // Dev mode: configuration lives in the bundled application.properties
+            // on the classpath. No external file to write — just continue.
+            return;
         }
         Path path = externalPropertiesPath(appHome);
         try (OutputStream out = Files.newOutputStream(path)) {
