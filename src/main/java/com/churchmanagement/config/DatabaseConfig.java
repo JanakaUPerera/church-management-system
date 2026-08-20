@@ -48,6 +48,17 @@ public final class DatabaseConfig {
         }
     }
 
+    /**
+     * Closes the current pool and clears the singleton so the next call to
+     * {@link #getDataSource()} re-reads {@code application.properties} and
+     * creates a fresh pool.  Call this after the database setup wizard saves
+     * new connection settings.
+     */
+    public static synchronized void reset() {
+        closeDataSource();
+        dataSource = null;
+    }
+
     private static HikariDataSource createDataSource() {
         Properties properties = loadProperties();
 
