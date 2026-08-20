@@ -29,19 +29,10 @@ public class DatabaseSetupController {
     @FXML private TextField hostField;
     @FXML private TextField portField;
     @FXML private TextField databaseNameField;
-
-    // Admin credentials (used once to create the app user — never saved)
-    @FXML private TextField adminUsernameField;
-    @FXML private PasswordField adminPasswordField;
-    @FXML private TextField visibleAdminPasswordField;
-    @FXML private Button toggleAdminPasswordButton;
-
-    // Application credentials (saved to application.properties)
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
     @FXML private TextField visiblePasswordField;
     @FXML private Button togglePasswordButton;
-
     @FXML private CheckBox runMigrationsCheckBox;
     @FXML private VBox stepsContainer;
     @FXML private Label statusLabel;
@@ -52,7 +43,6 @@ public class DatabaseSetupController {
 
     private final DatabaseSetupService setupService = new DatabaseSetupService();
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private boolean adminPasswordVisible;
     private boolean passwordVisible;
     private boolean initSucceeded;
     private Runnable onComplete;
@@ -69,8 +59,6 @@ public class DatabaseSetupController {
     @FXML
     private void initialize() {
         applyPersistedTheme();
-        visibleAdminPasswordField.textProperty().bindBidirectional(adminPasswordField.textProperty());
-        setAdminPasswordVisible(false);
         visiblePasswordField.textProperty().bindBidirectional(passwordField.textProperty());
         setPasswordVisible(false);
         ButtonIconUtil.applyIcon(closeButton, "fas-times");
@@ -157,11 +145,6 @@ public class DatabaseSetupController {
     }
 
     @FXML
-    private void toggleAdminPasswordVisibility() {
-        setAdminPasswordVisible(!adminPasswordVisible);
-    }
-
-    @FXML
     private void togglePasswordVisibility() {
         setPasswordVisible(!passwordVisible);
     }
@@ -212,15 +195,6 @@ public class DatabaseSetupController {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private void setAdminPasswordVisible(boolean visible) {
-        adminPasswordVisible = visible;
-        visibleAdminPasswordField.setVisible(visible);
-        visibleAdminPasswordField.setManaged(visible);
-        adminPasswordField.setVisible(!visible);
-        adminPasswordField.setManaged(!visible);
-        toggleAdminPasswordButton.setGraphic(createPasswordIcon(visible ? "fas-eye-slash" : "fas-eye"));
-    }
-
     private void applyPersistedTheme() {
         String theme = ThemePreferenceStore.load();
         if ("DARK".equalsIgnoreCase(theme)) {
@@ -235,10 +209,6 @@ public class DatabaseSetupController {
         hostField.setText(dto.getHost());
         portField.setText(String.valueOf(dto.getPort()));
         databaseNameField.setText(dto.getDatabaseName());
-        // Admin creds are never persisted — always start with defaults.
-        adminUsernameField.setText(dto.getAdminUsername()); // "root"
-        adminPasswordField.setText("");
-        // App creds come from saved config (if any).
         usernameField.setText(dto.getUsername());
         passwordField.setText(dto.getPassword());
         runMigrationsCheckBox.setSelected(dto.isRunMigrations());
@@ -258,21 +228,25 @@ public class DatabaseSetupController {
         if (!databaseNameField.getText().strip().matches("[A-Za-z0-9_]+")) {
             return "Database name must contain only letters, numbers, and underscores.";
         }
-        if (adminUsernameField.getText().isBlank()) return "Admin username is required.";
-        if (usernameField.getText().isBlank()) return "Application username is required.";
+        if (usernameField.getText().isBlank()) return "Username is required.";
         if (!usernameField.getText().strip().matches("[A-Za-z0-9_]+")) {
-            return "Application username must contain only letters, numbers, and underscores.";
+            return "Username must contain only letters, numbers, and underscores.";
         }
         return null;
     }
 
+    /**
+     * Builds a DTO from the UI fields.  Admin credentials are loaded from the
+     * service (which reads them from {@code application.properties}) so the user
+     * never has to type them.
+     */
     private DatabaseSetupDto buildDto() {
-        DatabaseSetupDto dto = new DatabaseSetupDto();
+        // Start from the loaded config to inherit admin credentials.
+        DatabaseSetupDto dto = setupService.load();
+        // Override with what the user actually typed in the form.
         dto.setHost(hostField.getText().strip());
         dto.setPort(Integer.parseInt(portField.getText().strip()));
         dto.setDatabaseName(databaseNameField.getText().strip());
-        dto.setAdminUsername(adminUsernameField.getText().strip());
-        dto.setAdminPassword(adminPasswordField.getText());
         dto.setUsername(usernameField.getText().strip());
         dto.setPassword(passwordField.getText());
         dto.setRunMigrations(runMigrationsCheckBox.isSelected());
@@ -307,9 +281,6 @@ public class DatabaseSetupController {
         hostField.setDisable(disabled);
         portField.setDisable(disabled);
         databaseNameField.setDisable(disabled);
-        adminUsernameField.setDisable(disabled);
-        adminPasswordField.setDisable(disabled);
-        visibleAdminPasswordField.setDisable(disabled);
         usernameField.setDisable(disabled);
         passwordField.setDisable(disabled);
         visiblePasswordField.setDisable(disabled);

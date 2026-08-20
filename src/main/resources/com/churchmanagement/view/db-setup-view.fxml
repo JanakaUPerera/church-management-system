@@ -6,7 +6,6 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.ProgressIndicator?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
@@ -23,7 +22,7 @@
       Inner StackPane matches the card width so the close button pins to the
       card's corner, not the full-screen overlay corner.
     -->
-    <StackPane prefWidth="460" maxWidth="460">
+    <StackPane prefWidth="440" maxWidth="440">
 
         <!-- ── Card ──────────────────────────────────────────────────────── -->
         <VBox alignment="CENTER_LEFT" spacing="0" styleClass="startup-card">
@@ -33,9 +32,9 @@
                    maxWidth="Infinity">
                 <VBox.margin><Insets right="32"/></VBox.margin>
             </Label>
-            <Label text="Configure the connection to the central MySQL database server."
+            <Label text="Configure the connection to the central database server."
                    styleClass="db-setup-subtitle" wrapText="true">
-                <VBox.margin><Insets top="4" bottom="18"/></VBox.margin>
+                <VBox.margin><Insets top="4" bottom="20"/></VBox.margin>
             </Label>
 
             <!-- ── Server Host ─────────────────────────────────────────── -->
@@ -46,7 +45,7 @@
 
             <!-- ── Port  +  Database Name  (side by side) ─────────────── -->
             <HBox spacing="12">
-                <VBox.margin><Insets bottom="16"/></VBox.margin>
+                <VBox.margin><Insets bottom="14"/></VBox.margin>
 
                 <VBox prefWidth="110" spacing="0">
                     <Label text="Port" styleClass="db-setup-field-label"/>
@@ -65,59 +64,19 @@
                 </VBox>
             </HBox>
 
-            <!-- ── Section: Admin Access ──────────────────────────────── -->
-            <Separator>
-                <VBox.margin><Insets bottom="10"/></VBox.margin>
-            </Separator>
-            <Label text="MySQL Admin Access" styleClass="db-setup-section-label"/>
-            <Label text="Used once to create the app user and grant permissions. These credentials are NOT saved."
-                   styleClass="db-setup-hint" wrapText="true">
-                <VBox.margin><Insets top="2" bottom="12"/></VBox.margin>
-            </Label>
-
-            <!-- Admin Username -->
-            <Label text="Admin Username" styleClass="db-setup-field-label"/>
-            <TextField fx:id="adminUsernameField" promptText="root">
-                <VBox.margin><Insets top="4" bottom="14"/></VBox.margin>
-            </TextField>
-
-            <!-- Admin Password -->
-            <Label text="Admin Password" styleClass="db-setup-field-label"/>
-            <StackPane>
-                <VBox.margin><Insets top="4" bottom="16"/></VBox.margin>
-                <PasswordField fx:id="adminPasswordField" promptText="Admin password"
-                               styleClass="login-password-input"/>
-                <TextField fx:id="visibleAdminPasswordField" promptText="Admin password"
-                           styleClass="login-password-input" visible="false" managed="false"/>
-                <Button fx:id="toggleAdminPasswordButton" contentDisplay="GRAPHIC_ONLY"
-                        maxHeight="28" maxWidth="32" prefHeight="28" prefWidth="32"
-                        onAction="#toggleAdminPasswordVisibility"
-                        styleClass="password-toggle-button" StackPane.alignment="CENTER_RIGHT"/>
-            </StackPane>
-
-            <!-- ── Section: Application User ─────────────────────────── -->
-            <Separator>
-                <VBox.margin><Insets bottom="10"/></VBox.margin>
-            </Separator>
-            <Label text="Application Database User" styleClass="db-setup-section-label"/>
-            <Label text="The account the app uses every day. Credentials are saved to application.properties."
-                   styleClass="db-setup-hint" wrapText="true">
-                <VBox.margin><Insets top="2" bottom="12"/></VBox.margin>
-            </Label>
-
-            <!-- App Username -->
+            <!-- ── Username ───────────────────────────────────────────── -->
             <Label text="Username" styleClass="db-setup-field-label"/>
             <TextField fx:id="usernameField" promptText="e.g. churchDbUser">
                 <VBox.margin><Insets top="4" bottom="14"/></VBox.margin>
             </TextField>
 
-            <!-- App Password -->
+            <!-- ── Password ───────────────────────────────────────────── -->
             <Label text="Password" styleClass="db-setup-field-label"/>
             <StackPane>
-                <VBox.margin><Insets top="4" bottom="16"/></VBox.margin>
-                <PasswordField fx:id="passwordField" promptText="App user password"
+                <VBox.margin><Insets top="4" bottom="20"/></VBox.margin>
+                <PasswordField fx:id="passwordField" promptText="Database password"
                                styleClass="login-password-input"/>
-                <TextField fx:id="visiblePasswordField" promptText="App user password"
+                <TextField fx:id="visiblePasswordField" promptText="Database password"
                            styleClass="login-password-input" visible="false" managed="false"/>
                 <Button fx:id="togglePasswordButton" contentDisplay="GRAPHIC_ONLY"
                         maxHeight="28" maxWidth="32" prefHeight="28" prefWidth="32"
@@ -131,9 +90,9 @@
                       styleClass="db-setup-checkbox">
                 <VBox.margin><Insets bottom="4"/></VBox.margin>
             </CheckBox>
-            <Label text="Enable on one machine only. When unchecked this machine connects but never applies schema changes."
+            <Label text="Enable on one machine only. When unchecked this machine connects to the shared database but never applies schema changes."
                    styleClass="db-setup-hint" wrapText="true">
-                <VBox.margin><Insets bottom="14"/></VBox.margin>
+                <VBox.margin><Insets bottom="16"/></VBox.margin>
             </Label>
 
             <!-- ── Live step results — populated dynamically by controller ─ -->

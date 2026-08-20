@@ -44,9 +44,21 @@ public class DatabaseSetupService {
     /**
      * Loads the current saved configuration into a DTO, or returns defaults
      * when no external file exists.
+     *
+     * <p>Admin credentials ({@code db.admin.username} / {@code db.admin.password})
+     * are always read from the bundled classpath {@code application.properties} so
+     * the user never needs to type them in the UI.  Any external override takes
+     * precedence if present.</p>
      */
     public DatabaseSetupDto load() {
         DatabaseSetupDto dto = new DatabaseSetupDto();
+
+        // ── Admin credentials from bundled classpath properties ────────────
+        Properties bundled = loadBundledProperties();
+        dto.setAdminUsername(firstNonBlank(bundled.getProperty("db.admin.username"), dto.getAdminUsername()));
+        dto.setAdminPassword(firstNonBlank(bundled.getProperty("db.admin.password"), dto.getAdminPassword()));
+
+        // ── Connection settings from external file (if it exists) ──────────
         String appHome = System.getProperty("app.home");
         if (appHome == null) {
             return dto;
@@ -66,6 +78,9 @@ public class DatabaseSetupService {
             dto.setUsername(firstNonBlank(p.getProperty("db.username"), dto.getUsername()));
             dto.setPassword(firstNonBlank(p.getProperty("db.password"), dto.getPassword()));
             dto.setRunMigrations(!"false".equalsIgnoreCase(p.getProperty("db.run-migrations", "true")));
+            // Allow external file to override admin credentials if needed.
+            dto.setAdminUsername(firstNonBlank(p.getProperty("db.admin.username"), dto.getAdminUsername()));
+            dto.setAdminPassword(firstNonBlank(p.getProperty("db.admin.password"), dto.getAdminPassword()));
         } catch (IOException ignored) {
             // Return defaults — the setup screen lets the user correct anything.
         }
@@ -344,6 +359,27 @@ public class DatabaseSetupService {
         p.setProperty("flyway.locations",            "classpath:db/migration");
         p.setProperty("db.run-migrations",           dto.isRunMigrations() ? "true" : "false");
         p.setProperty("receipt.pdf.output.folder",   "./receipts");
+        // Admin credentials are carried forward so re-running the wizard works
+        // without needing the bundled file again.
+        if (dto.getAdminUsername() != null && !dto.getAdminUsername().isBlank()) {
+            p.setProperty("db.admin.username", dto.getAdminUsername());
+        }
+        if (dto.getAdminPassword() != null) {
+            p.setProperty("db.admin.password", dto.getAdminPassword());
+        }
+        return p;
+    }
+
+    /** Loads the bundled {@code /application.properties} from the classpath. */
+    private Properties loadBundledProperties() {
+        Properties p = new Properties();
+        try (var in = DatabaseSetupService.class.getResourceAsStream("/application.properties")) {
+            if (in != null) {
+                p.load(in);
+            }
+        } catch (IOException ignored) {
+            // Best-effort — caller falls back to DTO defaults.
+        }
         return p;
     }
 
