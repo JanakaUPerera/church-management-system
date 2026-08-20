@@ -116,39 +116,63 @@ public class DatabaseSetupService {
      */
     public void initializeDatabase(DatabaseSetupDto dto, Consumer<InitStep> onStep) {
         validateIdentifier(dto.getDatabaseName(), "Database name");
-        validateIdentifier(dto.getUsername(),     "Username");
+        validateIdentifier(dto.getUsername(),     "Application username");
 
-        String db       = dto.getDatabaseName();
-        String user     = dto.getUsername();
-        String password = dto.getPassword();
-        String serverUrl = buildServerUrl(dto);
+        if (dto.getAdminUsername() == null || dto.getAdminUsername().isBlank()) {
+            throw new DatabaseException("Admin username is required.");
+        }
 
-        // ── Step 1: server connectivity ───────────────────────────────────
+        String db          = dto.getDatabaseName();
+        String appUser     = dto.getUsername();
+        String appPassword = dto.getPassword();
+        String adminUser   = dto.getAdminUsername().strip();
+        String adminPass   = dto.getAdminPassword();
+        String serverUrl   = buildServerUrl(dto);
+
+        // ── Step 1: server connectivity (as admin) ────────────────────────
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             throw new DatabaseException("MySQL JDBC driver not found on classpath.", e);
         }
 
-        try (Connection conn = DriverManager.getConnection(serverUrl, user, password)) {
+        try (Connection conn = DriverManager.getConnection(serverUrl, adminUser, adminPass)) {
 
             onStep.accept(InitStep.success("Server connection",
-                    "Connected to " + dto.getHost() + ":" + dto.getPort()));
+                    "Connected to " + dto.getHost() + ":" + dto.getPort() + " as '" + adminUser + "'"));
 
             // ── Step 2: create database ───────────────────────────────────
             boolean created = createDatabaseIfAbsent(conn, db);
             onStep.accept(InitStep.success("Database",
                     created ? "'" + db + "' created (utf8mb4)" : "'" + db + "' already exists"));
 
-            // ── Step 3: grant privileges ──────────────────────────────────
-            if ("root".equalsIgnoreCase(user)) {
-                onStep.accept(InitStep.success("Permissions",
-                        "root — full access already available"));
+            // ── Step 3: create application user ──────────────────────────
+            // Skipped when the app user IS the admin (e.g. root used for both).
+            if (appUser.equalsIgnoreCase(adminUser)) {
+                onStep.accept(InitStep.success("Application user",
+                        "'" + appUser + "' is the admin account — no separate user needed"));
             } else {
                 try {
-                    grantPrivileges(conn, db, user);
+                    boolean userCreated = createUserIfAbsent(conn, appUser, appPassword);
+                    onStep.accept(InitStep.success("Application user",
+                            userCreated
+                                ? "'" + appUser + "'@'%' created"
+                                : "'" + appUser + "'@'%' already exists"));
+                } catch (Exception e) {
+                    onStep.accept(InitStep.warning("Application user",
+                            "Could not create user (it may already exist): " + shortMessage(e)));
+                }
+            }
+
+            // ── Step 4: grant privileges ──────────────────────────────────
+            if (appUser.equalsIgnoreCase(adminUser) && "root".equalsIgnoreCase(appUser)) {
+                onStep.accept(InitStep.success("Permissions",
+                        "root — full server access already available"));
+            } else {
+                try {
+                    grantPrivileges(conn, db, appUser);
                     onStep.accept(InitStep.success("Permissions",
-                            "ALL PRIVILEGES granted to '" + user + "'@'%'"));
+                            "ALL PRIVILEGES on '" + db + "' granted to '" + appUser + "'@'%'"));
                 } catch (Exception e) {
                     // Not fatal — user may already have the right grants.
                     onStep.accept(InitStep.warning("Permissions",
@@ -163,13 +187,13 @@ public class DatabaseSetupService {
             throw new DatabaseException(friendlyMessage(e), e);
         }
 
-        // ── Step 4: Flyway migrations ─────────────────────────────────────
-        // Flyway runs directly against the target database using the DTO
-        // credentials, independent of the app singleton DataSource.
+        // ── Step 5: Flyway migrations (run as app user) ───────────────────
+        // Flyway uses the APPLICATION credentials so we also verify that the
+        // app user can actually reach the target database before we save.
         String dbUrl = buildJdbcUrl(dto) + "&connectTimeout=8000&socketTimeout=10000";
         try {
             Flyway flyway = Flyway.configure()
-                    .dataSource(dbUrl, dto.getUsername(), dto.getPassword())
+                    .dataSource(dbUrl, appUser, appPassword)
                     .locations("classpath:db/migration")
                     .baselineOnMigrate(true)
                     .ignoreMigrationPatterns("*:missing")
@@ -236,6 +260,44 @@ public class DatabaseSetupService {
                     + "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         }
         return true;
+    }
+
+    /**
+     * Creates {@code username@'%'} with the given password if that account does
+     * not already exist.  Uses {@code CREATE USER IF NOT EXISTS} (MySQL 5.7.6+).
+     *
+     * @return {@code true} if the account was created, {@code false} if it already existed.
+     */
+    private boolean createUserIfAbsent(Connection conn, String username, String password)
+            throws Exception {
+        // Check whether the account exists first so we can return an informative boolean.
+        try (PreparedStatement check = conn.prepareStatement(
+                "SELECT COUNT(*) FROM information_schema.USER_PRIVILEGES "
+                + "WHERE GRANTEE = CONCAT(\"'\", ?, \"'@'%'\")")) {
+            check.setString(1, username);
+            try (ResultSet rs = check.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return false; // already exists
+                }
+            }
+        }
+        // Username validated by validateIdentifier() — safe to embed.
+        // Password is escaped for use inside a SQL string literal.
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(
+                    "CREATE USER '" + username + "'@'%' "
+                    + "IDENTIFIED BY '" + escapeSqlString(password) + "'");
+        }
+        return true;
+    }
+
+    /**
+     * Escapes a value for safe embedding inside a MySQL single-quoted string
+     * literal.  Handles backslashes and single quotes.
+     */
+    private String escapeSqlString(String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\").replace("'", "\\'");
     }
 
     /**

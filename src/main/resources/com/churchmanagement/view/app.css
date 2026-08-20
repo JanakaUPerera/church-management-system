@@ -4221,6 +4221,12 @@
     -fx-text-fill: #78716c;
 }
 
+.db-setup-section-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #d97706;
+}
+
 .db-setup-status {
     -fx-font-size: 13px;
     -fx-background-radius: 6;
@@ -4318,6 +4324,10 @@
     -fx-text-fill: #6b7280;
 }
 
+.theme-dark .db-setup-section-label {
+    -fx-text-fill: #fbbf24;
+}
+
 .theme-dark .db-setup-status-success {
     -fx-text-fill: #bbf7d0;
     -fx-background-color: rgba(22, 101, 52, 0.30);
@@ -4367,6 +4377,10 @@
 
 .theme-orchid .db-setup-hint {
     -fx-text-fill: #8c239a;
+}
+
+.theme-orchid .db-setup-section-label {
+    -fx-text-fill: #9c1fa6;
 }
 
 .theme-orchid .db-setup-status-success {

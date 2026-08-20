@@ -4,16 +4,27 @@ public class DatabaseSetupDto {
     private String host;
     private int port;
     private String databaseName;
+
+    // Admin credentials — used once during setup to create the app user and
+    // grant privileges.  Never written to application.properties.
+    private String adminUsername;
+    private String adminPassword;
+
+    // Application credentials — stored in application.properties and used by
+    // the app on every launch.
     private String username;
     private String password;
+
     private boolean runMigrations;
 
     public DatabaseSetupDto() {
-        this.host = "localhost";
-        this.port = 3306;
-        this.databaseName = "church_management_system";
-        this.username = "";
-        this.password = "";
+        this.host          = "localhost";
+        this.port          = 3306;
+        this.databaseName  = "church_management_system";
+        this.adminUsername = "root";
+        this.adminPassword = "";
+        this.username      = "";
+        this.password      = "";
         this.runMigrations = true;
     }
 
@@ -25,6 +36,12 @@ public class DatabaseSetupDto {
 
     public String getDatabaseName() { return databaseName; }
     public void setDatabaseName(String databaseName) { this.databaseName = databaseName; }
+
+    public String getAdminUsername() { return adminUsername; }
+    public void setAdminUsername(String adminUsername) { this.adminUsername = adminUsername; }
+
+    public String getAdminPassword() { return adminPassword; }
+    public void setAdminPassword(String adminPassword) { this.adminPassword = adminPassword; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
