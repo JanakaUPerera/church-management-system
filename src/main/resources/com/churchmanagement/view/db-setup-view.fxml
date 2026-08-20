@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+  Full-screen transparent overlay — same visual framing as the startup screen.
+  The card is always visible from the start (no spinner phase needed here).
+-->
+<StackPane fx:id="setupRoot" styleClass="startup-overlay" stylesheets="@app.css"
+           xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.churchmanagement.controller.DatabaseSetupController">
+
+    <VBox alignment="CENTER_LEFT" spacing="0"
+          prefWidth="440" maxWidth="440"
+          styleClass="startup-card">
+
+        <!-- ── Header ─────────────────────────────────────────────────────── -->
+        <Label text="Database Connection Setup" styleClass="db-setup-title"/>
+        <Label text="Configure the connection to the central database server."
+               styleClass="db-setup-subtitle" wrapText="true">
+            <VBox.margin><Insets top="4" bottom="20"/></VBox.margin>
+        </Label>
+
+        <!-- ── Server Host ─────────────────────────────────────────────────── -->
+        <Label text="Server Host / IP" styleClass="db-setup-field-label"/>
+        <TextField fx:id="hostField" promptText="e.g. 192.168.1.100">
+            <VBox.margin><Insets top="4" bottom="14"/></VBox.margin>
+        </TextField>
+
+        <!-- ── Port  +  Database Name  (side by side) ─────────────────────── -->
+        <HBox spacing="12">
+            <VBox.margin><Insets bottom="14"/></VBox.margin>
+
+            <VBox prefWidth="110" spacing="0">
+                <Label text="Port" styleClass="db-setup-field-label"/>
+                <TextField fx:id="portField" promptText="3306">
+                    <VBox.margin><Insets top="4"/></VBox.margin>
+                </TextField>
+            </VBox>
+
+            <VBox spacing="0" maxWidth="Infinity">
+                <HBox.hgrow>ALWAYS</HBox.hgrow>
+                <Label text="Database Name" styleClass="db-setup-field-label"/>
+                <TextField fx:id="databaseNameField" promptText="church_management_system" maxWidth="Infinity">
+                    <VBox.margin><Insets top="4"/></VBox.margin>
+                </TextField>
+            </VBox>
+        </HBox>
+
+        <!-- ── Username ───────────────────────────────────────────────────── -->
+        <Label text="Username" styleClass="db-setup-field-label"/>
+        <TextField fx:id="usernameField" promptText="Database username">
+            <VBox.margin><Insets top="4" bottom="14"/></VBox.margin>
+        </TextField>
+
+        <!-- ── Password ───────────────────────────────────────────────────── -->
+        <Label text="Password" styleClass="db-setup-field-label"/>
+        <StackPane>
+            <VBox.margin><Insets top="4" bottom="20"/></VBox.margin>
+            <PasswordField fx:id="passwordField" promptText="Database password"
+                          styleClass="login-password-input"/>
+            <TextField fx:id="visiblePasswordField" promptText="Database password"
+                       styleClass="login-password-input" visible="false" managed="false"/>
+            <Button fx:id="togglePasswordButton" contentDisplay="GRAPHIC_ONLY"
+                    maxHeight="28" maxWidth="32" prefHeight="28" prefWidth="32"
+                    onAction="#togglePasswordVisibility"
+                    styleClass="password-toggle-button" StackPane.alignment="CENTER_RIGHT"/>
+        </StackPane>
+
+        <!-- ── Migration checkbox ─────────────────────────────────────────── -->
+        <CheckBox fx:id="runMigrationsCheckBox"
+                  text="This machine manages database updates (migrations)"
+                  styleClass="db-setup-checkbox">
+            <VBox.margin><Insets bottom="4"/></VBox.margin>
+        </CheckBox>
+        <Label text="Enable on one machine only. When unchecked this machine connects to the shared database but never applies schema changes."
+               styleClass="db-setup-hint" wrapText="true">
+            <VBox.margin><Insets bottom="20"/></VBox.margin>
+        </Label>
+
+        <!-- ── Status label (test / save feedback) ────────────────────────── -->
+        <Label fx:id="statusLabel" wrapText="true" maxWidth="Infinity"
+               styleClass="db-setup-status" visible="false" managed="false">
+            <VBox.margin><Insets bottom="12"/></VBox.margin>
+        </Label>
+
+        <!-- ── Button bar ─────────────────────────────────────────────────── -->
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <ProgressIndicator fx:id="testSpinner" prefWidth="22" prefHeight="22"/>
+            <Button fx:id="testButton" text="Test Connection" onAction="#handleTest"
+                    styleClass="startup-check-now-button" prefWidth="148" prefHeight="34"/>
+            <Button fx:id="saveButton" text="Save &amp; Continue" onAction="#handleSave"
+                    styleClass="primary-button" prefWidth="148" prefHeight="34"/>
+        </HBox>
+
+    </VBox>
+</StackPane>
