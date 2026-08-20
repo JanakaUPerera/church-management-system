@@ -3,18 +3,22 @@ package com.churchmanagement.controller;
 import com.churchmanagement.dto.DatabaseSetupDto;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.service.DatabaseSetupService;
+import com.churchmanagement.service.DatabaseSetupService.InitStep;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ThemePreferenceStore;
 import com.churchmanagement.util.ThemeService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,36 +34,26 @@ public class DatabaseSetupController {
     @FXML private TextField visiblePasswordField;
     @FXML private Button togglePasswordButton;
     @FXML private CheckBox runMigrationsCheckBox;
+    @FXML private VBox stepsContainer;
     @FXML private Label statusLabel;
     @FXML private ProgressIndicator testSpinner;
     @FXML private Button testButton;
     @FXML private Button saveButton;
-
     @FXML private Button closeButton;
-    @FXML private Label rawDetailLabel;
 
     private final DatabaseSetupService setupService = new DatabaseSetupService();
-    private final AtomicBoolean testing = new AtomicBoolean(false);
+    private final AtomicBoolean running = new AtomicBoolean(false);
     private boolean passwordVisible;
-    private boolean testPassed;
+    private boolean initSucceeded;
     private Runnable onComplete;
     private Runnable onCancel;
 
-    /** Called by MainApplication after the scene is shown. */
     public void setOnComplete(Runnable onComplete) {
         this.onComplete = onComplete;
     }
 
-    /** Called by MainApplication; invoked when the user closes the wizard without saving. */
     public void setOnCancel(Runnable onCancel) {
         this.onCancel = onCancel;
-    }
-
-    @FXML
-    private void handleClose() {
-        if (onCancel != null) {
-            onCancel.run();
-        }
     }
 
     @FXML
@@ -69,72 +63,68 @@ public class DatabaseSetupController {
         setPasswordVisible(false);
         ButtonIconUtil.applyIcon(closeButton, "fas-times");
         closeButton.setText("");
-        ButtonIconUtil.applyIcon(testButton, "fas-plug");
+        ButtonIconUtil.applyIcon(testButton, "fas-database");
         ButtonIconUtil.applyIcon(saveButton, "fas-save");
         saveButton.setDisable(true);
         testSpinner.setVisible(false);
         testSpinner.setManaged(false);
         statusLabel.setVisible(false);
         statusLabel.setManaged(false);
-        rawDetailLabel.setVisible(false);
-        rawDetailLabel.setManaged(false);
+        stepsContainer.setVisible(false);
+        stepsContainer.setManaged(false);
         prefillForm();
     }
 
     @FXML
-    private void handleTest() {
-        if (!testing.compareAndSet(false, true)) {
+    private void handleInitialize() {
+        if (!running.compareAndSet(false, true)) {
             return;
         }
         String validationError = validateForm();
         if (validationError != null) {
             showStatus(validationError, Status.ERROR);
-            testing.set(false);
+            running.set(false);
             return;
         }
 
-        testPassed = false;
+        // Reset previous results
+        initSucceeded = false;
         saveButton.setDisable(true);
-        showStatus("Testing connection…", Status.INFO);
+        clearSteps();
+        hideStatus();
         setFormDisabled(true);
         showSpinner(true);
 
         DatabaseSetupDto dto = buildDto();
         Thread worker = new Thread(() -> {
             try {
-                setupService.testConnection(dto);
+                setupService.initializeDatabase(dto, step ->
+                        Platform.runLater(() -> addStepRow(step)));
                 Platform.runLater(() -> {
-                    showStatus("Connection successful.", Status.SUCCESS);
-                    hideRawDetail();
-                    testPassed = true;
+                    showStatus("Database initialized successfully.", Status.SUCCESS);
+                    initSucceeded = true;
                     saveButton.setDisable(false);
                     showSpinner(false);
                     setFormDisabled(false);
                 });
             } catch (DatabaseException e) {
-                String rawDetail = extractRawDetail(e);
                 Platform.runLater(() -> {
                     showStatus(e.getMessage(), Status.ERROR);
-                    if (rawDetail != null) {
-                        showRawDetail(rawDetail);
-                    } else {
-                        hideRawDetail();
-                    }
                     showSpinner(false);
                     setFormDisabled(false);
                 });
             } finally {
-                testing.set(false);
+                running.set(false);
             }
-        }, "db-setup-test");
+        }, "db-init");
         worker.setDaemon(true);
         worker.start();
     }
 
     @FXML
     private void handleSave() {
-        if (!testPassed) {
-            showStatus("Please test the connection before saving.", Status.ERROR);
+        if (!initSucceeded) {
+            showStatus("Please initialize the database first.", Status.ERROR);
             return;
         }
         try {
@@ -148,8 +138,59 @@ public class DatabaseSetupController {
     }
 
     @FXML
+    private void handleClose() {
+        if (onCancel != null) {
+            onCancel.run();
+        }
+    }
+
+    @FXML
     private void togglePasswordVisibility() {
         setPasswordVisible(!passwordVisible);
+    }
+
+    // ── Step rows ─────────────────────────────────────────────────────────────
+
+    private void addStepRow(InitStep step) {
+        Label icon = new Label();
+        Label detail = new Label(step.label() + " — " + step.detail());
+        detail.setWrapText(true);
+        detail.setMaxWidth(Double.MAX_VALUE);
+
+        switch (step.status()) {
+            case SUCCESS -> {
+                icon.setText("✓");
+                icon.getStyleClass().setAll("startup-check-icon-success");
+                detail.getStyleClass().setAll("startup-check-detail");
+            }
+            case WARNING -> {
+                icon.setText("⚠");
+                icon.getStyleClass().setAll("startup-check-icon-warning");
+                detail.getStyleClass().setAll("startup-check-detail");
+            }
+            case FAILURE -> {
+                icon.setText("✗");
+                icon.getStyleClass().setAll("startup-check-icon-error");
+                detail.getStyleClass().setAll("startup-check-detail");
+            }
+        }
+
+        HBox row = new HBox(10, icon, detail);
+        row.getStyleClass().add("startup-check-row");
+        HBox.setHgrow(detail, javafx.scene.layout.Priority.ALWAYS);
+        row.setPadding(new Insets(8, 12, 8, 12));
+
+        stepsContainer.getChildren().add(row);
+        if (!stepsContainer.isVisible()) {
+            stepsContainer.setVisible(true);
+            stepsContainer.setManaged(true);
+        }
+    }
+
+    private void clearSteps() {
+        stepsContainer.getChildren().clear();
+        stepsContainer.setVisible(false);
+        stepsContainer.setManaged(false);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -174,26 +215,22 @@ public class DatabaseSetupController {
     }
 
     private String validateForm() {
-        if (hostField.getText().isBlank()) {
-            return "Server host is required.";
-        }
+        if (hostField.getText().isBlank()) return "Server host is required.";
         String portText = portField.getText().strip();
-        if (portText.isBlank()) {
-            return "Port is required.";
-        }
+        if (portText.isBlank()) return "Port is required.";
         try {
             int port = Integer.parseInt(portText);
-            if (port < 1 || port > 65535) {
-                return "Port must be between 1 and 65535.";
-            }
+            if (port < 1 || port > 65535) return "Port must be between 1 and 65535.";
         } catch (NumberFormatException e) {
             return "Port must be a number.";
         }
-        if (databaseNameField.getText().isBlank()) {
-            return "Database name is required.";
+        if (databaseNameField.getText().isBlank()) return "Database name is required.";
+        if (!databaseNameField.getText().strip().matches("[A-Za-z0-9_]+")) {
+            return "Database name must contain only letters, numbers, and underscores.";
         }
-        if (usernameField.getText().isBlank()) {
-            return "Username is required.";
+        if (usernameField.getText().isBlank()) return "Username is required.";
+        if (!usernameField.getText().strip().matches("[A-Za-z0-9_]+")) {
+            return "Username must contain only letters, numbers, and underscores.";
         }
         return null;
     }
@@ -222,33 +259,9 @@ public class DatabaseSetupController {
         statusLabel.setManaged(true);
     }
 
-    private void showRawDetail(String detail) {
-        rawDetailLabel.setText(detail);
-        rawDetailLabel.setVisible(true);
-        rawDetailLabel.setManaged(true);
-    }
-
-    private void hideRawDetail() {
-        rawDetailLabel.setVisible(false);
-        rawDetailLabel.setManaged(false);
-    }
-
-    /**
-     * Walks the exception cause chain to find the deepest non-null message
-     * that differs from the friendly top-level message.  Returns null when
-     * there is nothing more specific to show.
-     */
-    private String extractRawDetail(DatabaseException e) {
-        String friendly = e.getMessage();
-        Throwable cause = e.getCause();
-        while (cause != null) {
-            String msg = cause.getMessage();
-            if (msg != null && !msg.isBlank() && !msg.equals(friendly)) {
-                return msg;
-            }
-            cause = cause.getCause();
-        }
-        return null;
+    private void hideStatus() {
+        statusLabel.setVisible(false);
+        statusLabel.setManaged(false);
     }
 
     private void showSpinner(boolean visible) {
