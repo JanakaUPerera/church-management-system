@@ -213,7 +213,7 @@ public class DatabaseSetupService {
                 try {
                     grantPrivileges(conn, db, appUser);
                     onStep.accept(InitStep.success("Permissions",
-                            "ALL PRIVILEGES on '" + db + "' granted to '" + appUser + "'@'%'"));
+                            "ALL PRIVILEGES on '" + db + "' + global RELOAD granted to '" + appUser + "'@'%'"));
                 } catch (Exception e) {
                     // Not fatal — user may already have the right grants.
                     onStep.accept(InitStep.warning("Permissions",
@@ -342,15 +342,24 @@ public class DatabaseSetupService {
     }
 
     /**
-     * Grants ALL PRIVILEGES on the target database to {@code username@'%'} and
-     * flushes privileges.  Both the database name and username have been
-     * validated by {@link #validateIdentifier} before this is called.
+     * Grants ALL PRIVILEGES on the target database, plus the global RELOAD
+     * privilege, to {@code username@'%'}, and flushes privileges. Both the
+     * database name and username have been validated by
+     * {@link #validateIdentifier} before this is called.
+     *
+     * <p>RELOAD is required by {@code mysqldump --single-transaction} on
+     * MySQL 8.0.21+, which issues a {@code FLUSH TABLES} before starting the
+     * consistent-snapshot transaction. It can only be granted at the global
+     * ({@code *.*}) scope — a database-scoped {@code GRANT ALL} does not
+     * include it — so without this, backups fail with "Access denied; you
+     * need (at least one of) the RELOAD or FLUSH_TABLES privilege(s)".</p>
      */
     private void grantPrivileges(Connection conn, String dbName, String username) throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(
                     "GRANT ALL PRIVILEGES ON `" + dbName + "`.* "
                     + "TO '" + username + "'@'%'");
+            stmt.execute("GRANT RELOAD ON *.* TO '" + username + "'@'%'");
             stmt.execute("FLUSH PRIVILEGES");
         }
     }
