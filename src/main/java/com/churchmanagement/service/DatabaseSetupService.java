@@ -399,6 +399,9 @@ public class DatabaseSetupService {
         // the very first time the file is written.
         p.putIfAbsent("receipt.pdf.output.folder",   "./receipts");
         p.putIfAbsent("reports.export.folder",       "./reports");
+        p.putIfAbsent("backup.folder",               "./backups");
+        p.putIfAbsent("backup.mysqldump.path",       "");
+        p.putIfAbsent("backup.mysql.client.path",    "");
         // Admin credentials are carried forward so re-running the wizard works
         // without needing the bundled file again.
         if (dto.getAdminUsername() != null && !dto.getAdminUsername().isBlank()) {
