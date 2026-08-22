@@ -7,6 +7,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -40,6 +41,35 @@ public final class DatabaseConfig {
 
     public static String getProperty(String key) {
         return loadProperties().getProperty(key);
+    }
+
+    /**
+     * Persists a single property into this machine's external
+     * {@code application.properties}, preserving every other key already
+     * present. Use this for settings that must stay <em>per-machine</em>
+     * (e.g. a local export folder) rather than shared system-wide via the
+     * database — each installation keeps its own copy instead of every
+     * client on the LAN reading one value out of the shared database.
+     *
+     * <p>No-op in dev / IDE mode ({@code app.home} absent) — the bundled
+     * classpath properties remain the active source and there is no
+     * external file to write, mirroring {@code DatabaseSetupService.save()}.</p>
+     */
+    public static synchronized void setProperty(String key, String value) {
+        Path externalConfig = AppHome.configFile();
+        if (externalConfig == null) {
+            return; // dev mode — nothing to persist
+        }
+        Properties properties = loadProperties();
+        properties.setProperty(key, value);
+        try {
+            Files.createDirectories(externalConfig.getParent());
+            try (OutputStream out = Files.newOutputStream(externalConfig)) {
+                properties.store(out, "Church Management System — machine configuration");
+            }
+        } catch (IOException exception) {
+            throw new DatabaseException("Unable to save local setting: " + key, exception);
+        }
     }
 
     public static synchronized void closeDataSource() {

@@ -367,6 +367,7 @@ public class DatabaseSetupService {
         p.setProperty("flyway.locations",            "classpath:db/migration");
         p.setProperty("db.run-migrations",           dto.isRunMigrations() ? "true" : "false");
         p.setProperty("receipt.pdf.output.folder",   "./receipts");
+        p.setProperty("reports.export.folder",       "./reports");
         // Admin credentials are carried forward so re-running the wizard works
         // without needing the bundled file again.
         if (dto.getAdminUsername() != null && !dto.getAdminUsername().isBlank()) {

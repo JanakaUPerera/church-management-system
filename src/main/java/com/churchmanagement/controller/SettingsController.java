@@ -8,6 +8,7 @@ import com.churchmanagement.dto.SystemSettingDto;
 import com.churchmanagement.dto.UpdateSystemSettingRequest;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
@@ -36,6 +37,8 @@ import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.io.File;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +57,16 @@ public class SettingsController {
     private static final int MODEM_DETECTION_TIMEOUT_MILLIS = 10_000;
     private static final int MODEM_PORT_PROBE_TIMEOUT_MILLIS = 1_500;
     private static final int MODEM_TEST_TIMEOUT_MILLIS = 10_000;
+
+    /**
+     * Local per-machine setting — persisted to this machine's external
+     * {@code application.properties} via {@link DatabaseConfig#setProperty},
+     * NOT to the shared {@code system_settings} table. A filesystem path only
+     * makes sense on the machine that saved it, so it must not apply to every
+     * client on the LAN. See {@code ReportExportLocationResolver}.
+     */
+    private static final String REPORT_EXPORT_FOLDER_KEY = "reports.export.folder";
+    private static final String REPORT_EXPORT_FOLDER_DEFAULT = "./reports";
 
     private final SystemSettingService systemSettingService = new SystemSettingService();
     private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
@@ -181,13 +194,50 @@ public class SettingsController {
 
     @FXML
     private void saveSystemSettings() {
-        saveSettings(List.of(
-                request("system.date.format", dateFormatField.getText()),
-                request("system.time.format", timeFormatField.getText()),
-                request("reports.export.folder", reportExportFolderField.getText()),
-                request("reports.pdf.charts.enabled", String.valueOf(pdfReportChartsEnabledCheckBox.isSelected())),
-                request("system.theme", themeComboBox.getValue())
-        ));
+        String reportExportFolder = normalizedReportExportFolder();
+        if (reportExportFolder == null) {
+            return; // validation error already shown
+        }
+
+        ProcessingDialog.run("Save Settings", "Saving settings...",
+                () -> {
+                    // Local per-machine value — written straight to this machine's
+                    // application.properties, never to the shared system_settings table.
+                    DatabaseConfig.setProperty(REPORT_EXPORT_FOLDER_KEY, reportExportFolder);
+                    return systemSettingService.updateSettings(List.of(
+                            request("system.date.format", dateFormatField.getText()),
+                            request("system.time.format", timeFormatField.getText()),
+                            request("reports.pdf.charts.enabled", String.valueOf(pdfReportChartsEnabledCheckBox.isSelected())),
+                            request("system.theme", themeComboBox.getValue())
+                    ));
+                },
+                settings -> {
+                    applySettings(settings);
+                    applyThemeToScene();
+                    clearErrors();
+                    showInfo("Settings updated", "Settings updated successfully.");
+                },
+                throwable -> showValidationError(processingMessage(throwable)));
+    }
+
+    /**
+     * Validates the report export folder field and returns its stripped value,
+     * or {@code null} after showing a validation error.
+     */
+    private String normalizedReportExportFolder() {
+        String value = reportExportFolderField.getText();
+        if (value == null || value.isBlank()) {
+            showValidationError("Report export location is required.");
+            return null;
+        }
+        String stripped = value.strip();
+        try {
+            Path.of(stripped);
+        } catch (InvalidPathException exception) {
+            showValidationError("Report export location is invalid.");
+            return null;
+        }
+        return stripped;
     }
 
     @FXML
@@ -347,10 +397,20 @@ public class SettingsController {
         smsRetryMaxAttemptsField.setText(values.get("sms.retry.max.attempts"));
         dateFormatField.setText(values.get("system.date.format"));
         timeFormatField.setText(values.get("system.time.format"));
-        reportExportFolderField.setText(defaultValue(values.get("reports.export.folder"), "./reports"));
+        loadReportExportFolderField();
         pdfReportChartsEnabledCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
                 values.get("reports.pdf.charts.enabled"), "true")));
         themeComboBox.setValue(defaultValue(values.get("system.theme"), "ORCHID"));
+    }
+
+    /**
+     * Reads the report export folder from this machine's local configuration
+     * (never from the shared {@code system_settings} DTO list — see
+     * {@link #REPORT_EXPORT_FOLDER_KEY}).
+     */
+    private void loadReportExportFolderField() {
+        reportExportFolderField.setText(defaultValue(
+                DatabaseConfig.getProperty(REPORT_EXPORT_FOLDER_KEY), REPORT_EXPORT_FOLDER_DEFAULT));
     }
 
     private void configureButtonIcons() {
