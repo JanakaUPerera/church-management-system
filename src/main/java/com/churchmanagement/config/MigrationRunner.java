@@ -12,12 +12,9 @@ public final class MigrationRunner {
         try {
             DatabaseConfig.testConnection();
 
-            // When db.run-migrations=false the machine is a secondary client that
-            // connects to the shared database but never applies schema changes.
-            // A null value (key absent — dev mode or old properties file) defaults
-            // to true so existing environments continue to work without change.
-            String runMigrations = DatabaseConfig.getProperty("db.run-migrations");
-            if ("false".equalsIgnoreCase(runMigrations)) {
+            // Secondary clients connect to the shared database but never apply
+            // schema changes — see PrimaryMachine.
+            if (!PrimaryMachine.isPrimary()) {
                 return;
             }
 

@@ -2,6 +2,7 @@ package com.churchmanagement;
 
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.config.MigrationRunner;
+import com.churchmanagement.config.PrimaryMachine;
 import com.churchmanagement.dto.BackupLogDto;
 import com.churchmanagement.enums.BackupStatus;
 import com.churchmanagement.service.BackupService;
@@ -31,6 +32,11 @@ public class BackupCliRunner {
     public int runAutoBackup() {
         try {
             ensureLogFolder();
+            if (!PrimaryMachine.isPrimary()) {
+                info("Skipping automatic database backup — this machine is a secondary client. "
+                        + "Automatic backups run only on the designated primary machine.");
+                return 0;
+            }
             info("Starting automatic database backup.");
             MigrationRunner.runMigrations();
             BackupLogDto log = backupService.createAutoBackup();
