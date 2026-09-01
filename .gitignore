@@ -49,3 +49,5 @@ user_uploads/
 
 # Java build files
 build-installer.bat
+# Local git worktrees (subagent-driven development scratch space)
+.worktrees/
