@@ -31,7 +31,7 @@ class SystemSettingServiceTest {
 
         List<SystemSettingDto> settings = service.loadSettings();
 
-        assertEquals(18, settings.size());
+        assertEquals(19, settings.size());
         assertEquals("organization.name", settings.getFirst().getSettingKey());
     }
 
@@ -80,6 +80,12 @@ class SystemSettingServiceTest {
     void rejectsInvalidLateReasonRequiredFlag() {
         assertInvalid("receipt.late.reason.required", "sometimes",
                 "Late submission reason required setting must be true or false.");
+    }
+
+    @Test
+    void rejectsInvalidWeekIdentifierDay() {
+        assertInvalid("receipt.week.identifier.day", "FUNDAY",
+                "Week identifier day must be MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, or SUNDAY.");
     }
 
     @Test
@@ -194,6 +200,7 @@ class SystemSettingServiceTest {
             add(setting("receipt.allow.back.week", "true", "BOOLEAN", "RECEIPT"));
             add(setting("receipt.late.reason.required", "false", "BOOLEAN", "RECEIPT"));
             add(setting("receipt.default.language", "ENGLISH", "ENUM", "RECEIPT"));
+            add(setting("receipt.week.identifier.day", "MONDAY", "ENUM", "RECEIPT"));
             add(setting("sms.enabled", "false", "BOOLEAN", "SMS"));
             add(setting("sms.gateway.type", "SIM_DONGLE", "ENUM", "SMS"));
             add(setting("sms.retry.enabled", "true", "BOOLEAN", "SMS"));

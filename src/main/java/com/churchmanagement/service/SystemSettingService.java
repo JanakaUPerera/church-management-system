@@ -109,6 +109,9 @@ public class SystemSettingService {
             case "receipt.default.language" -> requireOneOf(normalized,
                     "Receipt default language must be ENGLISH, SINHALA, or TAMIL.",
                     "ENGLISH", "SINHALA", "TAMIL");
+            case "receipt.week.identifier.day" -> requireOneOf(normalized,
+                    "Week identifier day must be MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, or SUNDAY.",
+                    "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
             default -> {
             }
         }
