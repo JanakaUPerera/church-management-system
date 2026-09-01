@@ -75,8 +75,7 @@ public class RestoreService {
             BackupSettingsDto settings = backupSettingsRepository.getSettings();
             int exitCode = commandRunner.run(commandBuilder.buildRestoreCommand(settings), backupFile);
             if (exitCode != 0) {
-                return failedRestore(backupFile, preRestoreBackup.getId(), currentUser,
-                        "Restore failed. Please check selected SQL file.");
+                return failedRestore(backupFile, preRestoreBackup.getId(), currentUser, restoreFailureMessage());
             }
             postRestoreMigrationRunner.run();
             preRestoreBackup = recordPreRestoreBackupAfterRestore(preRestoreBackup, currentUser);
@@ -96,6 +95,30 @@ public class RestoreService {
             return failedRestore(backupFile, preRestoreBackup.getId(), currentUser,
                     "Restore failed. Please check selected SQL file.");
         }
+    }
+
+    /** Includes the real mysql error captured from stderr when the command runner provides one. */
+    private String restoreFailureMessage() {
+        String detail = capturedErrorDetail();
+        return detail == null
+                ? "Restore failed. Please check selected SQL file."
+                : "Restore failed: " + detail;
+    }
+
+    private String capturedErrorDetail() {
+        String stderr = commandRunner.lastErrorOutput();
+        if (stderr == null || stderr.isBlank()) {
+            return null;
+        }
+        String condensed = stderr.lines()
+                .map(String::strip)
+                .filter(line -> !line.isBlank())
+                .reduce((first, second) -> first + " | " + second)
+                .orElse(null);
+        if (condensed == null) {
+            return null;
+        }
+        return condensed.length() > 400 ? condensed.substring(0, 400) + "…" : condensed;
     }
 
     private BackupLogDto createPreRestoreBackup() {

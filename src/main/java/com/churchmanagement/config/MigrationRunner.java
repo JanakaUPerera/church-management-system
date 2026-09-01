@@ -12,6 +12,12 @@ public final class MigrationRunner {
         try {
             DatabaseConfig.testConnection();
 
+            // Secondary clients connect to the shared database but never apply
+            // schema changes — see PrimaryMachine.
+            if (!PrimaryMachine.isPrimary()) {
+                return;
+            }
+
             Flyway flyway = Flyway.configure()
                     .dataSource(DatabaseConfig.getDataSource())
                     .locations(DatabaseConfig.getProperty("flyway.locations"))

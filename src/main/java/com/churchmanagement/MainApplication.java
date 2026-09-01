@@ -2,8 +2,10 @@ package com.churchmanagement;
 
 import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
+import com.churchmanagement.controller.DatabaseSetupController;
 import com.churchmanagement.controller.StartupController;
 import com.churchmanagement.service.AutoBackupScheduler;
+import com.churchmanagement.service.DatabaseSetupService;
 import com.churchmanagement.util.ApplicationRestartUtil;
 import com.churchmanagement.util.ThemeService;
 import javafx.application.Application;
@@ -21,11 +23,15 @@ import java.io.IOException;
 public class MainApplication extends Application {
 
     @Override
-    public void start(Stage primaryStage) throws IOException {
+    public void start(Stage primaryStage) {
         primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setTitle(AppConfig.APPLICATION_NAME);
 
-        showStartupScreen(primaryStage);
+        if (new DatabaseSetupService().isConfigured()) {
+            showStartupScreen(primaryStage);
+        } else {
+            showDatabaseSetup(primaryStage, () -> showStartupScreen(primaryStage));
+        }
     }
 
     @Override
@@ -46,21 +52,54 @@ public class MainApplication extends Application {
         launch(args);
     }
 
-    private void showStartupScreen(Stage stage) throws IOException {
-        FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.STARTUP_VIEW));
-        StackPane root = loader.load();
-        StartupController controller = loader.getController();
+    private void showStartupScreen(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.STARTUP_VIEW));
+            StackPane root = loader.load();
+            StartupController controller = loader.getController();
 
-        Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-        Scene scene = new Scene(root, screen.getWidth(), screen.getHeight());
-        scene.setFill(Color.TRANSPARENT);
-        stage.setScene(scene);
-        stage.setX(screen.getMinX());
-        stage.setY(screen.getMinY());
-        stage.show();
+            Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+            Scene scene = new Scene(root, screen.getWidth(), screen.getHeight());
+            scene.setFill(Color.TRANSPARENT);
+            stage.setScene(scene);
+            stage.setX(screen.getMinX());
+            stage.setY(screen.getMinY());
+            stage.show();
 
-        controller.setOnReady(() -> transitionToLogin(stage));
-        controller.startChecks();
+            controller.setOnReady(() -> transitionToLogin(stage));
+            controller.setOnConfigure(() ->
+                    showDatabaseSetup(stage, () -> {
+                        DatabaseConfig.reset();
+                        showStartupScreen(stage);
+                    }));
+            controller.startChecks();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load startup view.", e);
+        }
+    }
+
+    private void showDatabaseSetup(Stage stage, Runnable onComplete) {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainApplication.class.getResource(AppConfig.DB_SETUP_VIEW));
+            StackPane root = loader.load();
+            DatabaseSetupController controller = loader.getController();
+
+            Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+            Scene scene = new Scene(root, screen.getWidth(), screen.getHeight());
+            scene.setFill(Color.TRANSPARENT);
+            stage.setScene(scene);
+            stage.setX(screen.getMinX());
+            stage.setY(screen.getMinY());
+            stage.show();
+
+            controller.setOnComplete(onComplete);
+            // Closing the wizard always goes to the startup screen.
+            // On first launch the startup screen will fail and re-offer the button;
+            // from the startup error screen it just returns the user there.
+            controller.setOnCancel(() -> showStartupScreen(stage));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load database setup view.", e);
+        }
     }
 
     private void transitionToLogin(Stage stage) {

@@ -1,0 +1,480 @@
+package com.churchmanagement.service;
+
+import com.churchmanagement.config.AppHome;
+import com.churchmanagement.dto.DatabaseSetupDto;
+import com.churchmanagement.exception.DatabaseException;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.FlywayException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Properties;
+import java.util.function.Consumer;
+
+public class DatabaseSetupService {
+
+    private static final String URL_OPTIONS =
+            "useUnicode=true"
+            + "&characterEncoding=utf8"
+            + "&connectionCollation=utf8mb4_unicode_ci"
+            + "&serverTimezone=UTC";
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    /**
+     * Returns {@code false} only when running as a packaged install
+     * ({@code app.home} is set) and no external {@code application.properties}
+     * exists yet in the user-writable config directory.
+     * In dev / IDE mode ({@code app.home} absent) always returns {@code true}
+     * so the setup screen is skipped.
+     */
+    public boolean isConfigured() {
+        Path configFile = AppHome.configFile();
+        if (configFile == null) {
+            return true; // dev mode
+        }
+        return Files.exists(configFile);
+    }
+
+    /**
+     * Loads the current saved configuration into a DTO, or returns defaults
+     * when no external file exists.
+     *
+     * <p>Admin credentials ({@code db.admin.username} / {@code db.admin.password})
+     * are always read from the bundled classpath {@code application.properties} so
+     * the user never needs to type them in the UI.  Any external override takes
+     * precedence if present.</p>
+     */
+    public DatabaseSetupDto load() {
+        DatabaseSetupDto dto = new DatabaseSetupDto();
+
+        // ── Admin credentials from bundled classpath properties ────────────
+        Properties bundled = loadBundledProperties();
+        dto.setAdminUsername(firstNonBlank(bundled.getProperty("db.admin.username"), dto.getAdminUsername()));
+        dto.setAdminPassword(firstNonBlank(bundled.getProperty("db.admin.password"), dto.getAdminPassword()));
+
+        // ── Connection settings from external file (if it exists) ──────────
+        Path configFile = AppHome.configFile();
+        if (configFile == null || !Files.exists(configFile)) {
+            return dto; // dev mode or first launch
+        }
+        try {
+            Properties p = new Properties();
+            try (var in = Files.newInputStream(configFile)) {
+                p.load(in);
+            }
+            dto.setHost(firstNonBlank(p.getProperty("db.host"), dto.getHost()));
+            dto.setPort(parsePort(p.getProperty("db.port"), dto.getPort()));
+            dto.setDatabaseName(firstNonBlank(p.getProperty("db.name"), dto.getDatabaseName()));
+            dto.setUsername(firstNonBlank(p.getProperty("db.username"), dto.getUsername()));
+            dto.setPassword(firstNonBlank(p.getProperty("db.password"), dto.getPassword()));
+            dto.setRunMigrations(!"false".equalsIgnoreCase(p.getProperty("db.run-migrations", "true")));
+            // Allow external file to override admin credentials if needed.
+            dto.setAdminUsername(firstNonBlank(p.getProperty("db.admin.username"), dto.getAdminUsername()));
+            dto.setAdminPassword(firstNonBlank(p.getProperty("db.admin.password"), dto.getAdminPassword()));
+        } catch (IOException ignored) {
+            // Return defaults — the setup screen lets the user correct anything.
+        }
+        return dto;
+    }
+
+    /**
+     * Writes a complete {@code application.properties} to {@code $app.home}.
+     *
+     * <p>When {@code app.home} is not set the application is running in
+     * development / IDE mode and the bundled classpath properties are already
+     * the active configuration source.  In that case the save is a deliberate
+     * no-op — nothing is written, and the caller may proceed normally.</p>
+     */
+    public void save(DatabaseSetupDto dto) {
+        Path configFile = AppHome.configFile();
+        if (configFile == null) {
+            // Dev mode: configuration lives in the bundled application.properties
+            // on the classpath. No external file to write — just continue.
+            return;
+        }
+        try {
+            // Ensure the user-writable config directory exists (e.g. %APPDATA%\Church Management System\)
+            Files.createDirectories(configFile.getParent());
+            // Start from whatever is already saved on this machine so re-running
+            // the wizard doesn't clobber per-machine settings the user configured
+            // afterwards (e.g. report export folder via the Settings screen).
+            Properties existing = loadExistingProperties(configFile);
+            try (OutputStream out = Files.newOutputStream(configFile)) {
+                buildProperties(dto, existing).store(out,
+                        "Church Management System — machine configuration (generated by setup wizard)");
+            }
+        } catch (IOException e) {
+            throw new DatabaseException("Failed to write configuration file: " + configFile, e);
+        }
+    }
+
+    /** Loads the currently-saved external properties, or an empty set if none exist yet. */
+    private Properties loadExistingProperties(Path configFile) {
+        Properties properties = new Properties();
+        if (Files.exists(configFile)) {
+            try (InputStream in = Files.newInputStream(configFile)) {
+                properties.load(in);
+            } catch (IOException ignored) {
+                // Unreadable/corrupt file — start fresh; the wizard fields still get written.
+            }
+        }
+        return properties;
+    }
+
+    /**
+     * Fully initialises the database in four steps, calling {@code onStep}
+     * after each one so the UI can display live progress:
+     *
+     * <ol>
+     *   <li>Connect to the MySQL <em>server</em> (via {@code information_schema}
+     *       so the target database need not exist yet).</li>
+     *   <li>Create the target database with utf8mb4 charset if it does not
+     *       exist.</li>
+     *   <li>Grant {@code ALL PRIVILEGES} on the database to the configured
+     *       user (skipped for {@code root}; demoted to a warning if the
+     *       current user lacks {@code GRANT OPTION}).</li>
+     *   <li>Run Flyway {@code repair()} + {@code migrate()} directly against
+     *       the target database so the schema is fully up to date.</li>
+     * </ol>
+     *
+     * <p>The method throws {@link DatabaseException} on unrecoverable failures.
+     * A failed <em>grant</em> step is treated as a non-fatal warning so that
+     * users who already have the required privileges can still proceed.</p>
+     *
+     * @param dto    connection settings from the setup form.
+     * @param onStep called on the <strong>background</strong> thread after each
+     *               step; implementations must dispatch UI updates via
+     *               {@code Platform.runLater()}.
+     */
+    public void initializeDatabase(DatabaseSetupDto dto, Consumer<InitStep> onStep) {
+        validateIdentifier(dto.getDatabaseName(), "Database name");
+        validateIdentifier(dto.getUsername(),     "Application username");
+
+        if (dto.getAdminUsername() == null || dto.getAdminUsername().isBlank()) {
+            throw new DatabaseException("Admin username is required.");
+        }
+
+        String db          = dto.getDatabaseName();
+        String appUser     = dto.getUsername();
+        String appPassword = dto.getPassword();
+        String adminUser   = dto.getAdminUsername().strip();
+        String adminPass   = dto.getAdminPassword();
+        String serverUrl   = buildServerUrl(dto);
+
+        // ── Step 1: server connectivity (as admin) ────────────────────────
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new DatabaseException("MySQL JDBC driver not found on classpath.", e);
+        }
+
+        try (Connection conn = DriverManager.getConnection(serverUrl, adminUser, adminPass)) {
+
+            onStep.accept(InitStep.success("Server connection",
+                    "Connected to " + dto.getHost() + ":" + dto.getPort() + " as '" + adminUser + "'"));
+
+            // ── Step 2: create database ───────────────────────────────────
+            boolean created = createDatabaseIfAbsent(conn, db);
+            onStep.accept(InitStep.success("Database",
+                    created ? "'" + db + "' created (utf8mb4)" : "'" + db + "' already exists"));
+
+            // ── Step 3: create application user ──────────────────────────
+            // Skipped when the app user IS the admin (e.g. root used for both).
+            if (appUser.equalsIgnoreCase(adminUser)) {
+                onStep.accept(InitStep.success("Application user",
+                        "'" + appUser + "' is the admin account — no separate user needed"));
+            } else {
+                try {
+                    boolean userCreated = createUserIfAbsent(conn, appUser, appPassword);
+                    onStep.accept(InitStep.success("Application user",
+                            userCreated
+                                ? "'" + appUser + "'@'%' created"
+                                : "'" + appUser + "'@'%' already exists"));
+                } catch (Exception e) {
+                    onStep.accept(InitStep.warning("Application user",
+                            "Could not create user (it may already exist): " + shortMessage(e)));
+                }
+            }
+
+            // ── Step 4: grant privileges ──────────────────────────────────
+            if (appUser.equalsIgnoreCase(adminUser) && "root".equalsIgnoreCase(appUser)) {
+                onStep.accept(InitStep.success("Permissions",
+                        "root — full server access already available"));
+            } else {
+                try {
+                    grantPrivileges(conn, db, appUser);
+                    onStep.accept(InitStep.success("Permissions",
+                            "ALL PRIVILEGES on '" + db + "' + global RELOAD granted to '" + appUser + "'@'%'"));
+                } catch (Exception e) {
+                    // Not fatal — user may already have the right grants.
+                    onStep.accept(InitStep.warning("Permissions",
+                            "Could not grant (user may already have access): " + shortMessage(e)));
+                }
+            }
+
+        } catch (DatabaseException e) {
+            throw e;
+        } catch (Exception e) {
+            onStep.accept(InitStep.failure("Server connection", friendlyMessage(e)));
+            throw new DatabaseException(friendlyMessage(e), e);
+        }
+
+        // ── Step 5: Flyway migrations (run as app user) ───────────────────
+        // Flyway uses the APPLICATION credentials so we also verify that the
+        // app user can actually reach the target database before we save.
+        String dbUrl = buildJdbcUrl(dto) + "&connectTimeout=8000&socketTimeout=10000";
+        try {
+            Flyway flyway = Flyway.configure()
+                    .dataSource(dbUrl, appUser, appPassword)
+                    .locations("classpath:db/migration")
+                    .baselineOnMigrate(true)
+                    .ignoreMigrationPatterns("*:missing")
+                    .load();
+            flyway.repair();
+            int applied = flyway.migrate().migrationsExecuted;
+            onStep.accept(InitStep.success("Migrations",
+                    applied == 0 ? "Schema is already up to date"
+                                 : applied + " migration(s) applied"));
+        } catch (FlywayException e) {
+            onStep.accept(InitStep.failure("Migrations", shortMessage(e)));
+            throw new DatabaseException("Migrations failed: " + shortMessage(e), e);
+        }
+    }
+
+    // ── Step result ───────────────────────────────────────────────────────────
+
+    public enum StepStatus { SUCCESS, WARNING, FAILURE }
+
+    public record InitStep(String label, String detail, StepStatus status) {
+        static InitStep success(String label, String detail) {
+            return new InitStep(label, detail, StepStatus.SUCCESS);
+        }
+        static InitStep warning(String label, String detail) {
+            return new InitStep(label, detail, StepStatus.WARNING);
+        }
+        static InitStep failure(String label, String detail) {
+            return new InitStep(label, detail, StepStatus.FAILURE);
+        }
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /** Connects to information_schema so the target database need not exist yet. */
+    private String buildServerUrl(DatabaseSetupDto dto) {
+        return "jdbc:mysql://" + dto.getHost() + ":" + dto.getPort()
+                + "/information_schema?" + URL_OPTIONS
+                + "&connectTimeout=8000&socketTimeout=10000";
+    }
+
+    private String buildJdbcUrl(DatabaseSetupDto dto) {
+        return "jdbc:mysql://" + dto.getHost() + ":" + dto.getPort()
+                + "/" + dto.getDatabaseName() + "?" + URL_OPTIONS;
+    }
+
+    /**
+     * Creates the target database if it does not exist.
+     * @return {@code true} if the database was created, {@code false} if it already existed.
+     */
+    private boolean createDatabaseIfAbsent(Connection conn, String dbName) throws Exception {
+        try (PreparedStatement check = conn.prepareStatement(
+                "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?")) {
+            check.setString(1, dbName);
+            try (ResultSet rs = check.executeQuery()) {
+                if (rs.next()) {
+                    return false; // already exists
+                }
+            }
+        }
+        // Database name validated by validateIdentifier() — safe to embed in DDL.
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(
+                    "CREATE DATABASE `" + dbName + "` "
+                    + "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        }
+        return true;
+    }
+
+    /**
+     * Creates {@code username@'%'} with the given password if that account does
+     * not already exist.  Uses {@code CREATE USER IF NOT EXISTS} (MySQL 5.7.6+).
+     *
+     * @return {@code true} if the account was created, {@code false} if it already existed.
+     */
+    private boolean createUserIfAbsent(Connection conn, String username, String password)
+            throws Exception {
+        // Check whether the account exists first so we can return an informative boolean.
+        try (PreparedStatement check = conn.prepareStatement(
+                "SELECT COUNT(*) FROM information_schema.USER_PRIVILEGES "
+                + "WHERE GRANTEE = CONCAT(\"'\", ?, \"'@'%'\")")) {
+            check.setString(1, username);
+            try (ResultSet rs = check.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return false; // already exists
+                }
+            }
+        }
+        // Username validated by validateIdentifier() — safe to embed.
+        // Password is escaped for use inside a SQL string literal.
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(
+                    "CREATE USER '" + username + "'@'%' "
+                    + "IDENTIFIED BY '" + escapeSqlString(password) + "'");
+        }
+        return true;
+    }
+
+    /**
+     * Escapes a value for safe embedding inside a MySQL single-quoted string
+     * literal.  Handles backslashes and single quotes.
+     */
+    private String escapeSqlString(String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    /**
+     * Grants ALL PRIVILEGES on the target database, plus the global RELOAD
+     * privilege, to {@code username@'%'}, and flushes privileges. Both the
+     * database name and username have been validated by
+     * {@link #validateIdentifier} before this is called.
+     *
+     * <p>RELOAD is required by {@code mysqldump --single-transaction} on
+     * MySQL 8.0.21+, which issues a {@code FLUSH TABLES} before starting the
+     * consistent-snapshot transaction. It can only be granted at the global
+     * ({@code *.*}) scope — a database-scoped {@code GRANT ALL} does not
+     * include it — so without this, backups fail with "Access denied; you
+     * need (at least one of) the RELOAD or FLUSH_TABLES privilege(s)".</p>
+     */
+    private void grantPrivileges(Connection conn, String dbName, String username) throws Exception {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(
+                    "GRANT ALL PRIVILEGES ON `" + dbName + "`.* "
+                    + "TO '" + username + "'@'%'");
+            stmt.execute("GRANT RELOAD ON *.* TO '" + username + "'@'%'");
+            stmt.execute("FLUSH PRIVILEGES");
+        }
+    }
+
+    /**
+     * Ensures a database/user identifier contains only safe characters so it
+     * can be embedded in DDL without risk of injection.
+     */
+    private void validateIdentifier(String value, String fieldName) {
+        if (value == null || !value.matches("[A-Za-z0-9_]+")) {
+            throw new DatabaseException(
+                    fieldName + " must contain only letters, numbers, and underscores.");
+        }
+    }
+
+    /**
+     * Builds the full external {@code application.properties} content, layering
+     * the wizard's connection settings on top of {@code base} (whatever is
+     * already saved on this machine, or empty for a fresh install).
+     *
+     * <p>Connection settings always come from {@code dto} — that's the whole
+     * point of the wizard. Per-machine settings unrelated to the DB connection
+     * (e.g. local export folders) are left untouched if already present in
+     * {@code base}, and only seeded with a default the first time.</p>
+     */
+    private Properties buildProperties(DatabaseSetupDto dto, Properties base) {
+        Properties p = base;
+        p.setProperty("db.driver",   "com.mysql.cj.jdbc.Driver");
+        p.setProperty("db.url",      buildJdbcUrl(dto));
+        p.setProperty("db.username", dto.getUsername());
+        p.setProperty("db.password", dto.getPassword());
+        p.setProperty("db.host",     dto.getHost());
+        p.setProperty("db.port",     String.valueOf(dto.getPort()));
+        p.setProperty("db.name",     dto.getDatabaseName());
+        p.setProperty("db.user",     dto.getUsername());
+        p.setProperty("db.pool.name",               "ChurchManagementPool");
+        p.setProperty("db.pool.minimum-idle",        "2");
+        p.setProperty("db.pool.maximum-size",        "10");
+        p.setProperty("db.pool.connection-timeout",  "10000");
+        p.setProperty("db.pool.idle-timeout",        "600000");
+        p.setProperty("db.pool.max-lifetime",        "1800000");
+        p.setProperty("flyway.locations",            "classpath:db/migration");
+        p.setProperty("db.run-migrations",           dto.isRunMigrations() ? "true" : "false");
+        // Per-machine local settings — keep whatever is already saved on this
+        // machine (e.g. edited via the Settings screen); only seed a default
+        // the very first time the file is written.
+        p.putIfAbsent("receipt.pdf.output.folder",   "./receipts");
+        p.putIfAbsent("reports.export.folder",       "./reports");
+        p.putIfAbsent("backup.folder",               "./backups");
+        p.putIfAbsent("backup.mysqldump.path",       "");
+        p.putIfAbsent("backup.mysql.client.path",    "");
+        // Admin credentials are carried forward so re-running the wizard works
+        // without needing the bundled file again.
+        if (dto.getAdminUsername() != null && !dto.getAdminUsername().isBlank()) {
+            p.setProperty("db.admin.username", dto.getAdminUsername());
+        }
+        if (dto.getAdminPassword() != null) {
+            p.setProperty("db.admin.password", dto.getAdminPassword());
+        }
+        return p;
+    }
+
+    /** Loads the bundled {@code /application.properties} from the classpath. */
+    private Properties loadBundledProperties() {
+        Properties p = new Properties();
+        try (var in = DatabaseSetupService.class.getResourceAsStream("/application.properties")) {
+            if (in != null) {
+                p.load(in);
+            }
+        } catch (IOException ignored) {
+            // Best-effort — caller falls back to DTO defaults.
+        }
+        return p;
+    }
+
+    private int parsePort(String value, int defaultPort) {
+        if (value == null || value.isBlank()) return defaultPort;
+        try {
+            return Integer.parseInt(value.strip());
+        } catch (NumberFormatException e) {
+            return defaultPort;
+        }
+    }
+
+    private String firstNonBlank(String value, String fallback) {
+        return (value == null || value.isBlank()) ? fallback : value.strip();
+    }
+
+    private String shortMessage(Exception e) {
+        String msg = e.getMessage();
+        if (msg == null || msg.isBlank()) return e.getClass().getSimpleName();
+        return msg.length() > 200 ? msg.substring(0, 200) + "…" : msg;
+    }
+
+    private String friendlyMessage(Exception e) {
+        String msg      = e.getMessage() == null ? "" : e.getMessage();
+        Throwable cause = e.getCause();
+        String causeMsg = cause == null ? "" : (cause.getMessage() == null ? "" : cause.getMessage());
+        String combined = msg + " " + causeMsg;
+
+        if (combined.contains("Communications link failure") || combined.contains("Connection refused")) {
+            return "Cannot reach the server. Check the host and port.";
+        }
+        if (combined.contains("CREATE command denied") || combined.contains("create command denied")) {
+            return "The user lacks CREATE DATABASE privilege.";
+        }
+        if (combined.contains("Access denied")) {
+            return "Access denied — check the username and password.";
+        }
+        if (combined.contains("Unknown database")) {
+            return "Database not found — check the database name.";
+        }
+        if (combined.contains("Unable to acquire JDBC Connection") || combined.contains("Connection is not available")) {
+            return "Connection timed out. Check the host/port and ensure MySQL is running.";
+        }
+        return msg.length() > 180 ? msg.substring(0, 180) + "…" : msg;
+    }
+}

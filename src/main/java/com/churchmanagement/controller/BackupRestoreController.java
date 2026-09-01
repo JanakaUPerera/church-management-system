@@ -1,5 +1,6 @@
 package com.churchmanagement.controller;
 
+import com.churchmanagement.config.PrimaryMachine;
 import com.churchmanagement.dto.BackupLogDto;
 import com.churchmanagement.dto.BackupScheduleDto;
 import com.churchmanagement.dto.BackupSettingsDto;
@@ -515,9 +516,11 @@ public class BackupRestoreController {
         retentionDaysField.setText(Integer.toString(settings.getRetentionDays()));
         mysqldumpPathField.setText(nullToBlank(settings.getMysqldumpPath()));
         mysqlClientPathField.setText(nullToBlank(settings.getMysqlClientPath()));
-        schedulerTodoLabel.setText("");
-        schedulerTodoLabel.setVisible(false);
-        schedulerTodoLabel.setManaged(false);
+        boolean primaryMachine = PrimaryMachine.isPrimary();
+        schedulerTodoLabel.setText(primaryMachine ? "" : "This machine is a secondary client — "
+                + "scheduled automatic backups run only on the primary machine. Manual backups above still work here.");
+        schedulerTodoLabel.setVisible(!primaryMachine);
+        schedulerTodoLabel.setManaged(!primaryMachine);
         generateAutoBackupScriptButton.setVisible(false);
         generateAutoBackupScriptButton.setManaged(false);
         autoBackupScriptPathLabel.setVisible(false);

@@ -1,5 +1,6 @@
 package com.churchmanagement.service;
 
+import com.churchmanagement.config.PrimaryMachine;
 import com.churchmanagement.dto.BackupScheduleDto;
 
 import java.time.Duration;
@@ -11,11 +12,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 public class AutoBackupScheduler {
     private final BackupScheduleService backupScheduleService;
     private final BackupService backupService;
     private final ScheduledExecutorService executorService;
+    private final BooleanSupplier isPrimaryMachine;
     private final List<ScheduledFuture<?>> scheduledBackups = new ArrayList<>();
 
     public AutoBackupScheduler() {
@@ -27,8 +30,14 @@ public class AutoBackupScheduler {
     }
 
     public AutoBackupScheduler(BackupScheduleService backupScheduleService, BackupService backupService) {
+        this(backupScheduleService, backupService, PrimaryMachine::isPrimary);
+    }
+
+    AutoBackupScheduler(BackupScheduleService backupScheduleService, BackupService backupService,
+                        BooleanSupplier isPrimaryMachine) {
         this.backupScheduleService = backupScheduleService;
         this.backupService = backupService;
+        this.isPrimaryMachine = isPrimaryMachine;
         this.executorService = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "auto-backup-scheduler");
             thread.setDaemon(true);
@@ -38,6 +47,12 @@ public class AutoBackupScheduler {
 
     public synchronized void reloadSchedule() {
         cancel();
+        if (!isPrimaryMachine.getAsBoolean()) {
+            // Secondary/client machine — scheduled automatic backups run only
+            // on the designated primary machine (see PrimaryMachine) so every
+            // open client isn't independently dumping the same shared database.
+            return;
+        }
         for (BackupScheduleDto schedule : backupScheduleService.getEnabledSchedules()) {
             scheduleDailyBackup(schedule);
         }

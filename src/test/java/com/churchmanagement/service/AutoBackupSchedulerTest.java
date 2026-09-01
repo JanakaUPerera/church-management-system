@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -34,6 +35,18 @@ class AutoBackupSchedulerTest {
         assertEquals(List.of(LocalTime.of(6, 0)), scheduler.scheduledTimes);
     }
 
+    @Test
+    void secondaryClientMachineSchedulesNothing() {
+        CapturingScheduler scheduler = new CapturingScheduler(
+                new BackupScheduleService(new FakeBackupScheduleRepository(
+                        List.of(schedule("Morning", LocalTime.of(6, 0), true)))),
+                () -> false);
+
+        scheduler.reloadSchedule();
+
+        assertEquals(List.of(), scheduler.scheduledTimes);
+    }
+
     private CapturingScheduler scheduler(List<BackupScheduleDto> schedules) {
         return new CapturingScheduler(new BackupScheduleService(new FakeBackupScheduleRepository(schedules)));
     }
@@ -51,6 +64,10 @@ class AutoBackupSchedulerTest {
 
         private CapturingScheduler(BackupScheduleService backupScheduleService) {
             super(backupScheduleService, null);
+        }
+
+        private CapturingScheduler(BackupScheduleService backupScheduleService, BooleanSupplier isPrimaryMachine) {
+            super(backupScheduleService, null, isPrimaryMachine);
         }
 
         @Override

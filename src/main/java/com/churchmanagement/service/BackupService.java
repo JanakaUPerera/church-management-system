@@ -11,6 +11,8 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 
@@ -77,8 +79,7 @@ public class BackupService {
             BackupCommandBuilder.CommandSpec command = commandBuilder.buildDumpCommand(settings, backupFile);
             int exitCode = commandRunner.run(command, null);
             if (exitCode != 0 || !backupFileService.existsWithContent(backupFile)) {
-                return failedBackup(backupType, fileName, backupFile, currentUser,
-                        "Backup failed. Please check database credentials and tool paths.");
+                return failedBackup(backupType, fileName, backupFile, currentUser, backupFailureMessage());
             }
             long fileSize = backupFileService.fileSize(backupFile);
             BackupLogDto log = backupRepository.insertBackupLog(backupType, fileName, backupFile.toAbsolutePath().toString(),
@@ -94,6 +95,37 @@ public class BackupService {
             return failedBackup(backupType, fileName, backupFile, currentUser,
                     "Backup failed. Please check database credentials and tool paths.");
         }
+    }
+
+    /**
+     * Builds the failure message for a non-zero mysqldump exit (or an empty
+     * output file), including the real tool error when the command runner
+     * captured one — e.g. "Backup failed: mysqldump: Couldn't execute 'FLUSH
+     * ... TABLES': Access denied; you need ... the RELOAD or FLUSH_TABLES
+     * privilege(s)" — instead of a generic message that gives no clue why.
+     */
+    private String backupFailureMessage() {
+        String detail = capturedErrorDetail();
+        return detail == null
+                ? "Backup failed. Please check database credentials and tool paths."
+                : "Backup failed: " + detail;
+    }
+
+    /** Condenses captured stderr into one length-capped line suitable for the UI/activity log. */
+    private String capturedErrorDetail() {
+        String stderr = commandRunner.lastErrorOutput();
+        if (stderr == null || stderr.isBlank()) {
+            return null;
+        }
+        String condensed = stderr.lines()
+                .map(String::strip)
+                .filter(line -> !line.isBlank())
+                .reduce((first, second) -> first + " | " + second)
+                .orElse(null);
+        if (condensed == null) {
+            return null;
+        }
+        return condensed.length() > 400 ? condensed.substring(0, 400) + "…" : condensed;
     }
 
     private BackupLogDto failedBackup(BackupType backupType, String fileName, Path backupFile,
@@ -142,18 +174,44 @@ public class BackupService {
 
     public interface CommandRunner {
         int run(BackupCommandBuilder.CommandSpec command, Path inputFile) throws IOException, InterruptedException;
+
+        /**
+         * Returns the stderr captured by the most recent {@link #run} call, or
+         * {@code null} if none is available. Lets callers surface the real
+         * mysqldump/mysql error instead of guessing from just an exit code.
+         */
+        default String lastErrorOutput() {
+            return null;
+        }
     }
 
     public static class ProcessCommandRunner implements CommandRunner {
+        private volatile String lastErrorOutput;
+
         @Override
         public int run(BackupCommandBuilder.CommandSpec command, Path inputFile) throws IOException, InterruptedException {
             ProcessBuilder processBuilder = new ProcessBuilder(command.command());
             processBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
-            processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
             if (inputFile != null) {
                 processBuilder.redirectInput(inputFile.toFile());
             }
-            return processBuilder.start().waitFor();
+            Process process = processBuilder.start();
+            // Drain stderr fully before waitFor() — the child's stderr pipe has
+            // a bounded buffer, so reading it after waitFor() could deadlock if
+            // the tool writes more than that buffer holds.
+            lastErrorOutput = readFully(process.getErrorStream());
+            return process.waitFor();
+        }
+
+        @Override
+        public String lastErrorOutput() {
+            return lastErrorOutput;
+        }
+
+        private String readFully(InputStream stream) throws IOException {
+            try (stream) {
+                return new String(stream.readAllBytes(), StandardCharsets.UTF_8).strip();
+            }
         }
     }
 
