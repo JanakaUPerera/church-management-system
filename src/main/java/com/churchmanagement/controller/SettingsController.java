@@ -88,6 +88,7 @@ public class SettingsController {
     @FXML private CheckBox receiptAllowBackWeekCheckBox;
     @FXML private CheckBox receiptLateReasonRequiredCheckBox;
     @FXML private ComboBox<String> receiptLanguageComboBox;
+    @FXML private ComboBox<String> weekIdentifierDayComboBox;
     @FXML private Label receiptPaddingErrorLabel;
     @FXML private Label receiptLanguageErrorLabel;
     @FXML private CheckBox smsEnabledCheckBox;
@@ -119,6 +120,8 @@ public class SettingsController {
         new PermissionGuard(currentUser).require("settings.menu.view");
 
         receiptLanguageComboBox.getItems().setAll("ENGLISH", "SINHALA", "TAMIL");
+        weekIdentifierDayComboBox.getItems().setAll(
+                "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
         themeComboBox.getItems().setAll("ORCHID", "LIGHT", "DARK");
         gatewayTypeComboBox.getItems().setAll(SmsSettings.GatewayType.values());
         baudRateComboBox.getItems().setAll(9600, 19200, 38400, 115200);
@@ -154,7 +157,8 @@ public class SettingsController {
                 request("receipt.sequence.padding", receiptPaddingField.getText()),
                 request("receipt.allow.back.week", String.valueOf(receiptAllowBackWeekCheckBox.isSelected())),
                 request("receipt.late.reason.required", String.valueOf(receiptLateReasonRequiredCheckBox.isSelected())),
-                request("receipt.default.language", receiptLanguageComboBox.getValue())
+                request("receipt.default.language", receiptLanguageComboBox.getValue()),
+                request("receipt.week.identifier.day", weekIdentifierDayComboBox.getValue())
         ));
     }
 
@@ -391,6 +395,7 @@ public class SettingsController {
         receiptLateReasonRequiredCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
                 values.get("receipt.late.reason.required"), "false")));
         receiptLanguageComboBox.setValue(defaultValue(values.get("receipt.default.language"), "ENGLISH"));
+        weekIdentifierDayComboBox.setValue(defaultValue(values.get("receipt.week.identifier.day"), "MONDAY"));
         smsEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.enabled")));
         gatewayTypeComboBox.setValue(parseGatewayType(values.get("sms.gateway.type")));
         smsRetryEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.retry.enabled")));
