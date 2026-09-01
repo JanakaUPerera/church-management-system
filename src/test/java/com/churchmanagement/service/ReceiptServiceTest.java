@@ -42,10 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReceiptServiceTest {
-    private static final LocalDate NORMAL_WEEK_START = LocalDate.of(2026, 5, 11);
-    private static final LocalDate NORMAL_WEEK_END = LocalDate.of(2026, 5, 17);
-    private static final LocalDate BACK_WEEK_START = LocalDate.of(2026, 5, 4);
-    private static final LocalDate BACK_WEEK_END = LocalDate.of(2026, 5, 10);
+    private static final LocalDate CURRENT_WEEK_START = LocalDate.of(2026, 5, 12);
+    private static final LocalDate CURRENT_WEEK_END = LocalDate.of(2026, 5, 18);
+    private static final LocalDate BACK_WEEK_START = LocalDate.of(2026, 5, 5);
+    private static final LocalDate BACK_WEEK_END = LocalDate.of(2026, 5, 11);
 
     private FakeReceiptRepository receiptRepository;
     private FakeChurchRepository churchRepository;
@@ -77,7 +77,7 @@ class ReceiptServiceTest {
     }
 
     @Test
-    void createValidReceiptForNormalPreviousWeek() {
+    void createValidReceiptForCurrentSubmissionWeek() {
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
         assertEquals("REC26000001", response.getReceiptNo());
@@ -150,8 +150,8 @@ class ReceiptServiceTest {
     @Test
     void rejectFutureWeek() {
         CreateReceiptRequest request = validRequest();
-        request.setWeekStartDate(LocalDate.of(2026, 5, 18));
-        request.setWeekEndDate(LocalDate.of(2026, 5, 24));
+        request.setWeekStartDate(LocalDate.of(2026, 5, 19));
+        request.setWeekEndDate(LocalDate.of(2026, 5, 25));
 
         ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
                 () -> receiptService.createReceipt(request));
@@ -161,34 +161,33 @@ class ReceiptServiceTest {
     }
 
     @Test
-    void rejectWeekStartThatIsNotMonday() {
+    void rejectWeekEndThatIsNotMonday() {
         CreateReceiptRequest request = validRequest();
-        request.setWeekStartDate(LocalDate.of(2026, 5, 12));
         request.setWeekEndDate(LocalDate.of(2026, 5, 17));
+        request.setWeekStartDate(LocalDate.of(2026, 5, 11));
 
         ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
                 () -> receiptService.createReceipt(request));
 
-        assertTrue(exception.getMessage().contains("Week start date must be a Monday."));
+        assertTrue(exception.getMessage().contains("Week end date must be a Monday."));
     }
 
     @Test
-    void rejectWeekEndThatIsNotSunday() {
+    void rejectWeekStartThatIsNotTuesday() {
         CreateReceiptRequest request = validRequest();
-        request.setWeekEndDate(LocalDate.of(2026, 5, 16));
+        request.setWeekStartDate(LocalDate.of(2026, 5, 13));
 
         ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
                 () -> receiptService.createReceipt(request));
 
-        assertTrue(exception.getMessage().contains("Week end date must be a Sunday."));
+        assertTrue(exception.getMessage().contains("Week start date must be a Tuesday."));
     }
 
     @Test
     void rejectWeekEndNotEqualToStartPlusSixDays() {
         CreateReceiptRequest request = validRequest();
-        request.setWeekStartDate(LocalDate.of(2026, 5, 4));
-        request.setWeekEndDate(LocalDate.of(2026, 5, 17));
-        request.setLateSubmissionReason("Submitted after reconciliation.");
+        request.setWeekStartDate(LocalDate.of(2026, 5, 5));
+        request.setWeekEndDate(LocalDate.of(2026, 5, 18));
 
         ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
                 () -> receiptService.createReceipt(request));
@@ -197,9 +196,9 @@ class ReceiptServiceTest {
     }
 
     @Test
-    void rejectChurchServiceDateOutsideSelectedWeek() {
+    void rejectChurchServiceDateOutsideWeek() {
         CreateReceiptRequest request = validRequest();
-        request.setChurchServiceDate(NORMAL_WEEK_START.minusDays(1));
+        request.setChurchServiceDate(CURRENT_WEEK_START.minusDays(1));
 
         ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
                 () -> receiptService.createReceipt(request));
@@ -410,9 +409,9 @@ class ReceiptServiceTest {
     private CreateReceiptRequest validRequest() {
         CreateReceiptRequest request = new CreateReceiptRequest();
         request.setChurchId(10L);
-        request.setWeekStartDate(NORMAL_WEEK_START);
-        request.setWeekEndDate(NORMAL_WEEK_END);
-        request.setChurchServiceDate(NORMAL_WEEK_END);
+        request.setWeekStartDate(CURRENT_WEEK_START);
+        request.setWeekEndDate(CURRENT_WEEK_END);
+        request.setChurchServiceDate(CURRENT_WEEK_END);
         request.setSubmittedByName("Treasurer");
         request.setItems(List.of(
                 item(CollectionType.OFFERTORY, "100.00"),
@@ -431,8 +430,8 @@ class ReceiptServiceTest {
         receipt.setReceiptNo("REC26000000");
         receipt.setChurchId(10L);
         receipt.setRegionId(2L);
-        receipt.setWeekStartDate(NORMAL_WEEK_START);
-        receipt.setWeekEndDate(NORMAL_WEEK_END);
+        receipt.setWeekStartDate(CURRENT_WEEK_START);
+        receipt.setWeekEndDate(CURRENT_WEEK_END);
         receipt.setStatus(ReceiptStatus.CANCELLED);
         receipt.setCreatedAt(LocalDateTime.now());
         return receipt;
