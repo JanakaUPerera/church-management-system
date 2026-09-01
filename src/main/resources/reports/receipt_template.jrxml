@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="receipt_template" pageWidth="342" pageHeight="396" columnWidth="342"
+              name="receipt_template" pageWidth="382" pageHeight="436" columnWidth="382"
               leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="a0bf2c1c-2a9c-44ce-90ea-fb312c9f0a31">
     <parameter name="backgroundTopImage" class="java.io.InputStream"/>
     <parameter name="backgroundFooterBarImage" class="java.io.InputStream"/>
@@ -27,65 +27,68 @@
     <parameter name="cancelledWatermark" class="java.lang.String"/>
 
     <detail>
-        <band height="396">
-            <!-- Original design, unmodified pixels, compressed vertically to make room below.
-                 NOTE: text element heights below are intentionally generous (~1.5x font size).
+        <band height="436">
+            <!-- A 20pt margin frames the printed card on all sides (see the border + hole-punch
+                 elements at the end of this band): the pad's own blank paper margin, where the
+                 ring-binder holes sit outside the printed content. Every element below is the
+                 original design's card, unmodified pixels, offset by (+20,+20) into that frame -
+                 NOTE: text element heights are intentionally generous (~1.5x font size).
                  JasperReports computes text layout at fill time using AWT font metrics for
                  whatever font name is requested; when that family isn't actually installed as a
                  system font (only registered for PDF embedding), the substituted fallback font's
                  metrics can exceed a tightly-sized box and the whole line silently fails to
                  render (in both the Graphics2D preview and the PDF export). -->
             <image scaleImage="FillFrame">
-                <reportElement x="0" y="0" width="342" height="264" uuid="d1f1b111-1111-4111-8111-111111111101"/>
+                <reportElement x="20" y="20" width="342" height="264" uuid="d1f1b111-1111-4111-8111-111111111101"/>
                 <imageExpression><![CDATA[$P{backgroundTopImage}]]></imageExpression>
             </image>
 
             <!-- Values placed inline on each field's English label line. Left-column values share
-                 one common x (122); right-column values share one common x (235). -->
+                 one common x (142); right-column values share one common x (255). -->
             <textField textAdjust="ScaleFont">
-                <reportElement x="122" y="114" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111102"/>
+                <reportElement x="142" y="134" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111102"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{receivedFrom}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="122" y="147" width="65" height="12" uuid="d1f1b111-1111-4111-8111-111111111103"/>
+                <reportElement x="142" y="167" width="65" height="12" uuid="d1f1b111-1111-4111-8111-111111111103"/>
                 <textElement><font fontName="Noto Sans" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{branchChurch}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="235" y="148" width="98" height="12" uuid="d1f1b111-1111-4111-8111-111111111104"/>
+                <reportElement x="255" y="168" width="98" height="12" uuid="d1f1b111-1111-4111-8111-111111111104"/>
                 <textElement><font fontName="Noto Sans" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{number}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="122" y="179" width="65" height="12" uuid="d1f1b111-1111-4111-8111-111111111105"/>
+                <reportElement x="142" y="199" width="65" height="12" uuid="d1f1b111-1111-4111-8111-111111111105"/>
                 <textElement><font fontName="Noto Sans" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{titheAmount}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="235" y="180" width="98" height="12" uuid="d1f1b111-1111-4111-8111-111111111106"/>
+                <reportElement x="255" y="200" width="98" height="12" uuid="d1f1b111-1111-4111-8111-111111111106"/>
                 <textElement><font fontName="Noto Sans" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{offeringsAmount}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="122" y="209" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111107"/>
+                <reportElement x="142" y="229" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111107"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{churchServiceDate}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="122" y="228" width="205" height="13" uuid="d1f1b111-1111-4111-8111-111111111126"/>
+                <reportElement x="142" y="248" width="205" height="13" uuid="d1f1b111-1111-4111-8111-111111111126"/>
                 <textElement><font fontName="Noto Sans" size="9"/></textElement>
                 <textFieldExpression><![CDATA[$P{churchServiceWeek}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="122" y="244" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111108"/>
+                <reportElement x="142" y="264" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111108"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
             </textField>
 
             <!-- Cancelled watermark, overlaid on the original design section -->
             <textField>
-                <reportElement forecolor="#B00020" x="0" y="95" width="342" height="34" uuid="d1f1b111-1111-4111-8111-111111111109"/>
+                <reportElement forecolor="#B00020" x="20" y="115" width="342" height="34" uuid="d1f1b111-1111-4111-8111-111111111109"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Noto Sans" size="20" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{cancelledWatermark}]]></textFieldExpression>
             </textField>
@@ -94,99 +97,169 @@
                  church's own receipt language (one language is enough) - three font variants of
                  the same label text, only one prints, matching the requested language. -->
             <textField>
-                <reportElement x="235" y="271" width="98" height="13" uuid="d1f1b111-1111-4111-8111-111111111127">
+                <reportElement x="255" y="291" width="98" height="13" uuid="d1f1b111-1111-4111-8111-111111111127">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
                 </reportElement>
                 <textElement><font fontName="Noto Sans" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{otherDonationsLabel}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="235" y="271" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111128">
+                <reportElement x="255" y="291" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111128">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
                 </reportElement>
                 <textElement><font fontName="Noto Sans Sinhala" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{otherDonationsLabel}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="235" y="271" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111129">
+                <reportElement x="255" y="291" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111129">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
                 </reportElement>
                 <textElement><font fontName="Noto Sans Tamil" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{otherDonationsLabel}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="235" y="285" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111130"/>
+                <reportElement x="255" y="305" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111130"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{otherDonationsAmount}]]></textFieldExpression>
             </textField>
 
             <!-- Total, right side, right below Other Donations -->
             <textField>
-                <reportElement x="235" y="306" width="98" height="13" uuid="d1f1b111-1111-4111-8111-111111111131">
+                <reportElement x="255" y="326" width="98" height="13" uuid="d1f1b111-1111-4111-8111-111111111131">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
                 </reportElement>
                 <textElement><font fontName="Noto Sans" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="235" y="306" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111132">
+                <reportElement x="255" y="326" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111132">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
                 </reportElement>
                 <textElement><font fontName="Noto Sans Sinhala" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="235" y="306" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111133">
+                <reportElement x="255" y="326" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111133">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
                 </reportElement>
                 <textElement><font fontName="Noto Sans Tamil" size="8"/></textElement>
                 <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="235" y="320" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111134"/>
+                <reportElement x="255" y="340" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111134"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{totalAmount}]]></textFieldExpression>
             </textField>
 
             <!-- Footer disclaimer bar, original design pixels, unscaled (native aspect ratio) -->
             <image scaleImage="FillFrame">
-                <reportElement x="1" y="342" width="340" height="22" uuid="d1f1b111-1111-4111-8111-111111111119"/>
+                <reportElement x="21" y="362" width="340" height="22" uuid="d1f1b111-1111-4111-8111-111111111119"/>
                 <imageExpression><![CDATA[$P{backgroundFooterBarImage}]]></imageExpression>
             </image>
 
             <!-- Bottom white space: Receipt No / Printed At / Issued By, value under label -->
             <staticText>
-                <reportElement x="9" y="367" width="108" height="12" uuid="d1f1b111-1111-4111-8111-111111111120"/>
+                <reportElement x="29" y="387" width="108" height="12" uuid="d1f1b111-1111-4111-8111-111111111120"/>
                 <textElement><font fontName="Noto Sans" size="7"/></textElement>
                 <text><![CDATA[Receipt No:]]></text>
             </staticText>
             <textField textAdjust="ScaleFont">
-                <reportElement x="9" y="378" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111121"/>
+                <reportElement x="29" y="398" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111121"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{receiptNo}]]></textFieldExpression>
             </textField>
 
             <staticText>
-                <reportElement x="121" y="367" width="108" height="12" uuid="d1f1b111-1111-4111-8111-111111111122"/>
+                <reportElement x="141" y="387" width="108" height="12" uuid="d1f1b111-1111-4111-8111-111111111122"/>
                 <textElement><font fontName="Noto Sans" size="7"/></textElement>
                 <text><![CDATA[Printed At:]]></text>
             </staticText>
             <textField textAdjust="ScaleFont">
-                <reportElement x="121" y="378" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111123"/>
+                <reportElement x="141" y="398" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111123"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{printedAt}]]></textFieldExpression>
             </textField>
 
             <staticText>
-                <reportElement x="233" y="367" width="100" height="12" uuid="d1f1b111-1111-4111-8111-111111111124"/>
+                <reportElement x="253" y="387" width="100" height="12" uuid="d1f1b111-1111-4111-8111-111111111124"/>
                 <textElement><font fontName="Noto Sans" size="7"/></textElement>
                 <text><![CDATA[Issued By:]]></text>
             </staticText>
             <textField textAdjust="ScaleFont">
-                <reportElement x="233" y="378" width="100" height="18" uuid="d1f1b111-1111-4111-8111-111111111125"/>
+                <reportElement x="253" y="398" width="100" height="18" uuid="d1f1b111-1111-4111-8111-111111111125"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{issuedBy}]]></textFieldExpression>
             </textField>
+
+            <!-- Physical receipt-pad framing: outer rounded card border and ring-binder
+                 hole-punch circles, sitting in the 20pt blank-paper margin around the card
+                 (matching the source pad design). Drawn as vector shapes (not baked into the
+                 background raster) so they stay crisp at any resolution, and last in the band
+                 so they paint on top of everything else. -->
+            <rectangle radius="20">
+                <reportElement x="2" y="2" width="378" height="432" mode="Transparent" uuid="d1f1b111-1111-4111-8111-111111111140"/>
+                <graphicElement>
+                    <pen lineWidth="2.0" lineColor="#000000"/>
+                </graphicElement>
+            </rectangle>
+
+            <ellipse>
+                <reportElement x="3" y="21" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111141"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="3" y="84" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111142"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="3" y="148" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111143"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="3" y="211" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111144"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="3" y="274" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111145"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="3" y="338" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111146"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="3" y="401" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111147"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+
+            <ellipse>
+                <reportElement x="365" y="21" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111148"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="365" y="84" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111149"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="365" y="148" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111150"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="365" y="211" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111151"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="365" y="274" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111152"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="365" y="338" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111153"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
+            <ellipse>
+                <reportElement x="365" y="401" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111154"/>
+                <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>
+            </ellipse>
         </band>
     </detail>
 </jasperReport>

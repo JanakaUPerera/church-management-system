@@ -55,8 +55,8 @@ public class ReceiptPdfGenerator {
     private static final String BACKGROUND_TOP_IMAGE_PATH = "/reports/receipt_background_top.png";
     private static final String BACKGROUND_FOOTER_BAR_IMAGE_PATH = "/reports/receipt_background_footer_bar.png";
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
-    private static final int PAGE_WIDTH = 342;
-    private static final int PAGE_HEIGHT = 396;
+    private static final int PAGE_WIDTH = 382;
+    private static final int PAGE_HEIGHT = 436;
     private static final float PREVIEW_ZOOM = 3f;
 
     private final ReceiptRepository receiptRepository;
