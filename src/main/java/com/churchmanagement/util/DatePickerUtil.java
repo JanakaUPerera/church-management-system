@@ -61,6 +61,38 @@ public final class DatePickerUtil {
         });
     }
 
+    public static void enableDayOfWeekOnly(DatePicker datePicker, DayOfWeek allowedDay) {
+        applySystemDateFormat(datePicker);
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setDisable(empty || date.getDayOfWeek() != allowedDay);
+            }
+        });
+        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && newValue.getDayOfWeek() != allowedDay) {
+                datePicker.setValue(oldValue);
+            }
+        });
+    }
+
+    public static void enableDayOfWeekOnlyAndDisableFutureDates(DatePicker datePicker, DayOfWeek allowedDay) {
+        applySystemDateFormat(datePicker);
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setDisable(empty || date.getDayOfWeek() != allowedDay || date.isAfter(LocalDate.now()));
+            }
+        });
+        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && (newValue.getDayOfWeek() != allowedDay || newValue.isAfter(LocalDate.now()))) {
+                datePicker.setValue(oldValue);
+            }
+        });
+    }
+
     public static void restrictToRange(DatePicker datePicker, Supplier<LocalDate> minDate, Supplier<LocalDate> maxDate) {
         applySystemDateFormat(datePicker);
         datePicker.setDayCellFactory(picker -> new DateCell() {
