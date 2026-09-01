@@ -13,6 +13,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.ReceiptPrintService;
 import com.churchmanagement.service.ReceiptService;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.ButtonIconUtil;
@@ -50,6 +51,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -116,7 +118,7 @@ public class ReceiptEntryController {
         configureButtonIcons();
         configureControls();
         loadActiveChurches();
-        weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
+        weekStartDatePicker.setValue(WeekUtil.currentIdentifier(LocalDate.now(), resolveIdentifierDay()));
         updateWeekState();
         loadPendingCorrectionIfAvailable();
     }
@@ -162,9 +164,10 @@ public class ReceiptEntryController {
 
     private void configureControls() {
         ComboBoxUtil.makeChurchSearchable(churchComboBox, activeChurches);
-        DatePickerUtil.enableMondaysOnly(weekStartDatePicker);
-        DatePickerUtil.restrictToRange(churchServiceDatePicker, weekStartDatePicker::getValue,
-                () -> WeekUtil.getSundayForMonday(weekStartDatePicker.getValue()));
+        DatePickerUtil.enableDayOfWeekOnly(weekStartDatePicker, resolveIdentifierDay());
+        DatePickerUtil.restrictToRange(churchServiceDatePicker,
+                () -> WeekUtil.weekStartFor(weekStartDatePicker.getValue()),
+                weekStartDatePicker::getValue);
         churchComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateSelectedRegion());
         weekStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> updateWeekState());
         offertoryAmountField.textProperty().addListener((observable, oldValue, newValue) -> updateTotalAmount());
@@ -193,18 +196,23 @@ public class ReceiptEntryController {
         regionLabel.setText(church == null ? "-" : church.getRegionCode() + " - " + church.getRegionName());
     }
 
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(
+                SystemConfigurationCache.getInstance().getString("receipt.week.identifier.day"));
+    }
+
     private void updateWeekState() {
-        LocalDate start = weekStartDatePicker.getValue();
-        LocalDate end = WeekUtil.getSundayForMonday(start);
-        weekEndDateLabel.setText(dateTimeFormatter.formatDate(end));
+        LocalDate identifier = weekStartDatePicker.getValue();
+        LocalDate start = WeekUtil.weekStartFor(identifier);
+        weekEndDateLabel.setText(dateTimeFormatter.formatDate(start));
 
         LocalDate serviceDate = churchServiceDatePicker.getValue();
-        if (start != null && end != null
-                && (serviceDate == null || serviceDate.isBefore(start) || serviceDate.isAfter(end))) {
-            churchServiceDatePicker.setValue(end);
+        if (start != null && identifier != null
+                && (serviceDate == null || serviceDate.isBefore(start) || serviceDate.isAfter(identifier))) {
+            churchServiceDatePicker.setValue(identifier);
         }
 
-        boolean late = start != null && WeekUtil.isBackWeek(start, LocalDate.now());
+        boolean late = identifier != null && WeekUtil.isBackWeek(identifier, LocalDate.now(), resolveIdentifierDay());
         lateSubmissionLabel.setText(late ? "YES" : "NO");
         lateSubmissionLabel.getStyleClass().removeAll("status-active", "status-inactive");
         lateSubmissionLabel.getStyleClass().add(late ? "status-inactive" : "status-active");
@@ -221,10 +229,10 @@ public class ReceiptEntryController {
     private CreateReceiptRequest buildRequest() {
         CreateReceiptRequest request = new CreateReceiptRequest();
         Church selectedChurch = churchComboBox.getValue();
-        LocalDate weekStart = weekStartDatePicker.getValue();
+        LocalDate weekIdentifier = weekStartDatePicker.getValue();
         request.setChurchId(selectedChurch == null ? null : selectedChurch.getId());
-        request.setWeekStartDate(weekStart);
-        request.setWeekEndDate(WeekUtil.getSundayForMonday(weekStart));
+        request.setWeekEndDate(weekIdentifier);
+        request.setWeekStartDate(WeekUtil.weekStartFor(weekIdentifier));
         request.setChurchServiceDate(churchServiceDatePicker.getValue());
         request.setSubmittedByName(submittedByNameField.getText());
         request.setLateSubmissionReason(lateSubmissionReasonArea.getText());
@@ -257,7 +265,7 @@ public class ReceiptEntryController {
         correctedFromReceiptId = receipt.getId();
         correctedFromValueLabel.setText(receipt.getReceiptNo());
         selectChurch(receipt);
-        weekStartDatePicker.setValue(receipt.getWeekStartDate());
+        weekStartDatePicker.setValue(receipt.getWeekEndDate());
         churchServiceDatePicker.setValue(receipt.getChurchServiceDate());
         submittedByNameField.setText(receipt.getSubmittedByName());
         lateSubmissionReasonArea.setText(receipt.getLateSubmissionReason());
@@ -400,7 +408,7 @@ public class ReceiptEntryController {
         }
         container.getChildren().addAll(
                 itemGrid(request, total),
-                summaryRow("Late submission:", WeekUtil.isBackWeek(request.getWeekStartDate(), LocalDate.now()) ? "YES" : "NO")
+                summaryRow("Late submission:", WeekUtil.isBackWeek(request.getWeekEndDate(), LocalDate.now(), resolveIdentifierDay()) ? "YES" : "NO")
         );
         return container;
     }
@@ -471,7 +479,7 @@ public class ReceiptEntryController {
     private void clearForm() {
         churchComboBox.getSelectionModel().clearSelection();
         updateSelectedRegion();
-        weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
+        weekStartDatePicker.setValue(WeekUtil.currentIdentifier(LocalDate.now(), resolveIdentifierDay()));
         submittedByNameField.clear();
         lateSubmissionReasonArea.clear();
         correctedFromReceiptId = null;
