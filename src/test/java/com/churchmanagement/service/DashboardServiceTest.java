@@ -9,6 +9,7 @@ import com.churchmanagement.dto.dashboard.RegionSubmissionProgressDto;
 import com.churchmanagement.dto.dashboard.TrendingDashboardDto;
 import com.churchmanagement.dto.dashboard.WeeklyDashboardDto;
 import com.churchmanagement.repository.DashboardRepository;
+import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import org.junit.jupiter.api.AfterEach;
@@ -31,13 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DashboardServiceTest {
     private FakeDashboardRepository dashboardRepository;
     private FakeActivityLogService activityLogService;
+    private FakeSystemConfigurationCache configurationCache;
     private DashboardService dashboardService;
 
     @BeforeEach
     void setUp() {
         dashboardRepository = new FakeDashboardRepository();
         activityLogService = new FakeActivityLogService();
-        dashboardService = new DashboardService(dashboardRepository, activityLogService, fixedClock());
+        configurationCache = new FakeSystemConfigurationCache();
+        dashboardService = new DashboardService(dashboardRepository, activityLogService, fixedClock(), configurationCache);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("receipt.view", "report.view", "sms.logs.view", "backup.view")));
     }
@@ -480,6 +483,19 @@ class DashboardServiceTest {
         @Override
         public void logDashboardTrendingViewed(Long userId) {
             lastAction = DASHBOARD_TRENDING_VIEWED;
+        }
+    }
+
+    private static class FakeSystemConfigurationCache extends SystemConfigurationCache {
+        private final java.util.Map<String, String> values = new java.util.HashMap<>();
+
+        private FakeSystemConfigurationCache() {
+            super(new SystemSettingRepository((DataSource) null));
+        }
+
+        @Override
+        public String getString(String key) {
+            return values.get(key);
         }
     }
 
