@@ -31,33 +31,53 @@ class ReceiptPdfGeneratorTest {
         assertEquals("CH001", parameters.get("number"));
         assertEquals("500.00", parameters.get("titheAmount"));
         assertEquals("250.00", parameters.get("offeringsAmount"));
-        assertEquals("-", parameters.get("otherDonationsAmount"));
-        assertEquals("750.00", parameters.get("totalAmount"));
+        assertEquals("2026-Jan-12   Total Amount: 750.00", parameters.get("dateReceived"));
         assertEquals("REC26000001", parameters.get("receiptNo"));
         assertEquals("Admin", parameters.get("issuedBy"));
         assertEquals("", parameters.get("cancelledWatermark"));
     }
 
     @Test
-    void generatePdfParametersUseSingleLanguageLabelMatchingReceiptLanguage() {
+    void generatePdfParametersFoldOtherDonationsIntoOfferingsRowAsCompactAddition() {
+        ReceiptResponseDto withOtherDonations = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH);
+        withOtherDonations.setItems(List.of(
+                new ReceiptItemDto(CollectionType.TITHES, new BigDecimal("500.00"), null),
+                new ReceiptItemDto(CollectionType.OFFERTORY, new BigDecimal("250.00"), null),
+                new ReceiptItemDto(CollectionType.OTHER_DONATIONS, new BigDecimal("100.00"), null)
+        ));
+
+        // Purely numeric ("250.00 + 100.00") rather than spelling out the Other Donations label:
+        // the Offerings column is only ~124pt wide, too narrow in every language - especially the
+        // longer Sinhala/Tamil translations - to fit a label without pushing the amount off the
+        // edge, so it doesn't vary by language.
+        assertEquals("250.00 + 100.00", generator.parameters(withOtherDonations).get("offeringsAmount"));
+
+        withOtherDonations.setReceiptLanguage(ReceiptLanguage.SINHALA);
+        assertEquals("250.00 + 100.00", generator.parameters(withOtherDonations).get("offeringsAmount"));
+
+        withOtherDonations.setReceiptLanguage(ReceiptLanguage.TAMIL);
+        assertEquals("250.00 + 100.00", generator.parameters(withOtherDonations).get("offeringsAmount"));
+    }
+
+    @Test
+    void generatePdfParametersOmitOtherDonationsFromOfferingsRowWhenNotPresent() {
+        Map<String, Object> parameters = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
+
+        assertEquals("250.00", parameters.get("offeringsAmount"));
+    }
+
+    @Test
+    void generatePdfParametersFoldTotalIntoDateReceivedRowInReceiptLanguage() {
         Map<String, Object> english = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
-        assertEquals("Other Donations", english.get("otherDonationsLabel"));
-        assertEquals("Total Amount", english.get("totalLabel"));
-        assertEquals(Boolean.TRUE, english.get("receiptLanguageIsEnglish"));
-        assertEquals(Boolean.FALSE, english.get("receiptLanguageIsSinhala"));
-        assertEquals(Boolean.FALSE, english.get("receiptLanguageIsTamil"));
+        assertEquals("2026-Jan-12   Total Amount: 750.00", english.get("dateReceived"));
 
-        Map<String, Object> sinhala = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.SINHALA));
-        assertEquals("වෙනත් පරිත්‍යාග", sinhala.get("otherDonationsLabel"));
-        assertEquals("මුළු මුදල", sinhala.get("totalLabel"));
-        assertEquals(Boolean.TRUE, sinhala.get("receiptLanguageIsSinhala"));
-        assertEquals(Boolean.FALSE, sinhala.get("receiptLanguageIsEnglish"));
+        ReceiptResponseDto sinhalaReceipt = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.SINHALA);
+        Map<String, Object> sinhala = generator.parameters(sinhalaReceipt);
+        assertEquals("2026-Jan-12   මුළු මුදල: 750.00", sinhala.get("dateReceived"));
 
-        Map<String, Object> tamil = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.TAMIL));
-        assertEquals("மற்ற நன்கொடைகள்", tamil.get("otherDonationsLabel"));
-        assertEquals("மொத்த தொகை", tamil.get("totalLabel"));
-        assertEquals(Boolean.TRUE, tamil.get("receiptLanguageIsTamil"));
-        assertEquals(Boolean.FALSE, tamil.get("receiptLanguageIsEnglish"));
+        ReceiptResponseDto tamilReceipt = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.TAMIL);
+        Map<String, Object> tamil = generator.parameters(tamilReceipt);
+        assertEquals("2026-Jan-12   மொத்த தொகை: 750.00", tamil.get("dateReceived"));
     }
 
     @Test

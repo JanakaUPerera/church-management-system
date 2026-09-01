@@ -14,10 +14,6 @@
     <parameter name="churchServiceDate" class="java.lang.String"/>
     <parameter name="churchServiceWeek" class="java.lang.String"/>
     <parameter name="dateReceived" class="java.lang.String"/>
-    <parameter name="otherDonationsLabel" class="java.lang.String"/>
-    <parameter name="otherDonationsAmount" class="java.lang.String"/>
-    <parameter name="totalLabel" class="java.lang.String"/>
-    <parameter name="totalAmount" class="java.lang.String"/>
     <parameter name="receiptLanguageIsSinhala" class="java.lang.Boolean"/>
     <parameter name="receiptLanguageIsTamil" class="java.lang.Boolean"/>
     <parameter name="receiptLanguageIsEnglish" class="java.lang.Boolean"/>
@@ -51,23 +47,30 @@
                 <textFieldExpression><![CDATA[$P{receivedFrom}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="142" y="167" width="65" height="12" uuid="d1f1b111-1111-4111-8111-111111111103"/>
-                <textElement><font fontName="Noto Sans" size="8"/></textElement>
+                <reportElement x="142" y="162" width="65" height="18" uuid="d1f1b111-1111-4111-8111-111111111103"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{branchChurch}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="255" y="168" width="98" height="12" uuid="d1f1b111-1111-4111-8111-111111111104"/>
-                <textElement><font fontName="Noto Sans" size="8"/></textElement>
+                <reportElement x="255" y="163" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111104"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{number}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="142" y="199" width="65" height="12" uuid="d1f1b111-1111-4111-8111-111111111105"/>
-                <textElement><font fontName="Noto Sans" size="8"/></textElement>
+                <reportElement x="142" y="194" width="65" height="18" uuid="d1f1b111-1111-4111-8111-111111111105"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{titheAmount}]]></textFieldExpression>
             </textField>
+            <!-- Offerings value: on receipts with an Other Donations amount, this string also
+                 carries " + <amount>" tacked onto the end (computed in ReceiptPdfGenerator)
+                 rather than adding a separate field the pad's original design doesn't have.
+                 Purely numeric (no translated label - this column is too narrow, ~124pt, to
+                 also spell out the Other Donations label, especially the longer Sinhala/Tamil
+                 translations, without pushing the amount itself off the edge), so one field
+                 works for every language. -->
             <textField textAdjust="ScaleFont">
-                <reportElement x="255" y="200" width="98" height="12" uuid="d1f1b111-1111-4111-8111-111111111106"/>
-                <textElement><font fontName="Noto Sans" size="8"/></textElement>
+                <reportElement x="255" y="195" width="124" height="18" uuid="d1f1b111-1111-4111-8111-111111111106"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{offeringsAmount}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
@@ -76,13 +79,35 @@
                 <textFieldExpression><![CDATA[$P{churchServiceDate}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
-                <reportElement x="142" y="248" width="205" height="13" uuid="d1f1b111-1111-4111-8111-111111111126"/>
-                <textElement><font fontName="Noto Sans" size="9"/></textElement>
+                <reportElement x="142" y="248" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111126"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{churchServiceWeek}]]></textFieldExpression>
             </textField>
+            <!-- Date received value: this string also carries "   <Total label>: <amount>"
+                 tacked onto the end (computed in ReceiptPdfGenerator) so Total always shows
+                 without adding a field the pad's original design doesn't have. Widened well
+                 past the original 108pt column since nothing else occupies this row past that
+                 point. Three font variants, one per language, so the tacked-on label renders in
+                 the right script; only one prints. -->
             <textField textAdjust="ScaleFont">
-                <reportElement x="142" y="264" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111108"/>
+                <reportElement x="142" y="264" width="220" height="18" uuid="d1f1b111-1111-4111-8111-111111111108">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
+                </reportElement>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="142" y="264" width="220" height="18" uuid="d1f1b111-1111-4111-8111-111111111162">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Sinhala" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="142" y="264" width="220" height="18" uuid="d1f1b111-1111-4111-8111-111111111163">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Tamil" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
             </textField>
 
@@ -93,64 +118,6 @@
                 <textFieldExpression><![CDATA[$P{cancelledWatermark}]]></textFieldExpression>
             </textField>
 
-            <!-- Other Donations, right side, beside/after Date Received. Single label matching the
-                 church's own receipt language (one language is enough) - three font variants of
-                 the same label text, only one prints, matching the requested language. -->
-            <textField>
-                <reportElement x="255" y="291" width="98" height="13" uuid="d1f1b111-1111-4111-8111-111111111127">
-                    <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
-                </reportElement>
-                <textElement><font fontName="Noto Sans" size="8"/></textElement>
-                <textFieldExpression><![CDATA[$P{otherDonationsLabel}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="255" y="291" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111128">
-                    <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
-                </reportElement>
-                <textElement><font fontName="Noto Sans Sinhala" size="8"/></textElement>
-                <textFieldExpression><![CDATA[$P{otherDonationsLabel}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="255" y="291" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111129">
-                    <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
-                </reportElement>
-                <textElement><font fontName="Noto Sans Tamil" size="8"/></textElement>
-                <textFieldExpression><![CDATA[$P{otherDonationsLabel}]]></textFieldExpression>
-            </textField>
-            <textField textAdjust="ScaleFont">
-                <reportElement x="255" y="305" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111130"/>
-                <textElement><font fontName="Noto Sans" size="12"/></textElement>
-                <textFieldExpression><![CDATA[$P{otherDonationsAmount}]]></textFieldExpression>
-            </textField>
-
-            <!-- Total, right side, right below Other Donations -->
-            <textField>
-                <reportElement x="255" y="326" width="98" height="13" uuid="d1f1b111-1111-4111-8111-111111111131">
-                    <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
-                </reportElement>
-                <textElement><font fontName="Noto Sans" size="8"/></textElement>
-                <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="255" y="326" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111132">
-                    <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
-                </reportElement>
-                <textElement><font fontName="Noto Sans Sinhala" size="8"/></textElement>
-                <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="255" y="326" width="98" height="14" uuid="d1f1b111-1111-4111-8111-111111111133">
-                    <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
-                </reportElement>
-                <textElement><font fontName="Noto Sans Tamil" size="8"/></textElement>
-                <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
-            </textField>
-            <textField textAdjust="ScaleFont">
-                <reportElement x="255" y="340" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111134"/>
-                <textElement><font fontName="Noto Sans" size="12"/></textElement>
-                <textFieldExpression><![CDATA[$P{totalAmount}]]></textFieldExpression>
-            </textField>
-
             <!-- Footer disclaimer bar, original design pixels, unscaled (native aspect ratio) -->
             <image scaleImage="FillFrame">
                 <reportElement x="21" y="362" width="340" height="22" uuid="d1f1b111-1111-4111-8111-111111111119"/>
@@ -159,8 +126,8 @@
 
             <!-- Bottom white space: Receipt No / Printed At / Issued By, value under label -->
             <staticText>
-                <reportElement x="29" y="387" width="108" height="12" uuid="d1f1b111-1111-4111-8111-111111111120"/>
-                <textElement><font fontName="Noto Sans" size="7"/></textElement>
+                <reportElement x="29" y="387" width="108" height="16" uuid="d1f1b111-1111-4111-8111-111111111120"/>
+                <textElement><font fontName="Noto Sans" size="10"/></textElement>
                 <text><![CDATA[Receipt No:]]></text>
             </staticText>
             <textField textAdjust="ScaleFont">
@@ -170,8 +137,8 @@
             </textField>
 
             <staticText>
-                <reportElement x="141" y="387" width="108" height="12" uuid="d1f1b111-1111-4111-8111-111111111122"/>
-                <textElement><font fontName="Noto Sans" size="7"/></textElement>
+                <reportElement x="141" y="387" width="108" height="16" uuid="d1f1b111-1111-4111-8111-111111111122"/>
+                <textElement><font fontName="Noto Sans" size="10"/></textElement>
                 <text><![CDATA[Printed At:]]></text>
             </staticText>
             <textField textAdjust="ScaleFont">
@@ -181,8 +148,8 @@
             </textField>
 
             <staticText>
-                <reportElement x="253" y="387" width="100" height="12" uuid="d1f1b111-1111-4111-8111-111111111124"/>
-                <textElement><font fontName="Noto Sans" size="7"/></textElement>
+                <reportElement x="253" y="387" width="100" height="16" uuid="d1f1b111-1111-4111-8111-111111111124"/>
+                <textElement><font fontName="Noto Sans" size="10"/></textElement>
                 <text><![CDATA[Issued By:]]></text>
             </staticText>
             <textField textAdjust="ScaleFont">
@@ -191,18 +158,11 @@
                 <textFieldExpression><![CDATA[$P{issuedBy}]]></textFieldExpression>
             </textField>
 
-            <!-- Physical receipt-pad framing: outer rounded card border and ring-binder
-                 hole-punch circles, sitting in the 20pt blank-paper margin around the card
-                 (matching the source pad design). Drawn as vector shapes (not baked into the
+            <!-- Physical receipt-pad framing: ring-binder hole-punch circles, sitting in the
+                 20pt blank-paper margin around the card (matching the source pad design; no
+                 outer border - just the holes). Drawn as vector shapes (not baked into the
                  background raster) so they stay crisp at any resolution, and last in the band
                  so they paint on top of everything else. -->
-            <rectangle radius="20">
-                <reportElement x="2" y="2" width="378" height="432" mode="Transparent" uuid="d1f1b111-1111-4111-8111-111111111140"/>
-                <graphicElement>
-                    <pen lineWidth="2.0" lineColor="#000000"/>
-                </graphicElement>
-            </rectangle>
-
             <ellipse>
                 <reportElement x="3" y="21" width="14" height="14" mode="Opaque" backcolor="#FFFFFF" uuid="d1f1b111-1111-4111-8111-111111111141"/>
                 <graphicElement><pen lineWidth="1.0" lineColor="#000000"/></graphicElement>

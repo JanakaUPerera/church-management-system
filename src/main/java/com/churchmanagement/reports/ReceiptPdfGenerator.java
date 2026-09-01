@@ -235,19 +235,32 @@ public class ReceiptPdfGenerator {
         parameters.put("branchChurch", truncate(receipt.getChurchName(), 14));
         parameters.put("number", nullToDash(receipt.getChurchCode()));
         parameters.put("titheAmount", amountFor(receipt, CollectionType.TITHES));
-        parameters.put("offeringsAmount", amountFor(receipt, CollectionType.OFFERTORY));
         parameters.put("churchServiceDate", receipt.getChurchServiceDate() == null
                 ? "-" : dateTimeFormatter.formatDate(receipt.getChurchServiceDate()));
         parameters.put("churchServiceWeek", "(Week: " + dateTimeFormatter.formatDate(receipt.getWeekStartDate())
                 + " - " + dateTimeFormatter.formatDate(receipt.getWeekEndDate()) + ")");
-        parameters.put("dateReceived", receipt.getReceiptDateTime() == null
-                ? "-" : dateTimeFormatter.formatDate(receipt.getReceiptDateTime().toLocalDate()));
 
+        // Other Donations and Total have no field of their own on the physical pad, so rather
+        // than add a new section below it, they ride along on the two rows that already exist.
+        // Total (roomy row, full-width label fits in every language) is tacked onto the end of
+        // the Date Received row as "<label>: <amount>". Other Donations (only when the receipt
+        // actually has one) rides the Offerings row instead - that column is only ~124pt wide,
+        // not enough to also spell out the (long, in Sinhala/Tamil) translated label without the
+        // amount itself getting clipped off the end, so it's shown as a plain "+ <amount>"
+        // addition instead: unambiguous in context (the Offerings row), and the figure - the
+        // part that actually matters - always stays fully visible.
         ReceiptLanguage language = receipt.getReceiptLanguage();
-        parameters.put("otherDonationsLabel", translationService.label("other_donations", language));
-        parameters.put("otherDonationsAmount", amountFor(receipt, CollectionType.OTHER_DONATIONS));
-        parameters.put("totalLabel", translationService.label("total_amount", language));
-        parameters.put("totalAmount", formatAmount(receipt.getTotalAmount()));
+        String otherDonationsAmount = amountFor(receipt, CollectionType.OTHER_DONATIONS);
+        String offeringsAmount = amountFor(receipt, CollectionType.OFFERTORY);
+        parameters.put("offeringsAmount", "-".equals(otherDonationsAmount)
+                ? offeringsAmount
+                : offeringsAmount + " + " + otherDonationsAmount);
+
+        String dateReceived = receipt.getReceiptDateTime() == null
+                ? "-" : dateTimeFormatter.formatDate(receipt.getReceiptDateTime().toLocalDate());
+        parameters.put("dateReceived", dateReceived + "   " + translationService.label("total_amount", language)
+                + ": " + formatAmount(receipt.getTotalAmount()));
+
         parameters.put("receiptLanguageIsSinhala", language == ReceiptLanguage.SINHALA);
         parameters.put("receiptLanguageIsTamil", language == ReceiptLanguage.TAMIL);
         parameters.put("receiptLanguageIsEnglish", language != ReceiptLanguage.SINHALA && language != ReceiptLanguage.TAMIL);
