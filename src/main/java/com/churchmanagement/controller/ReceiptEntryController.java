@@ -46,9 +46,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-import java.awt.Desktop;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.DayOfWeek;
@@ -551,14 +549,12 @@ public class ReceiptEntryController {
         alert.setTitle("Receipt Saved");
         alert.setHeaderText("Receipt saved successfully");
         alert.setContentText(savedReceiptMessage(receipt));
-        ButtonType viewPdfButton = new ButtonType("View PDF", ButtonBar.ButtonData.LEFT);
         ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
         ButtonType previewButton = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
         List<ButtonType> buttonTypes = new ArrayList<>();
         if (ReceiptPdfGenerator.PREVIEW_FEATURE_ENABLED) {
             buttonTypes.add(previewButton);
         }
-        buttonTypes.add(viewPdfButton);
         if (canPrintOriginal(receipt)) {
             buttonTypes.add(printOriginalButton);
         }
@@ -568,8 +564,6 @@ public class ReceiptEntryController {
         Optional<ButtonType> result = alert.showAndWait();
         if (result.filter(previewButton::equals).isPresent()) {
             previewReceipt(receipt);
-        } else if (result.filter(viewPdfButton::equals).isPresent()) {
-            openPdf(receipt);
         } else if (result.filter(printOriginalButton::equals).isPresent()) {
             printOriginal(receipt);
         }
@@ -618,23 +612,6 @@ public class ReceiptEntryController {
                 && receipt != null
                 && receipt.getStatus() == ReceiptStatus.ACTIVE
                 && !receipt.isOriginalPrinted();
-    }
-
-    private void openPdf(ReceiptResponseDto receipt) {
-        ProcessingDialog.run("Open PDF", "Preparing PDF...",
-                () -> {
-            String path = receipt.getPdfFilePath();
-            if (path == null || path.isBlank()) {
-                path = receiptPrintService.generatePdf(receipt.getId());
-            }
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new ReceiptPrintService.ReceiptPrintException(
-                        "PDF was generated, but this computer cannot open it automatically.");
-            }
-            Desktop.getDesktop().open(new File(path));
-                },
-                () -> setMessage("PDF opened."),
-                this::showProcessingError);
     }
 
     private void printOriginal(ReceiptResponseDto receipt) {
