@@ -57,6 +57,15 @@ class WeekUtilTest {
     }
 
     @Test
+    void isWeekStartDaySupportsSundayIdentifierWraparound() {
+        LocalDate monday = LocalDate.of(2026, 5, 18);
+        LocalDate sunday = LocalDate.of(2026, 5, 24);
+
+        assertTrue(WeekUtil.isWeekStartDay(monday, DayOfWeek.SUNDAY));
+        assertFalse(WeekUtil.isWeekStartDay(sunday, DayOfWeek.SUNDAY));
+    }
+
+    @Test
     void isBackWeekIsTrueOnlyBeforeTheCurrentIdentifier() {
         LocalDate today = LocalDate.of(2026, 5, 18);
 
