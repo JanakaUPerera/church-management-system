@@ -75,6 +75,18 @@ public final class DatePickerUtil {
                 datePicker.setValue(oldValue);
             }
         });
+        // When opened with no selection yet, jump the calendar to the enabled range instead of
+        // leaving it on today's month (which may have no enabled days in it at all).
+        datePicker.setOnShowing(event -> {
+            if (datePicker.getValue() != null) {
+                return;
+            }
+            LocalDate target = maxDate.get() != null ? maxDate.get() : minDate.get();
+            if (target != null) {
+                datePicker.setValue(target);
+                datePicker.setValue(null);
+            }
+        });
     }
 
     private static boolean isOutsideRange(LocalDate date, LocalDate minDate, LocalDate maxDate) {
