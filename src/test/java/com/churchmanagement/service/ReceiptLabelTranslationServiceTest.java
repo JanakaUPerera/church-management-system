@@ -24,6 +24,20 @@ class ReceiptLabelTranslationServiceTest {
     }
 
     @Test
+    void othersLabelIsTranslatedPerLanguage() {
+        assertEquals("Others", service.label("others", ReceiptLanguage.ENGLISH));
+        assertEquals("වෙනත්", service.label("others", ReceiptLanguage.SINHALA));
+        assertEquals("மற்றவை", service.label("others", ReceiptLanguage.TAMIL));
+    }
+
+    @Test
+    void totalLabelIsTranslatedPerLanguage() {
+        assertEquals("Total", service.label("total", ReceiptLanguage.ENGLISH));
+        assertEquals("එකතුව", service.label("total", ReceiptLanguage.SINHALA));
+        assertEquals("மொத்தம்", service.label("total", ReceiptLanguage.TAMIL));
+    }
+
+    @Test
     void missingKeyFallsBackToEnglishKeyValue() {
         assertEquals("unknown_key", service.label("unknown_key", ReceiptLanguage.SINHALA));
     }
