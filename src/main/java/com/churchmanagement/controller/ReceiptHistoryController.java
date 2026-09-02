@@ -1028,12 +1028,12 @@ public class ReceiptHistoryController {
             printButton.getStyleClass().add("table-action-button");
             smsButton.getStyleClass().add("table-action-button");
             ButtonIconUtil.applyTableActionIcon(viewButton, "fas-eye", "View receipt");
-            ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Export PDF");
+            ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Preview PDF");
             ButtonIconUtil.applyTableActionIcon(printButton, "fas-print", "Print original");
             ButtonIconUtil.applyTableActionIcon(smsButton, "fas-paper-plane", "Send SMS");
             ButtonIconUtil.applyTableActionIcon(recreateButton, "fas-redo", "Re-create receipt");
             viewButton.setOnAction(event -> showReceiptDetailsDialog(getTableView().getItems().get(getIndex())));
-            pdfButton.setOnAction(event -> exportPdf(getTableView().getItems().get(getIndex())));
+            pdfButton.setOnAction(event -> previewPdf(getTableView().getItems().get(getIndex())));
             printButton.setOnAction(event -> printOriginal(getTableView().getItems().get(getIndex())));
             smsButton.setOnAction(event -> sendSms(getTableView().getItems().get(getIndex())));
             recreateButton.setOnAction(event -> recreateReceipt(getTableView().getItems().get(getIndex())));
