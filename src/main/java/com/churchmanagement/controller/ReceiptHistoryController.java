@@ -64,6 +64,7 @@ import javafx.scene.layout.VBox;
 import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.DayOfWeek;
@@ -404,14 +405,16 @@ public class ReceiptHistoryController {
             dialog.setHeaderText("Receipt " + details.getReceiptNo());
             ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
             ButtonType previewButton = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
-            ButtonType openPdfButton = new ButtonType("Open PDF", ButtonBar.ButtonData.LEFT);
+            ButtonType previewPdfButton = new ButtonType("Preview PDF", ButtonBar.ButtonData.LEFT);
+            ButtonType exportPdfButton = new ButtonType("Export PDF", ButtonBar.ButtonData.LEFT);
             ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
             ButtonType cancelReceiptButton = new ButtonType("Cancel Receipt", ButtonBar.ButtonData.LEFT);
             ButtonType recreateButton = new ButtonType("Re-create Receipt", ButtonBar.ButtonData.LEFT);
             if (ReceiptPdfGenerator.PREVIEW_FEATURE_ENABLED) {
                 dialog.getDialogPane().getButtonTypes().add(previewButton);
+                dialog.getDialogPane().getButtonTypes().add(previewPdfButton);
             }
-            dialog.getDialogPane().getButtonTypes().add(openPdfButton);
+            dialog.getDialogPane().getButtonTypes().add(exportPdfButton);
             if (canPrintOriginal(details)) {
                 dialog.getDialogPane().getButtonTypes().add(printOriginalButton);
             }
@@ -428,8 +431,10 @@ public class ReceiptHistoryController {
             Optional<ButtonType> result = dialog.showAndWait();
             if (result.filter(previewButton::equals).isPresent()) {
                 previewReceipt(details);
-            } else if (result.filter(openPdfButton::equals).isPresent()) {
-                openPdf(details);
+            } else if (result.filter(previewPdfButton::equals).isPresent()) {
+                previewPdf(details);
+            } else if (result.filter(exportPdfButton::equals).isPresent()) {
+                exportPdf(details);
             } else if (result.filter(printOriginalButton::equals).isPresent()) {
                 printOriginal(details);
             } else if (result.filter(cancelReceiptButton::equals).isPresent()) {
@@ -791,21 +796,41 @@ public class ReceiptHistoryController {
         dialog.showAndWait();
     }
 
-    private void openPdf(ReceiptResponseDto receipt) {
-        ProcessingDialog.run("Open PDF", "Preparing PDF...",
+    /**
+     * Saves the full-design PDF into the configured Receipt PDF Export Location, records that
+     * path on the receipt, then opens it — for deliberately keeping/sharing a copy (e.g. by
+     * email or WhatsApp). Reuses an already-exported file rather than regenerating one.
+     */
+    private void exportPdf(ReceiptResponseDto receipt) {
+        ProcessingDialog.run("Export PDF", "Preparing PDF...",
                 () -> {
-            String path = receipt.getPdfFilePath();
-            if (path == null || path.isBlank()) {
-                path = receiptPrintService.generatePdf(receipt.getId());
-            }
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new ReceiptPrintService.ReceiptPrintException(
-                        "PDF was generated, but this computer cannot open it automatically.");
-            }
-            Desktop.getDesktop().open(new File(path));
+                    String path = receipt.getPdfFilePath();
+                    if (path == null || path.isBlank()) {
+                        path = receiptPrintService.generatePdf(receipt.getId());
+                    }
+                    openInDefaultViewer(path);
                 },
-                () -> setMessage("PDF opened."),
-                throwable -> showProcessingError("Open PDF", throwable));
+                () -> setMessage("PDF exported."),
+                throwable -> showProcessingError("Export PDF", throwable));
+    }
+
+    /**
+     * Opens the full-design PDF for a quick look only — written to a throwaway temp file, never
+     * saved into the configured receipts folder and never recorded on the receipt.
+     */
+    private void previewPdf(ReceiptResponseDto receipt) {
+        ProcessingDialog.run("Preview PDF", "Rendering receipt PDF...",
+                () -> openInDefaultViewer(receiptPdfGenerator.generateTemporaryPdf(receipt.getId())),
+                () -> setMessage("PDF preview opened."),
+                throwable -> showProcessingError("Preview PDF", throwable));
+    }
+
+    private void openInDefaultViewer(String path) throws IOException {
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+            throw new ReceiptPrintService.ReceiptPrintException(
+                    "PDF was generated, but this computer cannot open it automatically.");
+        }
+        Desktop.getDesktop().open(new File(path));
     }
 
     private void printOriginal(ReceiptResponseDto receipt) {
@@ -977,12 +1002,12 @@ public class ReceiptHistoryController {
             printButton.getStyleClass().add("table-action-button");
             smsButton.getStyleClass().add("table-action-button");
             ButtonIconUtil.applyTableActionIcon(viewButton, "fas-eye", "View receipt");
-            ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Open PDF");
+            ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Export PDF");
             ButtonIconUtil.applyTableActionIcon(printButton, "fas-print", "Print original");
             ButtonIconUtil.applyTableActionIcon(smsButton, "fas-paper-plane", "Send SMS");
             ButtonIconUtil.applyTableActionIcon(recreateButton, "fas-redo", "Re-create receipt");
             viewButton.setOnAction(event -> showReceiptDetailsDialog(getTableView().getItems().get(getIndex())));
-            pdfButton.setOnAction(event -> openPdf(getTableView().getItems().get(getIndex())));
+            pdfButton.setOnAction(event -> exportPdf(getTableView().getItems().get(getIndex())));
             printButton.setOnAction(event -> printOriginal(getTableView().getItems().get(getIndex())));
             smsButton.setOnAction(event -> sendSms(getTableView().getItems().get(getIndex())));
             recreateButton.setOnAction(event -> recreateReceipt(getTableView().getItems().get(getIndex())));
