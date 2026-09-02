@@ -55,7 +55,9 @@ public final class ReceiptValidator {
             }
         }
 
-        if (weekStart == null || !WeekUtil.isWeekStartDay(weekStart, identifierDay)) {
+        if (weekStart == null) {
+            errors.add("Week start date is required.");
+        } else if (!WeekUtil.isWeekStartDay(weekStart, identifierDay)) {
             errors.add("Week start date must be a " + WeekUtil.displayName(identifierDay.plus(1)) + ".");
         }
 
