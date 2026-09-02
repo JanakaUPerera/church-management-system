@@ -6,6 +6,7 @@ import com.churchmanagement.dto.SubmissionSummaryDto;
 import com.churchmanagement.dto.SubmissionTotalsDto;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.repository.SubmissionStatusRepository;
+import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import org.junit.jupiter.api.AfterEach;
@@ -31,13 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SubmissionStatusServiceTest {
     private FakeSubmissionStatusRepository repository;
     private FakeActivityLogService activityLogService;
+    private FakeSystemConfigurationCache configurationCache;
     private SubmissionStatusService service;
 
     @BeforeEach
     void setUp() {
         repository = new FakeSubmissionStatusRepository();
         activityLogService = new FakeActivityLogService();
-        service = new SubmissionStatusService(repository, activityLogService, fixedClock());
+        configurationCache = new FakeSystemConfigurationCache();
+        service = new SubmissionStatusService(repository, activityLogService, fixedClock(), configurationCache);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("receipt.view")));
     }
@@ -49,7 +52,7 @@ class SubmissionStatusServiceTest {
 
     @Test
     void submittedPendingAndCancelledStatusesAreCalculated() {
-        List<SubmissionStatusDto> rows = service.loadWeeklyStatus(LocalDate.of(2026, 5, 25), null, "ALL");
+        List<SubmissionStatusDto> rows = service.loadWeeklyStatus(LocalDate.of(2026, 5, 26), null, "ALL");
 
         assertEquals("SUBMITTED", row(rows, 1L).getStatus());
         assertEquals("PENDING", row(rows, 2L).getStatus());
@@ -59,8 +62,8 @@ class SubmissionStatusServiceTest {
 
     @Test
     void totalsUseActiveReceiptsOnlyAndExcludeCancelled() {
-        SubmissionTotalsDto totals = service.loadSubmissionTotals(LocalDate.of(2026, 5, 25), null);
-        SubmissionSummaryDto summary = service.loadWeeklySummary(LocalDate.of(2026, 5, 25), null);
+        SubmissionTotalsDto totals = service.loadSubmissionTotals(LocalDate.of(2026, 5, 26), null);
+        SubmissionSummaryDto summary = service.loadWeeklySummary(LocalDate.of(2026, 5, 26), null);
 
         assertEquals(new BigDecimal("1000.00"), totals.getTotalOffertory());
         assertEquals(new BigDecimal("500.00"), totals.getTotalTithes());
@@ -72,19 +75,19 @@ class SubmissionStatusServiceTest {
 
     @Test
     void lateSubmissionDisplayComesFromActiveSubmission() {
-        List<SubmissionStatusDto> rows = service.loadWeeklyStatus(LocalDate.of(2026, 5, 25), null, "ALL");
+        List<SubmissionStatusDto> rows = service.loadWeeklyStatus(LocalDate.of(2026, 5, 26), null, "ALL");
 
         assertTrue(row(rows, 1L).isLateSubmission());
         assertFalse(row(rows, 2L).isLateSubmission());
-        assertEquals(1, service.loadWeeklySummary(LocalDate.of(2026, 5, 25), null).getLateSubmissions());
+        assertEquals(1, service.loadWeeklySummary(LocalDate.of(2026, 5, 26), null).getLateSubmissions());
     }
 
     @Test
     void regionAndStatusFilteringAreApplied() {
         List<SubmissionStatusDto> northSubmitted = service.loadWeeklyStatus(
-                LocalDate.of(2026, 5, 25), 1L, "SUBMITTED");
+                LocalDate.of(2026, 5, 26), 1L, "SUBMITTED");
         List<SubmissionStatusDto> southCancelled = service.loadWeeklyStatus(
-                LocalDate.of(2026, 5, 25), 2L, "CANCELLED");
+                LocalDate.of(2026, 5, 26), 2L, "CANCELLED");
 
         assertEquals(1, northSubmitted.size());
         assertEquals(1L, northSubmitted.getFirst().getChurchId());
@@ -94,11 +97,27 @@ class SubmissionStatusServiceTest {
 
     @Test
     void defaultCurrentWeekSupportsPreviousAndNextNavigationMath() {
-        LocalDate defaultWeek = service.defaultWeekStart();
+        LocalDate defaultWeek = service.defaultWeekIdentifier();
 
         assertEquals(LocalDate.of(2026, 6, 1), defaultWeek);
         assertEquals(LocalDate.of(2026, 5, 25), defaultWeek.minusWeeks(1));
         assertEquals(LocalDate.of(2026, 6, 8), defaultWeek.plusWeeks(1));
+    }
+
+    @Test
+    void defaultWeekStartReturnsSixDaysBeforeTheIdentifier() {
+        assertEquals(LocalDate.of(2026, 5, 26), service.defaultWeekStart());
+    }
+
+    @Test
+    void identifierDaySettingIsActuallyReadNotHardcodedToMonday() {
+        FakeSystemConfigurationCache wednesdayCache = new FakeSystemConfigurationCache();
+        wednesdayCache.put("receipt.week.identifier.day", "WEDNESDAY");
+        SubmissionStatusService wednesdayService = new SubmissionStatusService(
+                repository, activityLogService, fixedClock(), wednesdayCache);
+
+        assertEquals(LocalDate.of(2026, 5, 27), wednesdayService.defaultWeekIdentifier());
+        assertEquals(LocalDate.of(2026, 5, 21), wednesdayService.defaultWeekStart());
     }
 
     @Test
@@ -111,9 +130,9 @@ class SubmissionStatusServiceTest {
     }
 
     @Test
-    void nonMondayWeekStartIsRejected() {
+    void nonTuesdayWeekStartIsRejected() {
         assertThrows(SubmissionStatusService.SubmissionStatusException.class,
-                () -> service.loadWeeklyStatus(LocalDate.of(2026, 5, 26), null, "ALL"));
+                () -> service.loadWeeklyStatus(LocalDate.of(2026, 5, 25), null, "ALL"));
     }
 
     private SubmissionStatusDto row(List<SubmissionStatusDto> rows, long churchId) {
@@ -134,10 +153,10 @@ class SubmissionStatusServiceTest {
                 new ChurchRow(3L, "C003", "Lake", 2L, "South")
         );
         private final List<ReceiptRow> receipts = List.of(
-                new ReceiptRow(10L, 1L, 1L, "R-10", LocalDate.of(2026, 5, 25),
+                new ReceiptRow(10L, 1L, 1L, "R-10", LocalDate.of(2026, 5, 26),
                         LocalDateTime.of(2026, 6, 2, 9, 0), "ACTIVE", true,
                         new BigDecimal("1000.00"), new BigDecimal("500.00"), new BigDecimal("200.00")),
-                new ReceiptRow(11L, 3L, 2L, "R-11", LocalDate.of(2026, 5, 25),
+                new ReceiptRow(11L, 3L, 2L, "R-11", LocalDate.of(2026, 5, 26),
                         LocalDateTime.of(2026, 6, 1, 9, 0), "CANCELLED", false,
                         new BigDecimal("300.00"), BigDecimal.ZERO, BigDecimal.ZERO),
                 new ReceiptRow(12L, 3L, 2L, "R-12", LocalDate.of(2026, 5, 18),
@@ -284,6 +303,23 @@ class SubmissionStatusServiceTest {
         @Override
         public void logSubmissionDetailsViewed(Long userId, long receiptId, String receiptNo) {
             lastAction = SUBMISSION_DETAILS_VIEWED;
+        }
+    }
+
+    private static class FakeSystemConfigurationCache extends SystemConfigurationCache {
+        private final java.util.Map<String, String> values = new java.util.HashMap<>();
+
+        private FakeSystemConfigurationCache() {
+            super(new SystemSettingRepository((DataSource) null));
+        }
+
+        @Override
+        public String getString(String key) {
+            return values.get(key);
+        }
+
+        private void put(String key, String value) {
+            values.put(key, value);
         }
     }
 

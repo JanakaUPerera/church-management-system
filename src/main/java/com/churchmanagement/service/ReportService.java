@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -27,6 +26,7 @@ public class ReportService {
     private final ReportExcelExporter excelExporter;
     private final PrinterService printerService;
     private final Clock clock;
+    private final SystemConfigurationCache configurationCache;
 
     public ReportService() {
         this(new ReportRepository(), new ActivityLogService(), new ReportPdfExporter(),
@@ -36,12 +36,20 @@ public class ReportService {
     public ReportService(ReportRepository reportRepository, ActivityLogService activityLogService,
                          ReportPdfExporter pdfExporter, ReportExcelExporter excelExporter,
                          PrinterService printerService, Clock clock) {
+        this(reportRepository, activityLogService, pdfExporter, excelExporter, printerService, clock,
+                SystemConfigurationCache.getInstance());
+    }
+
+    public ReportService(ReportRepository reportRepository, ActivityLogService activityLogService,
+                         ReportPdfExporter pdfExporter, ReportExcelExporter excelExporter,
+                         PrinterService printerService, Clock clock, SystemConfigurationCache configurationCache) {
         this.reportRepository = reportRepository;
         this.activityLogService = activityLogService;
         this.pdfExporter = pdfExporter;
         this.excelExporter = excelExporter;
         this.printerService = printerService;
         this.clock = clock == null ? Clock.systemDefaultZone() : clock;
+        this.configurationCache = configurationCache;
     }
 
     public ReportResult<? extends ReportTableRow> loadReport(ReportSearchCriteria criteria) {
@@ -108,8 +116,12 @@ public class ReportService {
                 ? LocalDate.of(today.getYear(), 1, 1)
                 : today.withDayOfMonth(1));
         criteria.setDateTo(today);
-        criteria.setWeekStartDate(WeekUtil.getCurrentWeekMonday(today));
+        criteria.setWeekStartDate(WeekUtil.weekStartFor(WeekUtil.currentIdentifier(today, resolveIdentifierDay())));
         return criteria;
+    }
+
+    public LocalDate defaultWeekIdentifier() {
+        return WeekUtil.currentIdentifier(LocalDate.now(clock), resolveIdentifierDay());
     }
 
     private boolean isAnnualCollectionReport(ReportType reportType) {
@@ -119,14 +131,15 @@ public class ReportService {
 
     public DateRange quickRange(String quickFilter) {
         LocalDate today = LocalDate.now(clock);
+        DayOfWeek identifierDay = resolveIdentifierDay();
         return switch (quickFilter) {
             case "This Week" -> {
-                LocalDate monday = WeekUtil.getCurrentWeekMonday(today);
-                yield new DateRange(monday, monday.plusDays(6));
+                LocalDate identifier = WeekUtil.currentIdentifier(today, identifierDay);
+                yield new DateRange(WeekUtil.weekStartFor(identifier), identifier);
             }
             case "Previous Week" -> {
-                LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
-                yield new DateRange(monday, monday.plusDays(6));
+                LocalDate identifier = WeekUtil.currentIdentifier(today, identifierDay).minusWeeks(1);
+                yield new DateRange(WeekUtil.weekStartFor(identifier), identifier);
             }
             case "Quarter" -> {
                 int quarterStart = ((today.getMonthValue() - 1) / 3) * 3 + 1;
@@ -216,8 +229,9 @@ public class ReportService {
             if (safe.getWeekStartDate() == null) {
                 safe.setWeekStartDate(defaultCriteria(safe.getReportType()).getWeekStartDate());
             }
-            if (!WeekUtil.isWeekStartMonday(safe.getWeekStartDate())) {
-                throw new ReportException("Week Start Date must be Monday.");
+            DayOfWeek identifierDay = resolveIdentifierDay();
+            if (!WeekUtil.isWeekStartDay(safe.getWeekStartDate(), identifierDay)) {
+                throw new ReportException("Week Start Date must be " + WeekUtil.displayName(identifierDay.plus(1)) + ".");
             }
             safe.setDateFrom(null);
             safe.setDateTo(null);
@@ -280,6 +294,10 @@ public class ReportService {
     private AuthenticatedUser requireCurrentUser() {
         return AuthContext.getCurrentUser()
                 .orElseThrow(() -> new ReportException("You do not have permission to view reports."));
+    }
+
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(configurationCache.getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
     }
 
     private String filterSummary(ReportSearchCriteria criteria) {

@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -100,9 +101,10 @@ public class ReceiptService {
         new PermissionGuard(currentUser).require("receipt.create");
 
         LocalDate today = LocalDate.now(clock);
-        boolean lateSubmission = request != null && WeekUtil.isBackWeek(request.getWeekStartDate(), today);
+        DayOfWeek identifierDay = resolveIdentifierDay();
+        boolean lateSubmission = request != null && WeekUtil.isBackWeek(request.getWeekEndDate(), today, identifierDay);
         enforceBackWeekSetting(lateSubmission);
-        validateRequest(request, today, lateSubmission);
+        validateRequest(request, today, lateSubmission, identifierDay);
 
         Church church = loadActiveChurch(request.getChurchId());
         List<ReceiptItem> items = toReceiptItems(request.getItems());
@@ -185,9 +187,10 @@ public class ReceiptService {
         new PermissionGuard(currentUser).require("receipt.create");
 
         LocalDate today = LocalDate.now(clock);
-        boolean lateSubmission = request != null && WeekUtil.isBackWeek(request.getWeekStartDate(), today);
+        DayOfWeek identifierDay = resolveIdentifierDay();
+        boolean lateSubmission = request != null && WeekUtil.isBackWeek(request.getWeekEndDate(), today, identifierDay);
         enforceBackWeekSetting(lateSubmission);
-        validateRequest(request, today, lateSubmission);
+        validateRequest(request, today, lateSubmission, identifierDay);
         Church church = loadActiveChurch(request.getChurchId());
 
         try {
@@ -201,12 +204,17 @@ public class ReceiptService {
         }
     }
 
-    private void validateRequest(CreateReceiptRequest request, LocalDate today, boolean lateSubmission) {
+    private void validateRequest(CreateReceiptRequest request, LocalDate today, boolean lateSubmission,
+                                 DayOfWeek identifierDay) {
         List<String> errors = ReceiptValidator.validateForCreate(request, today, lateSubmission,
-                isLateSubmissionReasonRequired());
+                isLateSubmissionReasonRequired(), identifierDay);
         if (!errors.isEmpty()) {
             throw new ReceiptException(String.join("\n", errors));
         }
+    }
+
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(configurationCache.getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
     }
 
     private void enforceBackWeekSetting(boolean lateSubmission) {

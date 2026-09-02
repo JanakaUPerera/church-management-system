@@ -8,6 +8,7 @@ import com.churchmanagement.entity.Region;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.service.SubmissionStatusService;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
@@ -15,6 +16,7 @@ import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.TablePaginationUtil;
+import com.churchmanagement.util.WeekUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -37,6 +39,7 @@ import javafx.scene.layout.HBox;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -98,20 +101,20 @@ public class SubmissionStatusController {
         configureTable();
         loadRegions();
         loadChurches();
-        weekStartDatePicker.setValue(submissionStatusService.defaultWeekStart());
+        weekStartDatePicker.setValue(submissionStatusService.defaultWeekIdentifier());
         refreshDashboard(false);
     }
 
     @FXML
     private void handlePreviousWeek() {
         LocalDate current = weekStartDatePicker.getValue();
-        weekStartDatePicker.setValue((current == null ? submissionStatusService.defaultWeekStart() : current).minusWeeks(1));
+        weekStartDatePicker.setValue((current == null ? submissionStatusService.defaultWeekIdentifier() : current).minusWeeks(1));
     }
 
     @FXML
     private void handleNextWeek() {
         LocalDate current = weekStartDatePicker.getValue();
-        LocalDate nextWeek = (current == null ? submissionStatusService.defaultWeekStart() : current).plusWeeks(1);
+        LocalDate nextWeek = (current == null ? submissionStatusService.defaultWeekIdentifier() : current).plusWeeks(1);
         if (!nextWeek.isAfter(LocalDate.now())) {
             weekStartDatePicker.setValue(nextWeek);
         }
@@ -119,7 +122,7 @@ public class SubmissionStatusController {
 
     @FXML
     private void handleSearch() {
-        LocalDate weekStart = weekStartDatePicker.getValue();
+        LocalDate weekStart = WeekUtil.weekStartFor(weekStartDatePicker.getValue());
         Region region = regionComboBox.getValue();
         Church church = churchComboBox.getValue();
         String status = statusComboBox.getValue();
@@ -140,13 +143,18 @@ public class SubmissionStatusController {
 
     @FXML
     private void handleRefresh() {
-        weekStartDatePicker.setValue(submissionStatusService.defaultWeekStart());
+        weekStartDatePicker.setValue(submissionStatusService.defaultWeekIdentifier());
         regionComboBox.getSelectionModel().selectFirst();
         updateChurchFilter();
         churchComboBox.getSelectionModel().selectFirst();
         statusComboBox.setValue(SubmissionStatusService.STATUS_ALL);
         searchField.clear();
         refreshDashboard(true);
+    }
+
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(
+                SystemConfigurationCache.getInstance().getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
     }
 
     private void configureButtons() {
@@ -157,7 +165,7 @@ public class SubmissionStatusController {
     }
 
     private void configureFilters() {
-        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weekStartDatePicker);
+        DatePickerUtil.enableDayOfWeekOnlyAndDisableFutureDates(weekStartDatePicker, resolveIdentifierDay());
         regionComboBox.setItems(regions);
         ComboBoxUtil.makeSearchable(regionComboBox, this::regionDisplayText);
         churchComboBox.setItems(filteredChurches);
@@ -257,7 +265,7 @@ public class SubmissionStatusController {
 
     private void refreshDashboard(boolean logFilterChange) {
         try {
-            LocalDate weekStart = weekStartDatePicker.getValue();
+            LocalDate weekStart = WeekUtil.weekStartFor(weekStartDatePicker.getValue());
             Region region = regionComboBox.getValue();
             Church church = churchComboBox.getValue();
             String status = statusComboBox.getValue();

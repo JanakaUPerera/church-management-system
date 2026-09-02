@@ -10,6 +10,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.util.WeekUtil;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,22 +18,29 @@ public class DashboardService {
     private final DashboardRepository dashboardRepository;
     private final ActivityLogService activityLogService;
     private final Clock clock;
+    private final SystemConfigurationCache configurationCache;
 
     public DashboardService() {
         this(new DashboardRepository(), new ActivityLogService(), Clock.systemDefaultZone());
     }
 
     public DashboardService(DashboardRepository dashboardRepository, ActivityLogService activityLogService, Clock clock) {
+        this(dashboardRepository, activityLogService, clock, SystemConfigurationCache.getInstance());
+    }
+
+    public DashboardService(DashboardRepository dashboardRepository, ActivityLogService activityLogService, Clock clock,
+                            SystemConfigurationCache configurationCache) {
         this.dashboardRepository = dashboardRepository;
         this.activityLogService = activityLogService;
         this.clock = clock == null ? Clock.systemDefaultZone() : clock;
+        this.configurationCache = configurationCache;
     }
 
     public WeeklyDashboardDto loadWeeklyDashboard(LocalDate weekStartDate, LocalDate weekEndDate, Long regionId) {
         AuthenticatedUser user = currentUser();
         PermissionGuard guard = new PermissionGuard(user);
         LocalDate safeWeekStart = defaultWeeklyStart(weekStartDate);
-        LocalDate safeWeekEnd = weekEndDate == null ? WeekUtil.getSundayForMonday(safeWeekStart) : weekEndDate;
+        LocalDate safeWeekEnd = weekEndDate == null ? safeWeekStart.plusDays(6) : weekEndDate;
         validateWeek(safeWeekStart, safeWeekEnd);
 
         WeeklyDashboardDto weekly = dashboardRepository.getWeeklySummary(safeWeekStart, safeWeekEnd, regionId);
@@ -105,8 +113,8 @@ public class DashboardService {
     }
 
     public DateRange defaultWeeklyRange() {
-        LocalDate weekStart = WeekUtil.getCurrentWeekMonday(LocalDate.now(clock));
-        return new DateRange(weekStart, WeekUtil.getSundayForMonday(weekStart));
+        LocalDate identifier = WeekUtil.currentIdentifier(LocalDate.now(clock), resolveIdentifierDay());
+        return new DateRange(WeekUtil.weekStartFor(identifier), identifier);
     }
 
     public DateRange defaultTrendingRange() {
@@ -165,11 +173,12 @@ public class DashboardService {
     }
 
     private void validateWeek(LocalDate weekStartDate, LocalDate weekEndDate) {
-        if (!WeekUtil.isWeekStartMonday(weekStartDate)) {
-            throw new DashboardException("Week start date must be a Monday.");
+        DayOfWeek identifierDay = resolveIdentifierDay();
+        if (!WeekUtil.isWeekStartDay(weekStartDate, identifierDay)) {
+            throw new DashboardException("Week start date must be a " + WeekUtil.displayName(identifierDay.plus(1)) + ".");
         }
-        if (!WeekUtil.isWeekEndSunday(weekEndDate)) {
-            throw new DashboardException("Week end date must be a Sunday.");
+        if (!WeekUtil.isIdentifierDay(weekEndDate, identifierDay)) {
+            throw new DashboardException("Week end date must be a " + WeekUtil.displayName(identifierDay) + ".");
         }
         if (!weekEndDate.equals(weekStartDate.plusDays(6))) {
             throw new DashboardException("Week end date must be 6 days after week start date.");
@@ -200,7 +209,7 @@ public class DashboardService {
         weekly.setBackupStatusVisible(guard.can("backup.view"));
         weekly.setTodaysReceiptsTotalVisible(receiptView);
         weekly.setLateSubmissionsVisible(receiptView
-                && WeekUtil.isBackWeek(weekly.getWeekStartDate(), LocalDate.now(clock)));
+                && WeekUtil.isBackWeek(weekly.getWeekEndDate(), LocalDate.now(clock), resolveIdentifierDay()));
         weekly.setWeekCollectionVisible(receiptView
                 && !isCurrentCalendarWeekRange(weekly.getWeekStartDate(), weekly.getWeekEndDate()));
         if (!receiptView) {
@@ -218,11 +227,14 @@ public class DashboardService {
     }
 
     private boolean isCurrentCalendarWeekRange(LocalDate weekStartDate, LocalDate weekEndDate) {
-        LocalDate today = LocalDate.now(clock);
-        LocalDate currentWeekStart = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate currentIdentifier = WeekUtil.currentIdentifier(LocalDate.now(clock), resolveIdentifierDay());
         return weekStartDate != null && weekEndDate != null
-                && weekStartDate.equals(currentWeekStart)
-                && weekEndDate.equals(WeekUtil.getSundayForMonday(currentWeekStart));
+                && weekEndDate.equals(currentIdentifier)
+                && weekStartDate.equals(WeekUtil.weekStartFor(currentIdentifier));
+    }
+
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(configurationCache.getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
     }
 
     private AuthenticatedUser currentUser() {

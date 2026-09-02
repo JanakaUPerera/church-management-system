@@ -71,9 +71,9 @@
                             <DatePicker fx:id="dateFromPicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
                             <Label fx:id="dateToLabel" styleClass="field-label" text="Date To" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
                             <DatePicker fx:id="dateToPicker" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-                            <Label fx:id="weekStartLabel" styleClass="field-label" text="Week" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <Label fx:id="weekStartLabel" styleClass="field-label" text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
                             <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                            <Label fx:id="weekEndLabel" styleClass="field-label" text="Week End" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                            <Label fx:id="weekEndLabel" styleClass="field-label" text="Week Start Date" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
                             <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
                             <Label fx:id="regionLabel" styleClass="field-label" text="Region" GridPane.columnIndex="4" GridPane.rowIndex="0"/>
                             <ComboBox fx:id="regionComboBox" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="0"/>

@@ -12,9 +12,11 @@ import com.churchmanagement.entity.Region;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.DashboardService;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.SystemDateTimeFormatter;
+import com.churchmanagement.util.WeekUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -41,6 +43,7 @@ import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -198,19 +201,24 @@ public class DashboardHomeController {
     private void shiftWeeklyDate(int weeks) {
         LocalDate selectedWeek = weeklyWeekDatePicker.getValue();
         if (selectedWeek == null) {
-            selectedWeek = dashboardService.defaultWeeklyRange().dateFrom();
+            selectedWeek = dashboardService.defaultWeeklyRange().dateTo();
         }
         weeklyWeekDatePicker.setValue(selectedWeek.plusWeeks(weeks));
         loadWeekly(true);
     }
 
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(
+                SystemConfigurationCache.getInstance().getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
+    }
+
     private void configureFilters() {
         DashboardService.DateRange weeklyRange = dashboardService.defaultWeeklyRange();
         DashboardService.DateRange trendingRange = dashboardService.defaultTrendingRange();
-        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weeklyWeekDatePicker);
+        DatePickerUtil.enableDayOfWeekOnlyAndDisableFutureDates(weeklyWeekDatePicker, resolveIdentifierDay());
         DatePickerUtil.disableFutureDates(trendingDateFromPicker);
         DatePickerUtil.disableFutureDates(trendingDateToPicker);
-        weeklyWeekDatePicker.setValue(weeklyRange.dateFrom());
+        weeklyWeekDatePicker.setValue(weeklyRange.dateTo());
         trendingDateFromPicker.setValue(trendingRange.dateFrom());
         trendingDateToPicker.setValue(trendingRange.dateTo());
         ComboBoxUtil.makeSearchable(weeklyRegionComboBox, this::regionDisplayText);
@@ -306,9 +314,9 @@ public class DashboardHomeController {
     private void loadWeekly(boolean filterChanged) {
         try {
             Region region = weeklyRegionComboBox.getValue();
-            WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(
-                    weeklyWeekDatePicker.getValue(),
-                    weeklyWeekDatePicker.getValue() == null ? null : weeklyWeekDatePicker.getValue().plusDays(6),
+            LocalDate identifier = weeklyWeekDatePicker.getValue();
+            LocalDate weekStart = identifier == null ? null : WeekUtil.weekStartFor(identifier);
+            WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(weekStart, identifier,
                     region == null ? null : region.getId());
             applyWeekly(weekly);
             if (filterChanged) {

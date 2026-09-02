@@ -34,7 +34,7 @@
             <ColumnConstraints hgrow="ALWAYS" minWidth="160" prefWidth="190"/>
         </columnConstraints>
 
-        <Label text="Week Start Date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Label text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
         <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
         <Label text="Region" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
         <ComboBox fx:id="regionComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>

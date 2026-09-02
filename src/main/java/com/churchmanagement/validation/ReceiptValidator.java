@@ -6,6 +6,7 @@ import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.util.WeekUtil;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -17,44 +18,47 @@ public final class ReceiptValidator {
     }
 
     public static List<String> validateForCreate(CreateReceiptRequest request, LocalDate today, boolean lateSubmission,
-                                                 boolean lateSubmissionReasonRequired) {
+                                                 boolean lateSubmissionReasonRequired, DayOfWeek identifierDay) {
         List<String> errors = new ArrayList<>();
 
         if (request == null) {
             errors.add("Church is required.");
-            errors.add("Week start date is required.");
+            errors.add("Week end date is required.");
             errors.add("Date of the church service is required.");
             errors.add("Submitted by name is required.");
             errors.add("At least one collection item is required.");
             return errors;
         }
 
-        validateHeader(request, today, lateSubmission, lateSubmissionReasonRequired, errors);
+        validateHeader(request, today, lateSubmission, lateSubmissionReasonRequired, identifierDay, errors);
         validateItems(request.getItems(), errors);
         return errors;
     }
 
     private static void validateHeader(CreateReceiptRequest request, LocalDate today, boolean lateSubmission,
-                                       boolean lateSubmissionReasonRequired, List<String> errors) {
+                                       boolean lateSubmissionReasonRequired, DayOfWeek identifierDay,
+                                       List<String> errors) {
         if (request.getChurchId() == null) {
             errors.add("Church is required.");
         }
 
         LocalDate weekStart = request.getWeekStartDate();
         LocalDate weekEnd = request.getWeekEndDate();
-        if (weekStart == null) {
-            errors.add("Week start date is required.");
+        if (weekEnd == null) {
+            errors.add("Week end date is required.");
         } else {
-            if (!WeekUtil.isWeekStartMonday(weekStart)) {
-                errors.add("Week start date must be a Monday.");
+            if (!WeekUtil.isIdentifierDay(weekEnd, identifierDay)) {
+                errors.add("Week end date must be a " + WeekUtil.displayName(identifierDay) + ".");
             }
-            if (weekStart.isAfter(WeekUtil.getPreviousWeekMonday(today))) {
+            if (weekEnd.isAfter(WeekUtil.currentIdentifier(today, identifierDay))) {
                 errors.add("Future weeks are not allowed.");
             }
         }
 
-        if (weekEnd == null || !WeekUtil.isWeekEndSunday(weekEnd)) {
-            errors.add("Week end date must be a Sunday.");
+        if (weekStart == null) {
+            errors.add("Week start date is required.");
+        } else if (!WeekUtil.isWeekStartDay(weekStart, identifierDay)) {
+            errors.add("Week start date must be a " + WeekUtil.displayName(identifierDay.plus(1)) + ".");
         }
 
         if (weekStart != null && weekEnd != null && !weekEnd.equals(weekStart.plusDays(6))) {

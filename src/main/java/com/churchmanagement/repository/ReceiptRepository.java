@@ -36,6 +36,17 @@ public class ReceiptRepository {
         this.dataSource = dataSource;
     }
 
+    /**
+     * Note: this is an exact-match {@code week_start_date = ?} guard against
+     * the currently configured week boundary (see
+     * {@code receipt.week.identifier.day} and
+     * {@link com.churchmanagement.util.WeekUtil}), so it cannot see an
+     * active receipt filed under a boundary that was in effect before a
+     * setting change — an accepted, intentional limitation, narrow in
+     * practice since it only matters for the single week straddling a
+     * cutover (see the "Accepted consequence" note in
+     * {@code docs/superpowers/specs/2026-09-01-receipt-week-boundary-config-design.md}).
+     */
     public boolean existsActiveReceiptForChurchAndWeek(long churchId, LocalDate weekStartDate) {
         String sql = """
                 SELECT 1
@@ -251,6 +262,19 @@ public class ReceiptRepository {
                 recreatedReceipt, null);
     }
 
+    /**
+     * Note on the {@code weekStartDate} filter: it's an exact-match
+     * {@code week_start_date = ?} lookup, so a week selection only ever
+     * matches receipts filed under the currently configured week boundary
+     * (see {@code receipt.week.identifier.day} and
+     * {@link com.churchmanagement.util.WeekUtil}) — receipts filed before
+     * that setting's cutover carry a {@code week_start_date} under the
+     * boundary in effect at the time and will not surface here. This is an
+     * accepted, intentional limitation (see the "Accepted consequence" note
+     * in
+     * {@code docs/superpowers/specs/2026-09-01-receipt-week-boundary-config-design.md}),
+     * not a bug.
+     */
     public List<ReceiptResponseDto> searchReceipts(Long churchId, Long regionId, LocalDate weekStartDate,
                                                    String searchText, ReceiptStatus status,
                                                    Boolean lateSubmission, Boolean recreatedReceipt,

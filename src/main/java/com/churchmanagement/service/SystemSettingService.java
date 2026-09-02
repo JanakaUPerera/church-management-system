@@ -7,6 +7,7 @@ import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import com.churchmanagement.util.WeekUtil;
 
 import java.util.List;
 import java.util.Locale;
@@ -109,6 +110,9 @@ public class SystemSettingService {
             case "receipt.default.language" -> requireOneOf(normalized,
                     "Receipt default language must be ENGLISH, SINHALA, or TAMIL.",
                     "ENGLISH", "SINHALA", "TAMIL");
+            case WeekUtil.IDENTIFIER_DAY_SETTING_KEY -> requireOneOf(normalized,
+                    "Week identifier day must be MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, or SUNDAY.",
+                    "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
             default -> {
             }
         }

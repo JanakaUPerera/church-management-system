@@ -9,6 +9,7 @@ import com.churchmanagement.dto.dashboard.RegionSubmissionProgressDto;
 import com.churchmanagement.dto.dashboard.TrendingDashboardDto;
 import com.churchmanagement.dto.dashboard.WeeklyDashboardDto;
 import com.churchmanagement.repository.DashboardRepository;
+import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import org.junit.jupiter.api.AfterEach;
@@ -31,13 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DashboardServiceTest {
     private FakeDashboardRepository dashboardRepository;
     private FakeActivityLogService activityLogService;
+    private FakeSystemConfigurationCache configurationCache;
     private DashboardService dashboardService;
 
     @BeforeEach
     void setUp() {
         dashboardRepository = new FakeDashboardRepository();
         activityLogService = new FakeActivityLogService();
-        dashboardService = new DashboardService(dashboardRepository, activityLogService, fixedClock());
+        configurationCache = new FakeSystemConfigurationCache();
+        dashboardService = new DashboardService(dashboardRepository, activityLogService, fixedClock(), configurationCache);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("receipt.view", "report.view", "sms.logs.view", "backup.view")));
     }
@@ -52,13 +55,26 @@ class DashboardServiceTest {
         DashboardService.DateRange range = dashboardService.defaultWeeklyRange();
         WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(null, null, null);
 
-        assertEquals(LocalDate.of(2026, 6, 1), range.dateFrom());
-        assertEquals(LocalDate.of(2026, 6, 7), range.dateTo());
+        assertEquals(LocalDate.of(2026, 5, 26), range.dateFrom());
+        assertEquals(LocalDate.of(2026, 6, 1), range.dateTo());
         assertEquals(range.dateFrom(), weekly.getWeekStartDate());
         assertEquals(range.dateTo(), weekly.getWeekEndDate());
         assertTrue(weekly.isTodaysReceiptsTotalVisible());
         assertFalse(weekly.isWeekCollectionVisible());
         assertEquals(ActivityLogService.DASHBOARD_WEEKLY_VIEWED, activityLogService.lastAction);
+    }
+
+    @Test
+    void identifierDaySettingIsActuallyReadNotHardcodedToMonday() {
+        FakeSystemConfigurationCache wednesdayCache = new FakeSystemConfigurationCache();
+        wednesdayCache.put("receipt.week.identifier.day", "WEDNESDAY");
+        DashboardService wednesdayService = new DashboardService(
+                dashboardRepository, activityLogService, fixedClock(), wednesdayCache);
+
+        DashboardService.DateRange range = wednesdayService.defaultWeeklyRange();
+
+        assertEquals(LocalDate.of(2026, 5, 21), range.dateFrom());
+        assertEquals(LocalDate.of(2026, 5, 27), range.dateTo());
     }
 
     @Test
@@ -87,15 +103,15 @@ class DashboardServiceTest {
 
     @Test
     void cancelledReceiptsExcludedFromAllTotals() {
-        WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(LocalDate.of(2026, 5, 25),
-                LocalDate.of(2026, 5, 31), null);
-        TrendingDashboardDto trending = dashboardService.loadTrendingDashboard(LocalDate.of(2026, 5, 25),
+        WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(LocalDate.of(2026, 5, 19),
+                LocalDate.of(2026, 5, 25), null);
+        TrendingDashboardDto trending = dashboardService.loadTrendingDashboard(LocalDate.of(2026, 5, 19),
                 LocalDate.of(2026, 6, 2), null);
 
         assertEquals(1, weekly.getCompletedRegions());
         assertEquals(2, weekly.getTotalRegions());
         assertEquals(new BigDecimal("1.0"), BigDecimal.valueOf(weekly.getRegionSubmissionProgress().getFirst().getProgress()));
-        assertEquals(new BigDecimal("1500.00"), weekly.getTodaysReceiptsTotal());
+        assertEquals(new BigDecimal("500.00"), weekly.getTodaysReceiptsTotal());
         assertEquals(BigDecimal.ZERO, pointValue(weekly.getCollectionTypeWeekReceiptTotals(), "OFFERTORY"));
         assertEquals(new BigDecimal("1500.00"), pointValue(weekly.getCollectionTypeWeeklyTotals(), "OFFERTORY"));
         assertEquals(BigDecimal.ZERO, pointValue(weekly.getCollectionTypeWeeklyTotals(), "OTHER_DONATIONS"));
@@ -103,36 +119,36 @@ class DashboardServiceTest {
                 weekly.getRegionWiseWeeklyCollection(), "North", "OFFERTORY"));
         assertEquals(new BigDecimal("500.00"), regionCollectionValue(
                 weekly.getRegionWiseWeeklyCollection(), "South", "TITHES"));
-        assertEquals(new BigDecimal("2000.00"), pointValue(trending.getTotalCollectionTrend(), "2026-05-25"));
+        assertEquals(new BigDecimal("2000.00"), pointValue(trending.getTotalCollectionTrend(), "2026-05-19"));
 
-        WeeklyDashboardDto filteredWeekly = dashboardService.loadWeeklyDashboard(LocalDate.of(2026, 5, 25),
-                LocalDate.of(2026, 5, 31), 2L);
+        WeeklyDashboardDto filteredWeekly = dashboardService.loadWeeklyDashboard(LocalDate.of(2026, 5, 19),
+                LocalDate.of(2026, 5, 25), 2L);
         assertEquals(new BigDecimal("1500.00"), pointValue(filteredWeekly.getTopWeeklyRegionCollections(), "North"));
         assertEquals(new BigDecimal("500.00"), pointValue(filteredWeekly.getTopWeeklyRegionCollections(), "South"));
     }
 
     @Test
     void pendingChurchesCalculatedFromActiveReceiptsOnly() {
-        WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(LocalDate.of(2026, 6, 1),
-                LocalDate.of(2026, 6, 7), null);
+        WeeklyDashboardDto weekly = dashboardService.loadWeeklyDashboard(LocalDate.of(2026, 5, 26),
+                LocalDate.of(2026, 6, 1), null);
 
         assertEquals(0, weekly.getSubmittedChurches());
         assertEquals(4, weekly.getPendingChurches());
         assertTrue(weekly.isTodaysReceiptsTotalVisible());
         assertFalse(weekly.isWeekCollectionVisible());
-        assertEquals(new BigDecimal("1500.00"), pointValue(weekly.getCollectionTypeWeekReceiptTotals(), "OFFERTORY"));
+        assertEquals(new BigDecimal("1000.00"), pointValue(weekly.getCollectionTypeWeekReceiptTotals(), "OFFERTORY"));
         assertEquals(new BigDecimal("500.00"), pointValue(weekly.getCollectionTypeWeekReceiptTotals(), "TITHES"));
         assertEquals(BigDecimal.ZERO, pointValue(weekly.getCollectionTypeWeeklyTotals(), "OFFERTORY"));
     }
 
     @Test
     void trendGroupingIsWeeklyForShortRanges() {
-        TrendingDashboardDto trending = dashboardService.loadTrendingDashboard(LocalDate.of(2026, 5, 25),
+        TrendingDashboardDto trending = dashboardService.loadTrendingDashboard(LocalDate.of(2026, 5, 19),
                 LocalDate.of(2026, 6, 2), null);
 
         assertEquals("WEEKLY", trending.getGroupingMode());
         assertEquals("WEEKLY", dashboardRepository.lastGroupingMode);
-        assertEquals("2026-05-25", trending.getTotalCollectionTrend().getFirst().getLabel());
+        assertEquals("2026-05-19", trending.getTotalCollectionTrend().getFirst().getLabel());
     }
 
     @Test
@@ -142,7 +158,7 @@ class DashboardServiceTest {
 
         assertEquals("WEEKLY", trending.getGroupingMode());
         assertEquals("WEEKLY", dashboardRepository.lastGroupingMode);
-        assertTrue(trending.getTotalCollectionTrend().stream().anyMatch(point -> "2026-05-25".equals(point.getLabel())));
+        assertTrue(trending.getTotalCollectionTrend().stream().anyMatch(point -> "2026-05-19".equals(point.getLabel())));
     }
 
     @Test
@@ -185,11 +201,11 @@ class DashboardServiceTest {
                 new ChurchRow(4L, 2L, "South", "Field", true)
         );
         private final List<ReceiptRow> receipts = List.of(
-                new ReceiptRow(1L, 1L, 1L, LocalDate.of(2026, 5, 25), LocalDate.of(2026, 6, 2),
+                new ReceiptRow(1L, 1L, 1L, LocalDate.of(2026, 5, 19), LocalDate.of(2026, 5, 27),
                         true, false, "OFFERTORY", new BigDecimal("1000.00")),
-                new ReceiptRow(2L, 2L, 1L, LocalDate.of(2026, 5, 25), LocalDate.of(2026, 6, 2),
+                new ReceiptRow(2L, 2L, 1L, LocalDate.of(2026, 5, 19), LocalDate.of(2026, 6, 2),
                         true, true, "OFFERTORY", new BigDecimal("500.00")),
-                new ReceiptRow(3L, 3L, 2L, LocalDate.of(2026, 5, 25), LocalDate.of(2026, 6, 1),
+                new ReceiptRow(3L, 3L, 2L, LocalDate.of(2026, 5, 19), LocalDate.of(2026, 5, 26),
                         true, false, "TITHES", new BigDecimal("500.00")),
                 new ReceiptRow(4L, 4L, 2L, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 2),
                         false, false, "OTHER_DONATIONS", new BigDecimal("900.00")),
@@ -480,6 +496,23 @@ class DashboardServiceTest {
         @Override
         public void logDashboardTrendingViewed(Long userId) {
             lastAction = DASHBOARD_TRENDING_VIEWED;
+        }
+    }
+
+    private static class FakeSystemConfigurationCache extends SystemConfigurationCache {
+        private final java.util.Map<String, String> values = new java.util.HashMap<>();
+
+        private FakeSystemConfigurationCache() {
+            super(new SystemSettingRepository((DataSource) null));
+        }
+
+        @Override
+        public String getString(String key) {
+            return values.get(key);
+        }
+
+        private void put(String key, String value) {
+            values.put(key, value);
         }
     }
 
