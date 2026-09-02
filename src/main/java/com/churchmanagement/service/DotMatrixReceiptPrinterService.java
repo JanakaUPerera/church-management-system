@@ -99,12 +99,21 @@ public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
         return pageFormat;
     }
 
-    private Printable printableFor(JasperPrint jasperPrint) {
+    Printable printableFor(JasperPrint jasperPrint) {
         return (graphics, pageFormat, pageIndex) -> {
             if (pageIndex > 0) {
                 return Printable.NO_SUCH_PAGE;
             }
-            exportToGraphics(jasperPrint, (Graphics2D) graphics);
+            Graphics2D graphics2D = (Graphics2D) graphics;
+            // The print pipeline hands us a Graphics2D whose (0,0) is already translated to the
+            // imageable area's top-left in physical page space (and clipped to its width/height),
+            // but every field in the report is positioned in absolute page coordinates (e.g.
+            // x=138 means physical page x=138, not "138 past the margin"). Left uncompensated,
+            // everything renders imageableX/imageableY too far right/down, and the right-column
+            // fields - already close to the page edge - get pushed past the clip and vanish
+            // entirely, exactly what happened on the physical Epson LQ-310 printout.
+            graphics2D.translate(-pageFormat.getImageableX(), -pageFormat.getImageableY());
+            exportToGraphics(jasperPrint, graphics2D);
             return Printable.PAGE_EXISTS;
         };
     }
