@@ -146,7 +146,7 @@ public class ReportsController {
     @FXML private Label dateFromLabel;
     @FXML private Label dateToLabel;
     @FXML private Label weekStartLabel;
-    @FXML private Label weekEndLabel;
+    @FXML private VBox weekStartPickerBox;
     @FXML private Label weekEndDateLabel;
     @FXML private Label regionLabel;
     @FXML private Label churchLabel;
@@ -561,7 +561,7 @@ public class ReportsController {
         boolean collectionColumns = supportsCollectionColumnSelection(reportType);
         updateStatusOptions(reportType);
         setVisible(!weekly, dateFromLabel, dateFromPicker, dateToLabel, dateToPicker);
-        setVisible(weekly, weekStartLabel, weekStartDatePicker, weekEndLabel, weekEndDateLabel);
+        setVisible(weekly, weekStartLabel, weekStartPickerBox);
         setVisible(region, regionLabel, regionComboBox);
         setVisible(church, churchLabel, churchComboBox);
         setVisible(status, statusLabel, statusComboBox);
@@ -626,7 +626,8 @@ public class ReportsController {
     }
 
     private void updateWeekStartLabel() {
-        weekEndDateLabel.setText(dateTimeFormatter.formatDate(WeekUtil.weekStartFor(weekStartDatePicker.getValue())));
+        LocalDate weekStart = WeekUtil.weekStartFor(weekStartDatePicker.getValue());
+        weekEndDateLabel.setText(weekStart == null ? "-" : "Week starts " + dateTimeFormatter.formatDate(weekStart));
     }
 
     private void showRowDetails(ReportTableRow row) {

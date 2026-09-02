@@ -57,8 +57,8 @@
                         </HBox>
                         <GridPane fx:id="filterGrid" hgap="12" vgap="10">
                             <columnConstraints>
-                                <ColumnConstraints minWidth="78" prefWidth="92"/>
-                                <ColumnConstraints minWidth="150" prefWidth="176"/>
+                                <ColumnConstraints minWidth="120" prefWidth="150"/>
+                                <ColumnConstraints minWidth="160" prefWidth="195"/>
                                 <ColumnConstraints minWidth="78" prefWidth="92"/>
                                 <ColumnConstraints minWidth="150" prefWidth="176"/>
                                 <ColumnConstraints minWidth="78" prefWidth="92"/>
@@ -71,10 +71,13 @@
                             <DatePicker fx:id="dateFromPicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
                             <Label fx:id="dateToLabel" styleClass="field-label" text="Date To" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
                             <DatePicker fx:id="dateToPicker" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-                            <Label fx:id="weekStartLabel" styleClass="field-label" text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                            <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                            <Label fx:id="weekEndLabel" styleClass="field-label" text="Week Start Date" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-                            <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+                            <Label fx:id="weekStartLabel" styleClass="field-label" text="Week" wrapText="true" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <VBox fx:id="weekStartPickerBox" spacing="2" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <children>
+                                    <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity"/>
+                                    <Label fx:id="weekEndDateLabel" styleClass="value-label field-hint" text="-" wrapText="true" maxWidth="Infinity"/>
+                                </children>
+                            </VBox>
                             <Label fx:id="regionLabel" styleClass="field-label" text="Region" GridPane.columnIndex="4" GridPane.rowIndex="0"/>
                             <ComboBox fx:id="regionComboBox" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="0"/>
                             <Label fx:id="churchLabel" styleClass="field-label" text="Church" GridPane.columnIndex="6" GridPane.rowIndex="0"/>

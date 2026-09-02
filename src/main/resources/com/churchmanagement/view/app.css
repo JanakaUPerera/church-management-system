@@ -1916,6 +1916,11 @@
     -fx-font-weight: normal;
 }
 
+.field-hint {
+    -fx-font-size: 11px;
+    -fx-opacity: 0.75;
+}
+
 /* ═══════════════════════════════════════════════
    FOOTER STATUS STATES + DEVELOPER CREDIT
    ═══════════════════════════════════════════════ */
