@@ -64,9 +64,13 @@ public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
         PrinterJob job = PrinterJob.getPrinterJob();
         try {
             job.setPrintService(printService);
-            job.setPrintable(printableFor(jasperPrint), job.validatePage(buildPageFormat()));
+            // The driver can silently shrink our requested Paper to whatever it/the selected
+            // media actually supports - capture what it validated down to, not just what we
+            // asked for, so a clipped printout can be diagnosed from the result alone.
+            PageFormat validatedPageFormat = job.validatePage(buildPageFormat());
+            job.setPrintable(printableFor(jasperPrint), validatedPageFormat);
             job.print();
-            return success(printService.getName());
+            return success(printService.getName(), validatedPageFormat);
         } catch (PrinterException exception) {
             return failure(friendlyMessage(exception));
         }
@@ -121,8 +125,23 @@ public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
         }
     }
 
-    private PrintResult success(String printerName) {
-        return new PrintResult(true, "Printed successfully.", printerName, LocalDateTime.now(clock));
+    private PrintResult success(String printerName, PageFormat validatedPageFormat) {
+        return new PrintResult(true, "Printed successfully. " + describePageFormat(validatedPageFormat),
+                printerName, LocalDateTime.now(clock));
+    }
+
+    /**
+     * Formats a page format's paper size and imageable area in points, for diagnosing clipped
+     * printouts: {@link java.awt.print.PrinterJob#validatePage} can silently shrink our
+     * requested {@link #buildPageFormat()} down to whatever the driver/selected media actually
+     * supports, so this reports what was actually used, not what was requested.
+     */
+    static String describePageFormat(PageFormat pageFormat) {
+        return String.format(
+                "page=%.1fx%.1fpt, imageable=[x=%.1f,y=%.1f,w=%.1f,h=%.1f]pt",
+                pageFormat.getWidth(), pageFormat.getHeight(),
+                pageFormat.getImageableX(), pageFormat.getImageableY(),
+                pageFormat.getImageableWidth(), pageFormat.getImageableHeight());
     }
 
     private PrintResult failure(String message) {

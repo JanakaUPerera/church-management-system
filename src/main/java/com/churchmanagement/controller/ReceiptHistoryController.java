@@ -859,7 +859,8 @@ public class ReceiptHistoryController {
     private void reprintTest(ReceiptResponseDto receipt) {
         ProcessingDialog.run("Reprint (Test)", "Sending receipt to printer...",
                 () -> receiptPrintService.testPrint(receipt.getId()),
-                () -> setMessage("Test print of receipt " + receipt.getReceiptNo() + " was sent to the printer."),
+                (String printerMessage) -> showInfo("Reprint (Test)",
+                        "Test print of receipt " + receipt.getReceiptNo() + " sent.\n" + printerMessage),
                 throwable -> showProcessingError("Reprint (Test)", throwable));
     }
 
@@ -999,6 +1000,15 @@ public class ReceiptHistoryController {
 
     private void showError(String title, String message) {
         Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+        setMessage(message);
+    }
+
+    private void showInfo(String title, String message) {
+        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.INFORMATION));
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(message);

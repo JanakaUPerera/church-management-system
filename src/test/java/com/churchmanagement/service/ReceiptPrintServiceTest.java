@@ -157,6 +157,13 @@ class ReceiptPrintServiceTest {
     }
 
     @Test
+    void testPrintReturnsThePrintersResultMessageForDiagnosingAlignment() {
+        String message = service.testPrint(100L);
+
+        assertEquals("Printed", message);
+    }
+
+    @Test
     void testPrintSendsReceiptToThePrinterEvenWhenCancelled() {
         printRepository.receipt.setStatus(ReceiptStatus.CANCELLED);
 

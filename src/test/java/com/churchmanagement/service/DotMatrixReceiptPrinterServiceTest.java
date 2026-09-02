@@ -58,6 +58,17 @@ class DotMatrixReceiptPrinterServiceTest {
         assertEquals(396.0 - topMarginPoints - bottomMarginPoints, imageableArea.getHeight(), DELTA);
     }
 
+    @Test
+    void describePageFormatReportsPaperSizeAndImageableAreaInPoints() {
+        String description = DotMatrixReceiptPrinterService.describePageFormat(
+                DotMatrixReceiptPrinterService.buildPageFormat());
+
+        // Whatever the printer driver actually validated our requested page format down to -
+        // the ground truth for diagnosing clipped content, since PrinterJob.validatePage(...)
+        // can silently shrink a custom Paper to whatever the driver/media size supports.
+        assertEquals("page=342.0x396.0pt, imageable=[x=34.0,y=11.3,w=274.0,h=367.7]pt", description);
+    }
+
     private Clock fixedClock() {
         return Clock.fixed(Instant.parse("2026-05-18T09:00:00Z"), ZoneId.of("UTC"));
     }
