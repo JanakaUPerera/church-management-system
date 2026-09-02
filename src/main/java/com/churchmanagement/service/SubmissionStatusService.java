@@ -11,6 +11,7 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.util.WeekUtil;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,6 +24,7 @@ public class SubmissionStatusService {
     private final SubmissionStatusRepository submissionStatusRepository;
     private final ActivityLogService activityLogService;
     private final Clock clock;
+    private final SystemConfigurationCache configurationCache;
 
     public SubmissionStatusService() {
         this(new SubmissionStatusRepository(), new ActivityLogService(), Clock.systemDefaultZone());
@@ -30,9 +32,16 @@ public class SubmissionStatusService {
 
     public SubmissionStatusService(SubmissionStatusRepository submissionStatusRepository,
                                    ActivityLogService activityLogService, Clock clock) {
+        this(submissionStatusRepository, activityLogService, clock, SystemConfigurationCache.getInstance());
+    }
+
+    public SubmissionStatusService(SubmissionStatusRepository submissionStatusRepository,
+                                   ActivityLogService activityLogService, Clock clock,
+                                   SystemConfigurationCache configurationCache) {
         this.submissionStatusRepository = submissionStatusRepository;
         this.activityLogService = activityLogService;
         this.clock = clock == null ? Clock.systemDefaultZone() : clock;
+        this.configurationCache = configurationCache;
     }
 
     public List<SubmissionStatusDto> loadWeeklyStatus(LocalDate weekStartDate, Long regionId, String status) {
@@ -78,7 +87,11 @@ public class SubmissionStatusService {
     }
 
     public LocalDate defaultWeekStart() {
-        return WeekUtil.getCurrentWeekMonday(LocalDate.now(clock));
+        return WeekUtil.weekStartFor(defaultWeekIdentifier());
+    }
+
+    public LocalDate defaultWeekIdentifier() {
+        return WeekUtil.currentIdentifier(LocalDate.now(clock), resolveIdentifierDay());
     }
 
     public void logFilterChanged(LocalDate weekStartDate, Long regionId, String regionName, String status) {
@@ -92,10 +105,15 @@ public class SubmissionStatusService {
 
     private LocalDate safeWeekStart(LocalDate weekStartDate) {
         LocalDate safeWeekStart = weekStartDate == null ? defaultWeekStart() : weekStartDate;
-        if (!WeekUtil.isWeekStartMonday(safeWeekStart)) {
-            throw new SubmissionStatusException("Week Start Date must be a Monday.");
+        DayOfWeek identifierDay = resolveIdentifierDay();
+        if (!WeekUtil.isWeekStartDay(safeWeekStart, identifierDay)) {
+            throw new SubmissionStatusException("Week Start Date must be a " + WeekUtil.displayName(identifierDay.plus(1)) + ".");
         }
         return safeWeekStart;
+    }
+
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(configurationCache.getString("receipt.week.identifier.day"));
     }
 
     private String safeStatus(String status) {
