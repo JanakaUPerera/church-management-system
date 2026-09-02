@@ -5,6 +5,7 @@ import com.churchmanagement.dto.report.*;
 import com.churchmanagement.repository.ReportRepository;
 import com.churchmanagement.reports.export.ReportExcelExporter;
 import com.churchmanagement.reports.export.ReportPdfExporter;
+import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,13 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ReportServiceTest {
     private FakeReportRepository repository;
+    private FakeSystemConfigurationCache configurationCache;
     private ReportService service;
 
     @BeforeEach
     void setUp() {
         repository = new FakeReportRepository();
+        configurationCache = new FakeSystemConfigurationCache();
         service = new ReportService(repository, new ActivityLogService(null), new ReportPdfExporter(fixedClock()),
-                new ReportExcelExporter(), new CapturingPrinterService(), fixedClock());
+                new ReportExcelExporter(), new CapturingPrinterService(), fixedClock(), configurationCache);
         AuthContext.setCurrentUser(user("report.view", "report.export", "report.print"));
     }
 
@@ -703,6 +707,19 @@ class ReportServiceTest {
         @Override
         public PrintResult printPdf(String pdfFilePath) {
             return new PrintResult(true, "Printed", "Test Printer", null);
+        }
+    }
+
+    private static class FakeSystemConfigurationCache extends SystemConfigurationCache {
+        private final java.util.Map<String, String> values = new java.util.HashMap<>();
+
+        private FakeSystemConfigurationCache() {
+            super(new SystemSettingRepository((DataSource) null));
+        }
+
+        @Override
+        public String getString(String key) {
+            return values.get(key);
         }
     }
 }
