@@ -12,6 +12,7 @@ import com.churchmanagement.repository.ReceiptPrintRepository.PrintType;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import net.sf.jasperreports.engine.JasperPrint;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -23,22 +24,22 @@ public class ReceiptPrintService {
     private final ReceiptPdfGenerator receiptPdfGenerator;
     private final ReceiptPrintRepository receiptPrintRepository;
     private final ActivityLogService activityLogService;
-    private final PrinterService printerService;
+    private final ReceiptPrinterService receiptPrinterService;
     private final DataSource dataSource;
     private final Clock clock;
 
     public ReceiptPrintService() {
         this(new ReceiptPdfGenerator(), new ReceiptPrintRepository(), new ActivityLogService(),
-                new MockPrinterService(), DatabaseConfig.getDataSource(), Clock.systemDefaultZone());
+                new DotMatrixReceiptPrinterService(), DatabaseConfig.getDataSource(), Clock.systemDefaultZone());
     }
 
     public ReceiptPrintService(ReceiptPdfGenerator receiptPdfGenerator, ReceiptPrintRepository receiptPrintRepository,
-                               ActivityLogService activityLogService, PrinterService printerService,
+                               ActivityLogService activityLogService, ReceiptPrinterService receiptPrinterService,
                                DataSource dataSource, Clock clock) {
         this.receiptPdfGenerator = receiptPdfGenerator;
         this.receiptPrintRepository = receiptPrintRepository;
         this.activityLogService = activityLogService;
-        this.printerService = printerService;
+        this.receiptPrinterService = receiptPrinterService;
         this.dataSource = dataSource;
         this.clock = clock;
     }
@@ -62,47 +63,10 @@ public class ReceiptPrintService {
             throw new ReceiptPrintException("You do not have permission to print receipts.");
         }
 
-        Receipt lockedReceipt = lockAndValidateForPrint(receiptId, currentUser);
-        String pdfPath = lockedReceipt.getPdfFilePath();
-        if (pdfPath == null || pdfPath.isBlank()) {
-            pdfPath = generatePdf(receiptId);
-        }
-        attemptOriginalPrint(receiptId, currentUser, pdfPath);
+        attemptOriginalPrint(receiptId, currentUser);
     }
 
-    private Receipt lockAndValidateForPrint(long receiptId, AuthenticatedUser currentUser) {
-        Connection connection = null;
-        boolean previousAutoCommit = true;
-        try {
-            connection = dataSource.getConnection();
-            previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-
-            Receipt receipt = receiptPrintRepository.lockReceiptForPrint(receiptId, connection)
-                    .orElseThrow(() -> new ReceiptPrintException("Receipt not found."));
-            if (receipt.getStatus() == ReceiptStatus.CANCELLED) {
-                activityLogService.logReceiptPrintBlockedCancelled(currentUser.getUserId(), receiptId);
-                throw new ReceiptPrintException("Cancelled receipts cannot be printed as original.");
-            }
-            if (receipt.isOriginalPrinted()) {
-                activityLogService.logReceiptPrintBlockedAlreadyPrinted(currentUser.getUserId(), receiptId);
-                throw new ReceiptPrintException("Original receipt has already been printed.");
-            }
-
-            connection.commit();
-            return receipt;
-        } catch (ReceiptPrintException exception) {
-            rollback(connection);
-            throw exception;
-        } catch (SQLException | DatabaseException exception) {
-            rollback(connection);
-            throw new ReceiptPrintException("Unable to print receipt right now. Please try again later.", exception);
-        } finally {
-            restoreAutoCommitAndClose(connection, previousAutoCommit);
-        }
-    }
-
-    private void attemptOriginalPrint(long receiptId, AuthenticatedUser currentUser, String pdfPath) {
+    private void attemptOriginalPrint(long receiptId, AuthenticatedUser currentUser) {
         Connection connection = null;
         boolean previousAutoCommit = true;
         try {
@@ -122,7 +86,8 @@ public class ReceiptPrintService {
             }
 
             receiptPrintRepository.incrementPrintAttempt(receiptId, connection);
-            PrintResult printResult = printerService.printPdf(pdfPath);
+            JasperPrint printJob = receiptPdfGenerator.renderPrintJasperPrint(receiptId);
+            PrintResult printResult = receiptPrinterService.print(printJob);
             if (!printResult.isSuccess()) {
                 throw new IllegalStateException(printResult.getMessage());
             }

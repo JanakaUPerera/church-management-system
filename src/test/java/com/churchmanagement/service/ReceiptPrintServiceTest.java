@@ -10,6 +10,7 @@ import com.churchmanagement.repository.ReceiptPrintRepository.PrintType;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperPrint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ class ReceiptPrintServiceTest {
     private FakeReceiptPdfGenerator pdfGenerator;
     private FakeReceiptPrintRepository printRepository;
     private FakeActivityLogService activityLogService;
-    private FakePrinterService printerService;
+    private FakeReceiptPrinterService receiptPrinterService;
     private FakeDataSource dataSource;
     private ReceiptPrintService service;
 
@@ -50,9 +51,9 @@ class ReceiptPrintServiceTest {
         pdfGenerator = new FakeReceiptPdfGenerator();
         printRepository = new FakeReceiptPrintRepository();
         activityLogService = new FakeActivityLogService();
-        printerService = new FakePrinterService();
+        receiptPrinterService = new FakeReceiptPrinterService();
         dataSource = new FakeDataSource();
-        service = new ReceiptPrintService(pdfGenerator, printRepository, activityLogService, printerService,
+        service = new ReceiptPrintService(pdfGenerator, printRepository, activityLogService, receiptPrinterService,
                 dataSource, fixedClock());
         AuthContext.setCurrentUser(adminUser());
     }
@@ -82,6 +83,14 @@ class ReceiptPrintServiceTest {
     }
 
     @Test
+    void printOriginalReceiptSendsTheReceiptStraightToThePrinterWithoutAPdfFile() {
+        service.printOriginalReceipt(100L);
+
+        assertEquals(100L, pdfGenerator.printJasperPrintReceiptId);
+        assertEquals(1, receiptPrinterService.printCount);
+    }
+
+    @Test
     void rejectSecondOriginalPrint() {
         printRepository.receipt.setOriginalPrinted(true);
 
@@ -90,7 +99,7 @@ class ReceiptPrintServiceTest {
                 () -> service.printOriginalReceipt(100L));
 
         assertEquals("Original receipt has already been printed.", exception.getMessage());
-        assertEquals(0, printerService.printCount);
+        assertEquals(0, receiptPrinterService.printCount);
         assertTrue(activityLogService.actions.contains(ActivityLogService.RECEIPT_PRINT_BLOCKED_ALREADY_PRINTED));
     }
 
@@ -103,13 +112,13 @@ class ReceiptPrintServiceTest {
                 () -> service.printOriginalReceipt(100L));
 
         assertEquals("Cancelled receipts cannot be printed as original.", exception.getMessage());
-        assertEquals(0, printerService.printCount);
+        assertEquals(0, receiptPrinterService.printCount);
         assertTrue(activityLogService.actions.contains(ActivityLogService.RECEIPT_PRINT_BLOCKED_CANCELLED));
     }
 
     @Test
     void doNotMarkOriginalPrintedIfPrintFails() {
-        printerService.failPrint = true;
+        receiptPrinterService.failPrint = true;
 
         assertThrows(ReceiptPrintService.ReceiptPrintException.class, () -> service.printOriginalReceipt(100L));
 
@@ -128,7 +137,7 @@ class ReceiptPrintServiceTest {
 
     @Test
     void insertPrintLogOnFailure() {
-        printerService.failPrint = true;
+        receiptPrinterService.failPrint = true;
 
         assertThrows(ReceiptPrintService.ReceiptPrintException.class, () -> service.printOriginalReceipt(100L));
 
@@ -147,7 +156,7 @@ class ReceiptPrintServiceTest {
                 () -> service.printOriginalReceipt(100L));
 
         assertEquals("You do not have permission to print receipts.", exception.getMessage());
-        assertEquals(0, printerService.printCount);
+        assertEquals(0, receiptPrinterService.printCount);
     }
 
     @Test
@@ -169,6 +178,7 @@ class ReceiptPrintServiceTest {
 
     private static class FakeReceiptPdfGenerator extends ReceiptPdfGenerator {
         private long generatedReceiptId;
+        private long printJasperPrintReceiptId;
 
         private FakeReceiptPdfGenerator() {
             super(null, null, null, Clock.systemUTC());
@@ -178,6 +188,12 @@ class ReceiptPrintServiceTest {
         public String generateReceiptPdf(long receiptId) {
             generatedReceiptId = receiptId;
             return "./receipts/REC26000001.pdf";
+        }
+
+        @Override
+        public JasperPrint renderPrintJasperPrint(long receiptId) {
+            printJasperPrintReceiptId = receiptId;
+            return new JasperPrint();
         }
     }
 
@@ -274,12 +290,12 @@ class ReceiptPrintServiceTest {
         }
     }
 
-    private static class FakePrinterService implements PrinterService {
+    private static class FakeReceiptPrinterService implements ReceiptPrinterService {
         private boolean failPrint;
         private int printCount;
 
         @Override
-        public PrintResult printPdf(String pdfPath) {
+        public PrintResult print(JasperPrint jasperPrint) {
             printCount++;
             if (failPrint) {
                 return new PrintResult(false, "Printer offline", "Test Printer",
