@@ -69,6 +69,14 @@ public class SettingsController {
     private static final String REPORT_EXPORT_FOLDER_KEY = "reports.export.folder";
     private static final String REPORT_EXPORT_FOLDER_DEFAULT = "./reports";
 
+    /**
+     * Local per-machine setting, same rationale as {@link #REPORT_EXPORT_FOLDER_KEY} — where
+     * on-demand full-design receipt PDFs (see {@code ReceiptPrintService#generatePdf}) are saved
+     * on this machine. Independent of the dot-matrix print path, which never writes a PDF file.
+     */
+    private static final String RECEIPT_PDF_OUTPUT_FOLDER_KEY = "receipt.pdf.output.folder";
+    private static final String RECEIPT_PDF_OUTPUT_FOLDER_DEFAULT = "./receipts";
+
     private final SystemSettingService systemSettingService = new SystemSettingService();
     private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
     private final SerialPortService serialPortService = new SerialPortService();
@@ -110,6 +118,8 @@ public class SettingsController {
     @FXML private TextField timeFormatField;
     @FXML private TextField reportExportFolderField;
     @FXML private Button browseReportExportFolderButton;
+    @FXML private TextField receiptPdfExportFolderField;
+    @FXML private Button browseReceiptPdfExportFolderButton;
     @FXML private CheckBox pdfReportChartsEnabledCheckBox;
     @FXML private ComboBox<String> themeComboBox;
     @FXML private Label themeErrorLabel;
@@ -203,12 +213,17 @@ public class SettingsController {
         if (reportExportFolder == null) {
             return; // validation error already shown
         }
+        String receiptPdfExportFolder = normalizedReceiptPdfExportFolder();
+        if (receiptPdfExportFolder == null) {
+            return; // validation error already shown
+        }
 
         ProcessingDialog.run("Save Settings", "Saving settings...",
                 () -> {
-                    // Local per-machine value — written straight to this machine's
+                    // Local per-machine values — written straight to this machine's
                     // application.properties, never to the shared system_settings table.
                     DatabaseConfig.setProperty(REPORT_EXPORT_FOLDER_KEY, reportExportFolder);
+                    DatabaseConfig.setProperty(RECEIPT_PDF_OUTPUT_FOLDER_KEY, receiptPdfExportFolder);
                     return systemSettingService.updateSettings(List.of(
                             request("system.date.format", dateFormatField.getText()),
                             request("system.time.format", timeFormatField.getText()),
@@ -245,6 +260,26 @@ public class SettingsController {
         return stripped;
     }
 
+    /**
+     * Validates the receipt PDF export folder field and returns its stripped value,
+     * or {@code null} after showing a validation error.
+     */
+    private String normalizedReceiptPdfExportFolder() {
+        String value = receiptPdfExportFolderField.getText();
+        if (value == null || value.isBlank()) {
+            showValidationError("Receipt PDF export location is required.");
+            return null;
+        }
+        String stripped = value.strip();
+        try {
+            Path.of(stripped);
+        } catch (InvalidPathException exception) {
+            showValidationError("Receipt PDF export location is invalid.");
+            return null;
+        }
+        return stripped;
+    }
+
     @FXML
     private void browseReportExportFolder() {
         DirectoryChooser chooser = new DirectoryChooser();
@@ -259,6 +294,23 @@ public class SettingsController {
         File selected = chooser.showDialog(window());
         if (selected != null) {
             reportExportFolderField.setText(selected.getAbsolutePath());
+        }
+    }
+
+    @FXML
+    private void browseReceiptPdfExportFolder() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Select Receipt PDF Export Folder");
+        String currentPath = receiptPdfExportFolderField.getText();
+        if (currentPath != null && !currentPath.isBlank()) {
+            File currentFolder = new File(currentPath);
+            if (currentFolder.isDirectory()) {
+                chooser.setInitialDirectory(currentFolder.getAbsoluteFile());
+            }
+        }
+        File selected = chooser.showDialog(window());
+        if (selected != null) {
+            receiptPdfExportFolderField.setText(selected.getAbsolutePath());
         }
     }
 
@@ -404,6 +456,7 @@ public class SettingsController {
         dateFormatField.setText(values.get("system.date.format"));
         timeFormatField.setText(values.get("system.time.format"));
         loadReportExportFolderField();
+        loadReceiptPdfExportFolderField();
         pdfReportChartsEnabledCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
                 values.get("reports.pdf.charts.enabled"), "true")));
         themeComboBox.setValue(defaultValue(values.get("system.theme"), "ORCHID"));
@@ -419,8 +472,19 @@ public class SettingsController {
                 DatabaseConfig.getProperty(REPORT_EXPORT_FOLDER_KEY), REPORT_EXPORT_FOLDER_DEFAULT));
     }
 
+    /**
+     * Reads the receipt PDF export folder from this machine's local configuration
+     * (never from the shared {@code system_settings} DTO list — see
+     * {@link #RECEIPT_PDF_OUTPUT_FOLDER_KEY}).
+     */
+    private void loadReceiptPdfExportFolderField() {
+        receiptPdfExportFolderField.setText(defaultValue(
+                DatabaseConfig.getProperty(RECEIPT_PDF_OUTPUT_FOLDER_KEY), RECEIPT_PDF_OUTPUT_FOLDER_DEFAULT));
+    }
+
     private void configureButtonIcons() {
         ButtonIconUtil.applyIcon(browseReportExportFolderButton, "fas-folder-open");
+        ButtonIconUtil.applyIcon(browseReceiptPdfExportFolderButton, "fas-folder-open");
     }
 
     private void loadSmsGatewaySettings() {

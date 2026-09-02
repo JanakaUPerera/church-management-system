@@ -148,12 +148,18 @@
                         <Button fx:id="browseReportExportFolderButton" onAction="#browseReportExportFolder" text="Browse"/>
                     </HBox>
 
-                    <Label text="PDF Report Charts" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                    <CheckBox fx:id="pdfReportChartsEnabledCheckBox" text="Show charts in PDF reports" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                    <Label text="Receipt PDF Export Location" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <HBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                        <TextField fx:id="receiptPdfExportFolderField" prefWidth="420"/>
+                        <Button fx:id="browseReceiptPdfExportFolderButton" onAction="#browseReceiptPdfExportFolder" text="Browse"/>
+                    </HBox>
 
-                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
+                    <Label text="PDF Report Charts" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                    <CheckBox fx:id="pdfReportChartsEnabledCheckBox" text="Show charts in PDF reports" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="5"/>
                 </GridPane>
                 <Button onAction="#saveSystemSettings" styleClass="primary-button" text="Save System"/>
             </VBox>
