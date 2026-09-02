@@ -125,6 +125,19 @@ class ReportServiceTest {
     }
 
     @Test
+    void identifierDaySettingIsActuallyReadNotHardcodedToMonday() {
+        FakeSystemConfigurationCache wednesdayCache = new FakeSystemConfigurationCache();
+        wednesdayCache.put("receipt.week.identifier.day", "WEDNESDAY");
+        ReportService wednesdayService = new ReportService(repository, new ActivityLogService(null),
+                new ReportPdfExporter(fixedClock()), new ReportExcelExporter(), new CapturingPrinterService(),
+                fixedClock(), wednesdayCache);
+
+        assertEquals(LocalDate.of(2026, 6, 3), wednesdayService.defaultWeekIdentifier());
+        assertEquals(LocalDate.of(2026, 5, 28),
+                wednesdayService.defaultCriteria(ReportType.WEEKLY_CHURCH_COLLECTION).getWeekStartDate());
+    }
+
+    @Test
     void monthlyCollectionShowsMonthName() {
         ReportResult<? extends ReportTableRow> result = service.loadReport(criteria(ReportType.REGION_MONTHLY_COLLECTION));
 
@@ -720,6 +733,10 @@ class ReportServiceTest {
         @Override
         public String getString(String key) {
             return values.get(key);
+        }
+
+        private void put(String key, String value) {
+            values.put(key, value);
         }
     }
 }

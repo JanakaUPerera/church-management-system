@@ -110,6 +110,17 @@ class SubmissionStatusServiceTest {
     }
 
     @Test
+    void identifierDaySettingIsActuallyReadNotHardcodedToMonday() {
+        FakeSystemConfigurationCache wednesdayCache = new FakeSystemConfigurationCache();
+        wednesdayCache.put("receipt.week.identifier.day", "WEDNESDAY");
+        SubmissionStatusService wednesdayService = new SubmissionStatusService(
+                repository, activityLogService, fixedClock(), wednesdayCache);
+
+        assertEquals(LocalDate.of(2026, 5, 27), wednesdayService.defaultWeekIdentifier());
+        assertEquals(LocalDate.of(2026, 5, 21), wednesdayService.defaultWeekStart());
+    }
+
+    @Test
     void loadSubmissionDetailsLogsDetailsView() {
         SubmissionDetailsDto details = service.loadSubmissionDetails(10L);
 

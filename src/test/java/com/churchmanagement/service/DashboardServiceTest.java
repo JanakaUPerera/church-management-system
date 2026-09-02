@@ -65,6 +65,19 @@ class DashboardServiceTest {
     }
 
     @Test
+    void identifierDaySettingIsActuallyReadNotHardcodedToMonday() {
+        FakeSystemConfigurationCache wednesdayCache = new FakeSystemConfigurationCache();
+        wednesdayCache.put("receipt.week.identifier.day", "WEDNESDAY");
+        DashboardService wednesdayService = new DashboardService(
+                dashboardRepository, activityLogService, fixedClock(), wednesdayCache);
+
+        DashboardService.DateRange range = wednesdayService.defaultWeeklyRange();
+
+        assertEquals(LocalDate.of(2026, 5, 21), range.dateFrom());
+        assertEquals(LocalDate.of(2026, 5, 27), range.dateTo());
+    }
+
+    @Test
     void defaultTrendingDateIsCurrentMonthStartToToday() {
         DashboardService.DateRange range = dashboardService.defaultTrendingRange();
         TrendingDashboardDto trending = dashboardService.loadTrendingDashboard(null, null, null);
@@ -496,6 +509,10 @@ class DashboardServiceTest {
         @Override
         public String getString(String key) {
             return values.get(key);
+        }
+
+        private void put(String key, String value) {
+            values.put(key, value);
         }
     }
 
