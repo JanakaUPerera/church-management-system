@@ -12,6 +12,7 @@ import com.churchmanagement.repository.UserRepository;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.service.ReportService;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
@@ -52,6 +53,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -187,7 +189,7 @@ public class ReportsController {
         ReportSearchCriteria defaults = reportService.defaultCriteria(selectedReportType());
         dateFromPicker.setValue(defaults.getDateFrom());
         dateToPicker.setValue(defaults.getDateTo());
-        weekStartDatePicker.setValue(defaults.getWeekStartDate());
+        weekStartDatePicker.setValue(reportService.defaultWeekIdentifier());
         regionComboBox.getSelectionModel().selectFirst();
         churchComboBox.getSelectionModel().selectFirst();
         statusComboBox.setValue(ALL);
@@ -263,7 +265,7 @@ public class ReportsController {
     private void configureFilters() {
         DatePickerUtil.disableFutureDates(dateFromPicker);
         DatePickerUtil.disableFutureDates(dateToPicker);
-        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weekStartDatePicker);
+        DatePickerUtil.enableDayOfWeekOnlyAndDisableFutureDates(weekStartDatePicker, resolveIdentifierDay());
         updateStatusOptions(ReportType.WEEKLY_CHURCH_COLLECTION);
         quickDateComboBox.setItems(FXCollections.observableArrayList("This Week", "Previous Week", "This Month", "Quarter", "Year"));
         quickDateComboBox.setValue("This Month");
@@ -274,10 +276,15 @@ public class ReportsController {
         ComboBoxUtil.makeSearchable(churchComboBox, this::churchText);
 
         quickDateComboBox.valueProperty().addListener((obs, oldValue, newValue) -> applyQuickDate(newValue));
-        weekStartDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> updateWeekEndDate());
+        weekStartDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> updateWeekStartLabel());
         regionComboBox.valueProperty().addListener((obs, oldValue, newValue) -> updateChurchFilter());
         tableSearchField.textProperty().addListener((obs, oldValue, newValue) -> applyTableSearch());
-        updateWeekEndDate();
+        updateWeekStartLabel();
+    }
+
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(
+                SystemConfigurationCache.getInstance().getString("receipt.week.identifier.day"));
     }
 
     private void buildReportCards() {
@@ -518,7 +525,7 @@ public class ReportsController {
         criteria.setReportType(selectedReportType());
         criteria.setDateFrom(dateFromPicker.getValue());
         criteria.setDateTo(dateToPicker.getValue());
-        criteria.setWeekStartDate(weekStartDatePicker.getValue());
+        criteria.setWeekStartDate(WeekUtil.weekStartFor(weekStartDatePicker.getValue()));
         criteria.setRegionId(selectedRegionId());
         criteria.setChurchId(selectedChurchId());
         criteria.setStatus(statusComboBox.getValue());
@@ -542,7 +549,7 @@ public class ReportsController {
         dateFromPicker.setValue(range.dateFrom());
         dateToPicker.setValue(range.dateTo());
         if ("This Week".equals(option) || "Previous Week".equals(option)) {
-            weekStartDatePicker.setValue(range.dateFrom());
+            weekStartDatePicker.setValue(range.dateTo());
         }
     }
 
@@ -618,8 +625,8 @@ public class ReportsController {
         grandTotalLabel.setText(amount(totals.getGrandTotal()));
     }
 
-    private void updateWeekEndDate() {
-        weekEndDateLabel.setText(dateTimeFormatter.formatDate(WeekUtil.getSundayForMonday(weekStartDatePicker.getValue())));
+    private void updateWeekStartLabel() {
+        weekEndDateLabel.setText(dateTimeFormatter.formatDate(WeekUtil.weekStartFor(weekStartDatePicker.getValue())));
     }
 
     private void showRowDetails(ReportTableRow row) {
