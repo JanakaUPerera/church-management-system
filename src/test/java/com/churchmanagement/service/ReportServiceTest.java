@@ -466,7 +466,7 @@ class ReportServiceTest {
     @Test
     void weeklyReportsIgnoreHiddenDateRangeFilters() {
         ReportSearchCriteria criteria = criteria(ReportType.SUBMISSION_STATUS);
-        criteria.setWeekStartDate(LocalDate.of(2026, 5, 25));
+        criteria.setWeekStartDate(LocalDate.of(2026, 5, 26));
         criteria.setDateFrom(LocalDate.of(2026, 6, 1));
         criteria.setDateTo(LocalDate.of(2026, 6, 30));
 
@@ -474,7 +474,7 @@ class ReportServiceTest {
 
         assertNull(repository.lastCriteria.getDateFrom());
         assertNull(repository.lastCriteria.getDateTo());
-        assertEquals(LocalDate.of(2026, 5, 25), repository.lastCriteria.getWeekStartDate());
+        assertEquals(LocalDate.of(2026, 5, 26), repository.lastCriteria.getWeekStartDate());
     }
 
     @Test
@@ -496,7 +496,7 @@ class ReportServiceTest {
     private ReportSearchCriteria criteria(ReportType reportType) {
         ReportSearchCriteria criteria = new ReportSearchCriteria();
         criteria.setReportType(reportType);
-        criteria.setWeekStartDate(LocalDate.of(2026, 6, 1));
+        criteria.setWeekStartDate(LocalDate.of(2026, 6, 2));
         criteria.setDateFrom(LocalDate.of(2026, 1, 1));
         criteria.setDateTo(LocalDate.of(2026, 12, 31));
         criteria.setLimit(100);
