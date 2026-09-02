@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="receipt_print_template" pageWidth="342" pageHeight="396" columnWidth="342"
+              leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="a0bf2c1c-2a9c-44ce-90ea-fb312c9f0a32">
+    <!-- Text-only counterpart of receipt_template.jrxml, for printing directly onto the
+         pre-printed physical receipt pad on the dot-matrix printer: no background images,
+         border, or hole-punch marks - those already exist on the paper stock (see
+         receipt_template.jrxml / docs/RECEIPT.pdf for the full design they come from).
+         Page is exactly the 4.75in x 5.5in (342x396pt) receipt itself - no frame - so every
+         coordinate below is that template's element position minus the (20,20) frame offset
+         its header comment describes; nothing here is repositioned or rescaled. The printable
+         area within the physical margins is enforced by the printer job's Paper/imageable-area
+         at print time (DotMatrixReceiptPrinterService), not by this template, so a few
+         right-column fields intentionally run past that printable area and are clipped by the
+         printer rather than redesigned - this is an accepted tradeoff, not a bug. -->
+    <parameter name="receivedFrom" class="java.lang.String"/>
+    <parameter name="branchChurch" class="java.lang.String"/>
+    <parameter name="number" class="java.lang.String"/>
+    <parameter name="titheAmount" class="java.lang.String"/>
+    <parameter name="offeringsAmount" class="java.lang.String"/>
+    <parameter name="churchServiceDate" class="java.lang.String"/>
+    <parameter name="churchServiceWeek" class="java.lang.String"/>
+    <parameter name="dateReceived" class="java.lang.String"/>
+    <parameter name="receiptLanguageIsSinhala" class="java.lang.Boolean"/>
+    <parameter name="receiptLanguageIsTamil" class="java.lang.Boolean"/>
+    <parameter name="receiptLanguageIsEnglish" class="java.lang.Boolean"/>
+    <parameter name="receiptNo" class="java.lang.String"/>
+    <parameter name="printedAt" class="java.lang.String"/>
+    <parameter name="issuedBy" class="java.lang.String"/>
+    <parameter name="cancelledWatermark" class="java.lang.String"/>
+
+    <detail>
+        <band height="396">
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="114" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111201"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{receivedFrom}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="142" width="65" height="18" uuid="d1f1b111-1111-4111-8111-111111111202"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{branchChurch}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="235" y="143" width="98" height="18" uuid="d1f1b111-1111-4111-8111-111111111203"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{number}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="174" width="65" height="18" uuid="d1f1b111-1111-4111-8111-111111111204"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{titheAmount}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="235" y="175" width="124" height="18" uuid="d1f1b111-1111-4111-8111-111111111205"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{offeringsAmount}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="209" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111206"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{churchServiceDate}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="228" width="205" height="18" uuid="d1f1b111-1111-4111-8111-111111111207"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{churchServiceWeek}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="244" width="220" height="18" uuid="d1f1b111-1111-4111-8111-111111111208">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="244" width="220" height="18" uuid="d1f1b111-1111-4111-8111-111111111209">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Sinhala" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="122" y="244" width="220" height="18" uuid="d1f1b111-1111-4111-8111-111111111210">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Tamil" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{dateReceived}]]></textFieldExpression>
+            </textField>
+
+            <!-- Cancelled watermark: kept for parity with receipt_template.jrxml, though in
+                 practice printOriginalReceipt() already refuses to print cancelled receipts,
+                 so this text is always empty on anything that actually reaches the printer. -->
+            <textField>
+                <reportElement forecolor="#B00020" x="0" y="95" width="342" height="34" uuid="d1f1b111-1111-4111-8111-111111111211"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Noto Sans" size="20" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{cancelledWatermark}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="9" y="367" width="108" height="16" uuid="d1f1b111-1111-4111-8111-111111111212"/>
+                <textElement><font fontName="Noto Sans" size="10"/></textElement>
+                <text><![CDATA[Receipt No:]]></text>
+            </staticText>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="9" y="378" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111213"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{receiptNo}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="121" y="367" width="108" height="16" uuid="d1f1b111-1111-4111-8111-111111111214"/>
+                <textElement><font fontName="Noto Sans" size="10"/></textElement>
+                <text><![CDATA[Printed At:]]></text>
+            </staticText>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="121" y="378" width="108" height="18" uuid="d1f1b111-1111-4111-8111-111111111215"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{printedAt}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="233" y="367" width="100" height="16" uuid="d1f1b111-1111-4111-8111-111111111216"/>
+                <textElement><font fontName="Noto Sans" size="10"/></textElement>
+                <text><![CDATA[Issued By:]]></text>
+            </staticText>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="233" y="378" width="100" height="18" uuid="d1f1b111-1111-4111-8111-111111111217"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{issuedBy}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+</jasperReport>

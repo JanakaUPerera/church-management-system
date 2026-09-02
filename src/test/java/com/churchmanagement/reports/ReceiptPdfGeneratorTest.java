@@ -7,6 +7,8 @@ import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.enums.ReceiptStatus;
 import com.churchmanagement.service.ReceiptFontService;
 import com.churchmanagement.service.ReceiptLabelTranslationService;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JRPrintImage;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReceiptPdfGeneratorTest {
     private final ReceiptPdfGenerator generator = new ReceiptPdfGenerator(null, null, null, Clock.systemUTC(),
@@ -85,6 +88,16 @@ class ReceiptPdfGeneratorTest {
         Map<String, Object> parameters = generator.parameters(receipt(ReceiptStatus.CANCELLED, ReceiptLanguage.ENGLISH));
 
         assertEquals("CANCELLED", parameters.get("cancelledWatermark"));
+    }
+
+    @Test
+    void renderPrintJasperPrintUsesTheFullReceiptPageWithNoBackgroundArtwork() {
+        JasperPrint print = generator.renderPrintJasperPrint(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
+
+        assertEquals(342, print.getPageWidth());
+        assertEquals(396, print.getPageHeight());
+        assertTrue(print.getPages().get(0).getElements().stream().noneMatch(JRPrintImage.class::isInstance),
+                "print-only report must not carry the receipt pad's background artwork");
     }
 
     private ReceiptResponseDto receipt(ReceiptStatus status, ReceiptLanguage language) {

@@ -51,6 +51,7 @@ public class ReceiptPdfGenerator {
     public static final boolean PREVIEW_FEATURE_ENABLED = true;
 
     private static final String TEMPLATE_PATH = "/reports/receipt_template.jrxml";
+    private static final String PRINT_TEMPLATE_PATH = "/reports/receipt_print_template.jrxml";
     private static final String UNICODE_TEST_TEMPLATE_PATH = "/reports/unicode_font_test.jrxml";
     private static final String BACKGROUND_TOP_IMAGE_PATH = "/reports/receipt_background_top.png";
     private static final String BACKGROUND_FOOTER_BAR_IMAGE_PATH = "/reports/receipt_background_footer_bar.png";
@@ -168,6 +169,29 @@ public class ReceiptPdfGenerator {
             throw exception;
         } catch (Exception exception) {
             throw new ReceiptPdfException("Receipt preview rendering failed.", exception);
+        }
+    }
+
+    /**
+     * Fills the print-only counterpart of the receipt (no background artwork, sized to the
+     * physical 4.75in x 5.5in receipt) for direct printing on the pre-printed pad — see
+     * {@link com.churchmanagement.service.DotMatrixReceiptPrinterService}. No PDF file is
+     * written and no database state is changed.
+     */
+    public JasperPrint renderPrintJasperPrint(long receiptId) {
+        ReceiptResponseDto receipt = receiptRepository.findReceiptDetailsById(receiptId)
+                .orElseThrow(() -> new ReceiptPdfException("Receipt not found."));
+        return renderPrintJasperPrint(receipt);
+    }
+
+    public JasperPrint renderPrintJasperPrint(ReceiptResponseDto receipt) {
+        try {
+            return JasperFillManager.fillReport(compileTemplate(PRINT_TEMPLATE_PATH, ReceiptFontService.NOTO_SANS),
+                    parameters(receipt), new JREmptyDataSource(1));
+        } catch (ReceiptPdfException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new ReceiptPdfException("Receipt print rendering failed.", exception);
         }
     }
 
