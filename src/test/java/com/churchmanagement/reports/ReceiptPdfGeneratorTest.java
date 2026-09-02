@@ -72,6 +72,16 @@ class ReceiptPdfGeneratorTest {
     }
 
     @Test
+    void generatePdfParametersFoldWeekRangeIntoChurchServiceDateRow() {
+        // No field of its own on the physical pad, and no free line's worth of vertical room
+        // between rows to add one - rides the Date of church service row instead, the same
+        // technique used for Total (dateReceived) and Other Donations (offeringsAmount).
+        Map<String, Object> parameters = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
+
+        assertEquals("2026-Jan-11   (Week: 2026-Jan-05 - 2026-Jan-11)", parameters.get("churchServiceDate"));
+    }
+
+    @Test
     void generatePdfParametersFoldTotalIntoDateReceivedRowInReceiptLanguage() {
         Map<String, Object> english = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
         assertEquals("2026-Jan-12   Total Amount: 750.00", english.get("dateReceived"));

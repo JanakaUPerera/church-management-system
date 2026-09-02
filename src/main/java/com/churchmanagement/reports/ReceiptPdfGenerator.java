@@ -53,11 +53,10 @@ public class ReceiptPdfGenerator {
     private static final String TEMPLATE_PATH = "/reports/receipt_template.jrxml";
     private static final String PRINT_TEMPLATE_PATH = "/reports/receipt_print_template.jrxml";
     private static final String UNICODE_TEST_TEMPLATE_PATH = "/reports/unicode_font_test.jrxml";
-    private static final String BACKGROUND_TOP_IMAGE_PATH = "/reports/receipt_background_top.png";
-    private static final String BACKGROUND_FOOTER_BAR_IMAGE_PATH = "/reports/receipt_background_footer_bar.png";
+    private static final String BACKGROUND_IMAGE_PATH = "/reports/receipt_background.png";
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
-    private static final int PAGE_WIDTH = 382;
-    private static final int PAGE_HEIGHT = 436;
+    private static final int PAGE_WIDTH = 342;
+    private static final int PAGE_HEIGHT = 396;
     private static final float PREVIEW_ZOOM = 3f;
 
     private final ReceiptRepository receiptRepository;
@@ -240,11 +239,9 @@ public class ReceiptPdfGenerator {
     }
 
     private JasperPrint fill(ReceiptResponseDto receipt) throws Exception {
-        try (InputStream topImage = openBundledResource(BACKGROUND_TOP_IMAGE_PATH);
-             InputStream footerBarImage = openBundledResource(BACKGROUND_FOOTER_BAR_IMAGE_PATH)) {
+        try (InputStream backgroundImage = openBundledResource(BACKGROUND_IMAGE_PATH)) {
             Map<String, Object> parameters = parameters(receipt);
-            parameters.put("backgroundTopImage", topImage);
-            parameters.put("backgroundFooterBarImage", footerBarImage);
+            parameters.put("backgroundImage", backgroundImage);
             return JasperFillManager.fillReport(compileTemplate(TEMPLATE_PATH, ReceiptFontService.NOTO_SANS),
                     parameters, new JREmptyDataSource(1));
         }
@@ -286,16 +283,19 @@ public class ReceiptPdfGenerator {
         parameters.put("branchChurch", truncate(receipt.getChurchName(), 14));
         parameters.put("number", nullToDash(receipt.getChurchCode()));
         parameters.put("titheAmount", amountFor(receipt, CollectionType.TITHES));
-        parameters.put("churchServiceDate", receipt.getChurchServiceDate() == null
-                ? "-" : dateTimeFormatter.formatDate(receipt.getChurchServiceDate()));
-        parameters.put("churchServiceWeek", "(Week: " + dateTimeFormatter.formatDate(receipt.getWeekStartDate())
+        // Week range, Other Donations and Total have no field of their own on the physical pad,
+        // so rather than add new rows below them, they ride along on rows that already exist.
+        // Week (no room for a whole extra line - the gap between rows on the real pad is only
+        // ~15-17pt) is tacked onto the end of the Date of church service row.
+        String churchServiceDate = receipt.getChurchServiceDate() == null
+                ? "-" : dateTimeFormatter.formatDate(receipt.getChurchServiceDate());
+        parameters.put("churchServiceDate", churchServiceDate + "   (Week: "
+                + dateTimeFormatter.formatDate(receipt.getWeekStartDate())
                 + " - " + dateTimeFormatter.formatDate(receipt.getWeekEndDate()) + ")");
 
-        // Other Donations and Total have no field of their own on the physical pad, so rather
-        // than add a new section below it, they ride along on the two rows that already exist.
         // Total (roomy row, full-width label fits in every language) is tacked onto the end of
         // the Date Received row as "<label>: <amount>". Other Donations (only when the receipt
-        // actually has one) rides the Offerings row instead - that column is only ~124pt wide,
+        // actually has one) rides the Offerings row instead - that column is only ~66pt wide,
         // not enough to also spell out the (long, in Sinhala/Tamil) translated label without the
         // amount itself getting clipped off the end, so it's shown as a plain "+ <amount>"
         // addition instead: unambiguous in context (the Offerings row), and the figure - the
