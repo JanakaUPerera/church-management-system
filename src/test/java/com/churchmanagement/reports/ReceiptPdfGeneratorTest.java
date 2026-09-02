@@ -36,14 +36,14 @@ class ReceiptPdfGeneratorTest {
         assertEquals("CH001", parameters.get("number"));
         assertEquals("500.00", parameters.get("titheAmount"));
         assertEquals("250.00", parameters.get("offeringsAmount"));
-        assertEquals("2026-Jan-12   Total Amount: 750.00", parameters.get("dateReceived"));
+        assertEquals("2026-Jan-12", parameters.get("dateReceived"));
         assertEquals("REC26000001", parameters.get("receiptNo"));
         assertEquals("Admin", parameters.get("issuedBy"));
         assertEquals("", parameters.get("cancelledWatermark"));
     }
 
     @Test
-    void generatePdfParametersFoldOtherDonationsIntoOfferingsRowAsCompactAddition() {
+    void generatePdfParametersShowOtherDonationsAsItsOwnRowUnderOfferingsWhenPresent() {
         ReceiptResponseDto withOtherDonations = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH);
         withOtherDonations.setItems(List.of(
                 new ReceiptItemDto(CollectionType.TITHES, new BigDecimal("500.00"), null),
@@ -51,46 +51,53 @@ class ReceiptPdfGeneratorTest {
                 new ReceiptItemDto(CollectionType.OTHER_DONATIONS, new BigDecimal("100.00"), null)
         ));
 
-        // Purely numeric ("250.00 + 100.00") rather than spelling out the Other Donations label:
-        // the Offerings column is only ~124pt wide, too narrow in every language - especially the
-        // longer Sinhala/Tamil translations - to fit a label without pushing the amount off the
-        // edge, so it doesn't vary by language.
-        assertEquals("250.00 + 100.00", generator.parameters(withOtherDonations).get("offeringsAmount"));
+        // Offerings stays a plain figure - Other Donations gets its own "Others" row under it,
+        // rather than riding along the Offerings row.
+        Map<String, Object> english = generator.parameters(withOtherDonations);
+        assertEquals("250.00", english.get("offeringsAmount"));
+        assertEquals(Boolean.TRUE, english.get("hasOtherDonations"));
+        assertEquals("Others", english.get("othersLabel"));
+        assertEquals("100.00", english.get("othersValue"));
 
         withOtherDonations.setReceiptLanguage(ReceiptLanguage.SINHALA);
-        assertEquals("250.00 + 100.00", generator.parameters(withOtherDonations).get("offeringsAmount"));
+        assertEquals("වෙනත්", generator.parameters(withOtherDonations).get("othersLabel"));
 
         withOtherDonations.setReceiptLanguage(ReceiptLanguage.TAMIL);
-        assertEquals("250.00 + 100.00", generator.parameters(withOtherDonations).get("offeringsAmount"));
+        assertEquals("மற்றவை", generator.parameters(withOtherDonations).get("othersLabel"));
     }
 
     @Test
-    void generatePdfParametersOmitOtherDonationsFromOfferingsRowWhenNotPresent() {
+    void generatePdfParametersHideOtherDonationsRowWhenNotPresent() {
         Map<String, Object> parameters = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
 
         assertEquals("250.00", parameters.get("offeringsAmount"));
+        assertEquals(Boolean.FALSE, parameters.get("hasOtherDonations"));
     }
 
     @Test
-    void generatePdfParametersPlaceWeekRangeOnItsOwnLineUnderChurchServiceDate() {
-        Map<String, Object> parameters = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
-
-        assertEquals("2026-Jan-11", parameters.get("churchServiceDate"));
-        assertEquals("Week: 2026-Jan-05 - 2026-Jan-11", parameters.get("collectionWeek"));
-    }
-
-    @Test
-    void generatePdfParametersFoldTotalIntoDateReceivedRowInReceiptLanguage() {
+    void generatePdfParametersExposeTotalAsItsOwnLabelAndValuePerLanguage() {
         Map<String, Object> english = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
-        assertEquals("2026-Jan-12   Total Amount: 750.00", english.get("dateReceived"));
+        assertEquals("Total", english.get("totalLabel"));
+        assertEquals("750.00", english.get("totalValue"));
 
         ReceiptResponseDto sinhalaReceipt = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.SINHALA);
-        Map<String, Object> sinhala = generator.parameters(sinhalaReceipt);
-        assertEquals("2026-Jan-12   මුළු මුදල: 750.00", sinhala.get("dateReceived"));
+        assertEquals("එකතුව", generator.parameters(sinhalaReceipt).get("totalLabel"));
 
         ReceiptResponseDto tamilReceipt = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.TAMIL);
-        Map<String, Object> tamil = generator.parameters(tamilReceipt);
-        assertEquals("2026-Jan-12   மொத்த தொகை: 750.00", tamil.get("dateReceived"));
+        assertEquals("மொத்தம்", generator.parameters(tamilReceipt).get("totalLabel"));
+    }
+
+    @Test
+    void generatePdfParametersPlaceWeekRangeOnItsOwnLineUnderChurchServiceDateTranslatedPerLanguage() {
+        Map<String, Object> english = generator.parameters(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
+        assertEquals("2026-Jan-11", english.get("churchServiceDate"));
+        assertEquals("Week: 2026-Jan-05 - 2026-Jan-11", english.get("collectionWeek"));
+
+        ReceiptResponseDto sinhalaReceipt = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.SINHALA);
+        assertEquals("සතිය: 2026-Jan-05 - 2026-Jan-11", generator.parameters(sinhalaReceipt).get("collectionWeek"));
+
+        ReceiptResponseDto tamilReceipt = receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.TAMIL);
+        assertEquals("வாரம்: 2026-Jan-05 - 2026-Jan-11", generator.parameters(tamilReceipt).get("collectionWeek"));
     }
 
     @Test

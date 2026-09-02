@@ -279,6 +279,8 @@ public class ReceiptPdfGenerator {
 
     Map<String, Object> parameters(ReceiptResponseDto receipt) {
         Map<String, Object> parameters = new HashMap<>();
+        ReceiptLanguage language = receipt.getReceiptLanguage();
+
         parameters.put("receivedFrom", truncate(receipt.getSubmittedByName(), 30));
         parameters.put("branchChurch", truncate(receipt.getChurchName(), 14));
         parameters.put("number", nullToDash(receipt.getChurchCode()));
@@ -287,32 +289,29 @@ public class ReceiptPdfGenerator {
                 ? "-" : dateTimeFormatter.formatDate(receipt.getChurchServiceDate());
         parameters.put("churchServiceDate", churchServiceDate);
         // Own line directly under the Date of church service value - no field of its own on the
-        // physical pad, but unlike Other Donations/Total below it gets a dedicated line rather
-        // than riding along an existing row.
-        parameters.put("collectionWeek", "Week: "
+        // physical pad, but gets a dedicated (translated) line rather than riding along an
+        // existing row.
+        parameters.put("collectionWeek", translationService.label("week", language) + ": "
                 + dateTimeFormatter.formatDate(receipt.getWeekStartDate())
                 + " - " + dateTimeFormatter.formatDate(receipt.getWeekEndDate()));
 
-        // Other Donations and Total have no field of their own on the physical pad either, so
-        // rather than add new rows below them, they ride along on rows that already exist.
-        // Total (roomy row, full-width label fits in every language) is tacked onto the end of
-        // the Date Received row as "<label>: <amount>". Other Donations (only when the receipt
-        // actually has one) rides the Offerings row instead - that column is only ~66pt wide,
-        // not enough to also spell out the (long, in Sinhala/Tamil) translated label without the
-        // amount itself getting clipped off the end, so it's shown as a plain "+ <amount>"
-        // addition instead: unambiguous in context (the Offerings row), and the figure - the
-        // part that actually matters - always stays fully visible.
-        ReceiptLanguage language = receipt.getReceiptLanguage();
+        parameters.put("offeringsAmount", amountFor(receipt, CollectionType.OFFERTORY));
+
+        // Other Donations and Total have no field of their own on the physical pad, so rather
+        // than tacking them onto existing rows, they each get their own translated label/value
+        // pair: Other Donations (only when the receipt actually has one) directly under
+        // Offerings as "Others", then Total underneath that (always shown).
         String otherDonationsAmount = amountFor(receipt, CollectionType.OTHER_DONATIONS);
-        String offeringsAmount = amountFor(receipt, CollectionType.OFFERTORY);
-        parameters.put("offeringsAmount", "-".equals(otherDonationsAmount)
-                ? offeringsAmount
-                : offeringsAmount + " + " + otherDonationsAmount);
+        boolean hasOtherDonations = !"-".equals(otherDonationsAmount);
+        parameters.put("hasOtherDonations", hasOtherDonations);
+        parameters.put("othersLabel", translationService.label("others", language));
+        parameters.put("othersValue", otherDonationsAmount);
+        parameters.put("totalLabel", translationService.label("total", language));
+        parameters.put("totalValue", formatAmount(receipt.getTotalAmount()));
 
         String dateReceived = receipt.getReceiptDateTime() == null
                 ? "-" : dateTimeFormatter.formatDate(receipt.getReceiptDateTime().toLocalDate());
-        parameters.put("dateReceived", dateReceived + "   " + translationService.label("total_amount", language)
-                + ": " + formatAmount(receipt.getTotalAmount()));
+        parameters.put("dateReceived", dateReceived);
 
         parameters.put("receiptLanguageIsSinhala", language == ReceiptLanguage.SINHALA);
         parameters.put("receiptLanguageIsTamil", language == ReceiptLanguage.TAMIL);

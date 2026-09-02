@@ -20,6 +20,11 @@
     <parameter name="churchServiceDate" class="java.lang.String"/>
     <parameter name="collectionWeek" class="java.lang.String"/>
     <parameter name="dateReceived" class="java.lang.String"/>
+    <parameter name="hasOtherDonations" class="java.lang.Boolean"/>
+    <parameter name="othersLabel" class="java.lang.String"/>
+    <parameter name="othersValue" class="java.lang.String"/>
+    <parameter name="totalLabel" class="java.lang.String"/>
+    <parameter name="totalValue" class="java.lang.String"/>
     <parameter name="receiptLanguageIsSinhala" class="java.lang.Boolean"/>
     <parameter name="receiptLanguageIsTamil" class="java.lang.Boolean"/>
     <parameter name="receiptLanguageIsEnglish" class="java.lang.Boolean"/>
@@ -55,36 +60,102 @@
                 <textElement><font fontName="Noto Sans" size="10"/></textElement>
                 <textFieldExpression><![CDATA[$P{titheAmount}]]></textFieldExpression>
             </textField>
-            <!-- Offerings value: on receipts with an Other Donations amount, this string also
-                 carries " + <amount>" tacked onto the end (computed in ReceiptPdfGenerator)
-                 rather than adding a separate field the pad's original design doesn't have.
-                 Purely numeric (no translated label - this column is only ~66pt wide, too narrow
-                 in every language, especially the longer Sinhala/Tamil translations, to also
-                 spell out the Other Donations label without pushing the amount off the edge), so
-                 one field works for every language. -->
             <textField textAdjust="ScaleFont">
                 <reportElement x="240" y="217" width="66" height="18" uuid="d1f1b111-1111-4111-8111-111111111106"/>
                 <textElement><font fontName="Noto Sans" size="10"/></textElement>
                 <textFieldExpression><![CDATA[$P{offeringsAmount}]]></textFieldExpression>
             </textField>
+            <!-- Other Donations, own "Others" row directly under Offerings - only when the
+                 receipt actually has one. No field of its own on the pad's design, so both label
+                 and value are ours; label needs a font variant per language, value is numeric so
+                 one field covers every language. -->
             <textField textAdjust="ScaleFont">
-                <reportElement x="138" y="256" width="168" height="18" uuid="d1f1b111-1111-4111-8111-111111111107"/>
+                <reportElement x="240" y="236" width="66" height="12" uuid="d1f1b111-1111-4111-8111-111111111171">
+                    <printWhenExpression><![CDATA[$P{hasOtherDonations} && $P{receiptLanguageIsEnglish}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans" size="8"/></textElement>
+                <textFieldExpression><![CDATA[$P{othersLabel}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="236" width="66" height="12" uuid="d1f1b111-1111-4111-8111-111111111172">
+                    <printWhenExpression><![CDATA[$P{hasOtherDonations} && $P{receiptLanguageIsSinhala}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Sinhala" size="8"/></textElement>
+                <textFieldExpression><![CDATA[$P{othersLabel}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="236" width="66" height="12" uuid="d1f1b111-1111-4111-8111-111111111173">
+                    <printWhenExpression><![CDATA[$P{hasOtherDonations} && $P{receiptLanguageIsTamil}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Tamil" size="8"/></textElement>
+                <textFieldExpression><![CDATA[$P{othersLabel}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="248" width="66" height="14" uuid="d1f1b111-1111-4111-8111-111111111174">
+                    <printWhenExpression><![CDATA[$P{hasOtherDonations}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans" size="9"/></textElement>
+                <textFieldExpression><![CDATA[$P{othersValue}]]></textFieldExpression>
+            </textField>
+            <!-- Total, own row under Offerings/Others - always shown, no field of its own on the
+                 pad's design either. -->
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="264" width="66" height="12" uuid="d1f1b111-1111-4111-8111-111111111175">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans" size="8"/></textElement>
+                <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="264" width="66" height="12" uuid="d1f1b111-1111-4111-8111-111111111176">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Sinhala" size="8"/></textElement>
+                <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="264" width="66" height="12" uuid="d1f1b111-1111-4111-8111-111111111177">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Tamil" size="8"/></textElement>
+                <textFieldExpression><![CDATA[$P{totalLabel}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="240" y="276" width="66" height="14" uuid="d1f1b111-1111-4111-8111-111111111178"/>
+                <textElement><font fontName="Noto Sans" size="9"/></textElement>
+                <textFieldExpression><![CDATA[$P{totalValue}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="140" y="256" width="168" height="18" uuid="d1f1b111-1111-4111-8111-111111111107"/>
                 <textElement><font fontName="Noto Sans" size="10"/></textElement>
                 <textFieldExpression><![CDATA[$P{churchServiceDate}]]></textFieldExpression>
             </textField>
             <!-- Collection week range: its own line directly under the Date of church service
                  value (computed in ReceiptPdfGenerator) - no field of its own on the pad's
-                 design. -->
+                 design. Font variant per language so the translated label renders correctly. -->
             <textField textAdjust="ScaleFont">
-                <reportElement x="138" y="276" width="168" height="14" uuid="d1f1b111-1111-4111-8111-111111111170"/>
+                <reportElement x="37" y="280" width="168" height="14" uuid="d1f1b111-1111-4111-8111-111111111170">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
+                </reportElement>
                 <textElement><font fontName="Noto Sans" size="9"/></textElement>
                 <textFieldExpression><![CDATA[$P{collectionWeek}]]></textFieldExpression>
             </textField>
-            <!-- Date received value: this string also carries "   <Total label>: <amount>"
-                 tacked onto the end (computed in ReceiptPdfGenerator) so Total always shows
-                 without adding a field the pad's original design doesn't have. Three font
-                 variants, one per language, so the tacked-on label renders in the right script;
-                 only one prints. -->
+            <textField textAdjust="ScaleFont">
+                <reportElement x="37" y="280" width="168" height="14" uuid="d1f1b111-1111-4111-8111-111111111179">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsSinhala}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Sinhala" size="9"/></textElement>
+                <textFieldExpression><![CDATA[$P{collectionWeek}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="ScaleFont">
+                <reportElement x="37" y="280" width="168" height="14" uuid="d1f1b111-1111-4111-8111-111111111180">
+                    <printWhenExpression><![CDATA[$P{receiptLanguageIsTamil}]]></printWhenExpression>
+                </reportElement>
+                <textElement><font fontName="Noto Sans Tamil" size="9"/></textElement>
+                <textFieldExpression><![CDATA[$P{collectionWeek}]]></textFieldExpression>
+            </textField>
+            <!-- Date received value - three font variants, one per language (a plain date, no
+                 translated text, but kept split for consistency and in case that changes). -->
             <textField textAdjust="ScaleFont">
                 <reportElement x="118" y="300" width="168" height="18" uuid="d1f1b111-1111-4111-8111-111111111108">
                     <printWhenExpression><![CDATA[$P{receiptLanguageIsEnglish}]]></printWhenExpression>
