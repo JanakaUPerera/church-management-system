@@ -18,6 +18,7 @@ import com.churchmanagement.service.ReceiptCancellationService;
 import com.churchmanagement.service.ReceiptSmsNotificationService;
 import com.churchmanagement.service.ReceiptPrintService;
 import com.churchmanagement.service.RegionService;
+import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DatePickerUtil;
@@ -65,6 +66,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -162,7 +164,7 @@ public class ReceiptHistoryController {
         regionComboBox.getSelectionModel().selectFirst();
         updateChurchFilter();
         churchComboBox.getSelectionModel().selectFirst();
-        weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
+        weekStartDatePicker.setValue(WeekUtil.currentIdentifier(LocalDate.now(), resolveIdentifierDay()));
         tableSearchField.clear();
         statusComboBox.getSelectionModel().clearSelection();
         lateSubmissionComboBox.getSelectionModel().selectFirst();
@@ -183,7 +185,7 @@ public class ReceiptHistoryController {
                 ALL_OPTION_TEXT, RECREATED_ONLY_OPTION_TEXT, ORIGINAL_ONLY_OPTION_TEXT));
         printStatusComboBox.setItems(FXCollections.observableArrayList(
                 ALL_OPTION_TEXT, PRINTED_ONLY_OPTION_TEXT, NOT_PRINTED_ONLY_OPTION_TEXT));
-        DatePickerUtil.enableMondaysOnlyAndDisableFutureDates(weekStartDatePicker);
+        DatePickerUtil.enableDayOfWeekOnlyAndDisableFutureDates(weekStartDatePicker, resolveIdentifierDay());
         regionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateChurchFilter());
         tableSearchField.setOnAction(event -> handleSearch());
     }
@@ -204,7 +206,7 @@ public class ReceiptHistoryController {
         return new ReceiptSearchCriteria(
                 selectedChurchId(churchComboBox.getValue()),
                 selectedRegionId(regionComboBox.getValue()),
-                weekStartDatePicker.getValue(),
+                WeekUtil.weekStartFor(weekStartDatePicker.getValue()),
                 tableSearchField.getText(),
                 statusComboBox.getValue(),
                 selectedLateSubmissionFilter(),
@@ -268,6 +270,11 @@ public class ReceiptHistoryController {
         return formatDate(receipt.getWeekStartDate()) + " to " + formatDate(receipt.getWeekEndDate());
     }
 
+    private DayOfWeek resolveIdentifierDay() {
+        return WeekUtil.parseIdentifierDay(
+                SystemConfigurationCache.getInstance().getString("receipt.week.identifier.day"));
+    }
+
     private void loadFilters() {
         try {
             allChurches.setAll(churchService.findAll());
@@ -284,7 +291,7 @@ public class ReceiptHistoryController {
     }
 
     private void resetFiltersToDefault() {
-        weekStartDatePicker.setValue(WeekUtil.getPreviousWeekMonday(LocalDate.now()));
+        weekStartDatePicker.setValue(WeekUtil.currentIdentifier(LocalDate.now(), resolveIdentifierDay()));
         tableSearchField.clear();
         statusComboBox.getSelectionModel().clearSelection();
         lateSubmissionComboBox.getSelectionModel().selectFirst();
