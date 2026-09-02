@@ -129,6 +129,33 @@ public class ReceiptPdfGenerator {
     }
 
     /**
+     * Writes the full-design receipt PDF to a throwaway file in the system temp folder, for the
+     * "Preview PDF" action — unlike {@link #generateReceiptPdf(long)}, this never writes into the
+     * configured receipts folder and never updates the receipt's saved-PDF path in the database.
+     * Purely a look; the file is marked for deletion when the JVM exits.
+     */
+    public String generateTemporaryPdf(long receiptId) {
+        ReceiptResponseDto receipt = receiptRepository.findReceiptDetailsById(receiptId)
+                .orElseThrow(() -> new ReceiptPdfException("Receipt not found."));
+        return generateTemporaryPdf(receipt);
+    }
+
+    public String generateTemporaryPdf(ReceiptResponseDto receipt) {
+        try {
+            Path tempFile = Files.createTempFile("receipt-preview-", ".pdf");
+            tempFile.toFile().deleteOnExit();
+
+            JasperPrint print = fill(receipt);
+            JasperExportManager.exportReportToPdfFile(print, tempFile.toString());
+            return tempFile.toString();
+        } catch (ReceiptPdfException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new ReceiptPdfException("Receipt preview PDF generation failed.", exception);
+        }
+    }
+
+    /**
      * Renders the receipt to an in-memory image for the "Preview" action — no PDF file is written
      * and no database state is changed. Gated at the call sites by {@link #PREVIEW_FEATURE_ENABLED}.
      */

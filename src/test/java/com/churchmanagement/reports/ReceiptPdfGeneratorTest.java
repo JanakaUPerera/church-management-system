@@ -12,6 +12,8 @@ import net.sf.jasperreports.engine.JRPrintImage;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -88,6 +90,19 @@ class ReceiptPdfGeneratorTest {
         Map<String, Object> parameters = generator.parameters(receipt(ReceiptStatus.CANCELLED, ReceiptLanguage.ENGLISH));
 
         assertEquals("CANCELLED", parameters.get("cancelledWatermark"));
+    }
+
+    @Test
+    void generateTemporaryPdfWritesAThrowawayFileWithoutTrackingIt() throws Exception {
+        String path = generator.generateTemporaryPdf(receipt(ReceiptStatus.ACTIVE, ReceiptLanguage.ENGLISH));
+
+        Path file = Path.of(path);
+        assertTrue(Files.exists(file), "temporary preview PDF should exist");
+        assertTrue(Files.size(file) > 0, "temporary preview PDF should not be empty");
+        assertTrue(path.endsWith(".pdf"));
+        assertEquals(Path.of(System.getProperty("java.io.tmpdir")).toRealPath(),
+                file.toAbsolutePath().getParent().toRealPath(),
+                "must be written to the system temp folder, not the configured receipts folder");
     }
 
     @Test
