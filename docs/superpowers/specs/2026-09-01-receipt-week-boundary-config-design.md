@@ -33,10 +33,22 @@ than around the start of the collection period:
 - No migration or reinterpretation of historical receipts. Existing
   `week_start_date`/`week_end_date` values are left exactly as stored;
   each receipt remains internally consistent (`end = start + 6`) under
-  whatever boundary was in effect when it was created. Reports spanning
-  the cutover date will show a one-day seam in historical data — expected
-  and accurate, since it reflects how the organization actually operated
-  at the time.
+  whatever boundary was in effect when it was created.
+
+  **Accepted consequence (confirmed during implementation, not merely a
+  cosmetic seam):** every weekly screen that filters on an *exact* week
+  match (`week_start_date = ?` — Submission Status, the weekly Report
+  types, and Receipt History's week filter) can no longer match a
+  receipt filed before the cutover, because old rows carry a
+  Monday-based `week_start_date` while the app always computes and
+  queries for the new (default: Tuesday-based) boundary. This is
+  permanent non-reachability through those specific screens, not a
+  one-time seam — the data itself is untouched and remains reachable
+  through the *range*-based screens (`week_start_date BETWEEN ? AND ?` —
+  the Dashboard's weekly summary, and the annual/monthly collection
+  report types), which degrade gracefully to a one-week attribution
+  shift at the cutover boundary instead. Accepted as-is: no query-layer
+  change, no historical data migration.
 - No DB schema changes: no new/renamed columns, no new constraints. The
   existing `week_start_date` (earlier boundary) / `week_end_date`
   (later boundary, now the identifier) columns keep their current roles

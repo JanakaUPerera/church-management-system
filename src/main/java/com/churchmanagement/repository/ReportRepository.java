@@ -16,6 +16,21 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Note on week filtering: the weekly (exact-match, {@code week_start_date = ?})
+ * report queries here only ever match receipts filed under the currently
+ * configured week boundary (see {@code receipt.week.identifier.day} and
+ * {@link com.churchmanagement.util.WeekUtil}). Receipts filed before that
+ * setting's cutover carry a {@code week_start_date} under the boundary in
+ * effect at the time, which will not equal what a post-cutover UI computes
+ * for the same calendar week — so those exact-match weekly reports cannot
+ * surface pre-cutover data. This is an accepted, intentional limitation
+ * (see the "Accepted consequence" note in
+ * {@code docs/superpowers/specs/2026-09-01-receipt-week-boundary-config-design.md}),
+ * not a bug. The range-based collection reports below ({@code BETWEEN}
+ * queries) are unaffected — they degrade gracefully to a one-week
+ * attribution shift at the cutover instead of losing data entirely.
+ */
 public class ReportRepository {
     private final DataSource dataSource;
 

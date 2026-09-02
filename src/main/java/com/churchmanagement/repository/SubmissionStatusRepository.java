@@ -21,6 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Note on week filtering: every query here is an exact-match
+ * {@code week_start_date = ?} lookup, so it only ever matches receipts
+ * filed under the currently configured week boundary (see
+ * {@code receipt.week.identifier.day} and
+ * {@link com.churchmanagement.util.WeekUtil}). Receipts filed before that
+ * setting's cutover carry a {@code week_start_date} under the boundary in
+ * effect at the time and will not surface here for a post-cutover week
+ * selection. This is an accepted, intentional limitation (see the
+ * "Accepted consequence" note in
+ * {@code docs/superpowers/specs/2026-09-01-receipt-week-boundary-config-design.md}),
+ * not a bug.
+ */
 public class SubmissionStatusRepository {
     private final DataSource dataSource;
 
