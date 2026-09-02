@@ -13,22 +13,6 @@ public final class DatePickerUtil {
     private DatePickerUtil() {
     }
 
-    public static void enableMondaysOnly(DatePicker datePicker) {
-        applySystemDateFormat(datePicker);
-        datePicker.setDayCellFactory(picker -> new DateCell() {
-            @Override
-            public void updateItem(java.time.LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                setDisable(empty || date.getDayOfWeek() != DayOfWeek.MONDAY);
-            }
-        });
-        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null && !isMonday(newValue)) {
-                datePicker.setValue(oldValue);
-            }
-        });
-    }
-
     public static void disableFutureDates(DatePicker datePicker) {
         applySystemDateFormat(datePicker);
         datePicker.setDayCellFactory(picker -> new DateCell() {
@@ -40,22 +24,6 @@ public final class DatePickerUtil {
         });
         datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null && newValue.isAfter(LocalDate.now())) {
-                datePicker.setValue(oldValue);
-            }
-        });
-    }
-
-    public static void enableMondaysOnlyAndDisableFutureDates(DatePicker datePicker) {
-        applySystemDateFormat(datePicker);
-        datePicker.setDayCellFactory(picker -> new DateCell() {
-            @Override
-            public void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                setDisable(empty || !isMonday(date) || date.isAfter(LocalDate.now()));
-            }
-        });
-        datePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null && (!isMonday(newValue) || newValue.isAfter(LocalDate.now()))) {
                 datePicker.setValue(oldValue);
             }
         });
@@ -140,7 +108,4 @@ public final class DatePickerUtil {
         });
     }
 
-    private static boolean isMonday(LocalDate date) {
-        return date.getDayOfWeek() == DayOfWeek.MONDAY;
-    }
 }
