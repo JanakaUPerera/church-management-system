@@ -262,6 +262,15 @@ public class ReceiptEntryController {
     }
 
     private void applyCorrectionReceipt(ReceiptResponseDto receipt) {
+        DayOfWeek identifierDay = resolveIdentifierDay();
+        if (!WeekUtil.isIdentifierDay(receipt.getWeekEndDate(), identifierDay)) {
+            throw new ReceiptService.ReceiptException(
+                    "This receipt's week (ending " + dateTimeFormatter.formatDate(receipt.getWeekEndDate())
+                            + ") does not match the current week identifier day ("
+                            + WeekUtil.displayName(identifierDay)
+                            + ") and cannot be automatically loaded for correction. "
+                            + "Verify the correct week manually before proceeding.");
+        }
         correctedFromReceiptId = receipt.getId();
         correctedFromValueLabel.setText(receipt.getReceiptNo());
         selectChurch(receipt);
