@@ -19,7 +19,7 @@
 - No migration or reinterpretation of historical receipts.
 - Every service gains its `SystemConfigurationCache` dependency by **adding a new trailing-parameter constructor overload** and making the existing (shorter) constructor delegate to it via `SystemConfigurationCache.getInstance()` — this keeps every existing test's constructor call compiling unchanged (confirmed safe: `SystemConfigurationCache.getString(...)` never touches the database unless `reload()`/`loadSettings()` is called, which none of these services do).
 - Every controller resolves the identifier day itself via a private `resolveIdentifierDay()` helper reading `SystemConfigurationCache.getInstance().getString("receipt.week.identifier.day")` through `WeekUtil.parseIdentifierDay(...)` — same pattern already used in services, no new shared abstraction.
-- Copy convention used everywhere a picker/label pair exists: the picker's label reads **"Week Ending Date"**, the computed read-only label reads **"Week Start Date"**.
+- Copy convention used everywhere a picker/label pair exists: the picker's label reads **"Week"**, the computed read-only label reads **"Week Start Date"**.
 
 ---
 
@@ -927,7 +927,7 @@ Change:
 to:
 
 ```xml
-              <Label text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+              <Label text="Week" GridPane.columnIndex="0" GridPane.rowIndex="1" />
               <DatePicker fx:id="weekStartDatePicker" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="1" />
               <Label text="Week Start Date" GridPane.columnIndex="2" GridPane.rowIndex="1" />
               <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1" />
@@ -937,7 +937,7 @@ to:
 
 - [ ] **Step 9: Manual verification**
 
-Run the app, open Receipt Entry: confirm the "Week Ending Date" picker only allows Mondays (or the configured day) and future dates are blocked, defaults to today if today is a Monday, the "Week Start Date" label shows 6 days earlier, "Date of church service" is restricted to that range, late-submission indicator and reason field toggle correctly for a back week, and a full create + a corrected-receipt re-creation both work.
+Run the app, open Receipt Entry: confirm the "Week" picker only allows Mondays (or the configured day) and future dates are blocked, defaults to today if today is a Monday, the "Week Start Date" label shows 6 days earlier, "Date of church service" is restricted to that range, late-submission indicator and reason field toggle correctly for a back week, and a full create + a corrected-receipt re-creation both work.
 
 - [ ] **Step 10: Commit**
 
@@ -1623,7 +1623,7 @@ Change:
 to:
 
 ```xml
-        <Label text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Label text="Week" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
         <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 ```
 
@@ -1931,7 +1931,7 @@ Change:
 to:
 
 ```xml
-                            <Label fx:id="weekStartLabel" styleClass="field-label" text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <Label fx:id="weekStartLabel" styleClass="field-label" text="Week" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
                             <DatePicker fx:id="weekStartDatePicker" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
                             <Label fx:id="weekEndLabel" styleClass="field-label" text="Week Start Date" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
                             <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0"/>

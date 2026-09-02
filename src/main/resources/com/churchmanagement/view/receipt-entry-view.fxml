@@ -36,7 +36,7 @@
               <Label text="Region" GridPane.columnIndex="2" GridPane.rowIndex="0" />
               <Label fx:id="regionLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0" />
       
-              <Label text="Week Ending Date" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+              <Label text="Week" GridPane.columnIndex="0" GridPane.rowIndex="1" />
               <DatePicker fx:id="weekStartDatePicker" prefWidth="280" GridPane.columnIndex="1" GridPane.rowIndex="1" />
               <Label text="Week Start Date" GridPane.columnIndex="2" GridPane.rowIndex="1" />
               <Label fx:id="weekEndDateLabel" styleClass="value-label" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1" />
