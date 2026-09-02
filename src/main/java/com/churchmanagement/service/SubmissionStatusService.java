@@ -113,7 +113,7 @@ public class SubmissionStatusService {
     }
 
     private DayOfWeek resolveIdentifierDay() {
-        return WeekUtil.parseIdentifierDay(configurationCache.getString("receipt.week.identifier.day"));
+        return WeekUtil.parseIdentifierDay(configurationCache.getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
     }
 
     private String safeStatus(String status) {

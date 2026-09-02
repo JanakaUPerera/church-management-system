@@ -8,6 +8,7 @@ import java.util.Locale;
 
 public final class WeekUtil {
     public static final DayOfWeek DEFAULT_IDENTIFIER_DAY = DayOfWeek.MONDAY;
+    public static final String IDENTIFIER_DAY_SETTING_KEY = "receipt.week.identifier.day";
 
     private WeekUtil() {
     }

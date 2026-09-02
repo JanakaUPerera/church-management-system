@@ -209,7 +209,7 @@ public class DashboardHomeController {
 
     private DayOfWeek resolveIdentifierDay() {
         return WeekUtil.parseIdentifierDay(
-                SystemConfigurationCache.getInstance().getString("receipt.week.identifier.day"));
+                SystemConfigurationCache.getInstance().getString(WeekUtil.IDENTIFIER_DAY_SETTING_KEY));
     }
 
     private void configureFilters() {

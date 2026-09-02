@@ -23,6 +23,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.ThemeService;
+import com.churchmanagement.util.WeekUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -158,7 +159,7 @@ public class SettingsController {
                 request("receipt.allow.back.week", String.valueOf(receiptAllowBackWeekCheckBox.isSelected())),
                 request("receipt.late.reason.required", String.valueOf(receiptLateReasonRequiredCheckBox.isSelected())),
                 request("receipt.default.language", receiptLanguageComboBox.getValue()),
-                request("receipt.week.identifier.day", weekIdentifierDayComboBox.getValue())
+                request(WeekUtil.IDENTIFIER_DAY_SETTING_KEY, weekIdentifierDayComboBox.getValue())
         ));
     }
 
@@ -395,7 +396,7 @@ public class SettingsController {
         receiptLateReasonRequiredCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
                 values.get("receipt.late.reason.required"), "false")));
         receiptLanguageComboBox.setValue(defaultValue(values.get("receipt.default.language"), "ENGLISH"));
-        weekIdentifierDayComboBox.setValue(defaultValue(values.get("receipt.week.identifier.day"), "MONDAY"));
+        weekIdentifierDayComboBox.setValue(defaultValue(values.get(WeekUtil.IDENTIFIER_DAY_SETTING_KEY), "MONDAY"));
         smsEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.enabled")));
         gatewayTypeComboBox.setValue(parseGatewayType(values.get("sms.gateway.type")));
         smsRetryEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.retry.enabled")));
