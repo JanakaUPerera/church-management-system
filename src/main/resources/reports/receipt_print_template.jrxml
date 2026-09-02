@@ -18,6 +18,7 @@
     <parameter name="titheAmount" class="java.lang.String"/>
     <parameter name="offeringsAmount" class="java.lang.String"/>
     <parameter name="churchServiceDate" class="java.lang.String"/>
+    <parameter name="collectionWeek" class="java.lang.String"/>
     <parameter name="dateReceived" class="java.lang.String"/>
     <parameter name="receiptLanguageIsSinhala" class="java.lang.Boolean"/>
     <parameter name="receiptLanguageIsTamil" class="java.lang.Boolean"/>
@@ -58,6 +59,14 @@
                 <reportElement x="138" y="256" width="168" height="18" uuid="d1f1b111-1111-4111-8111-111111111206"/>
                 <textElement><font fontName="Noto Sans" size="12"/></textElement>
                 <textFieldExpression><![CDATA[$P{churchServiceDate}]]></textFieldExpression>
+            </textField>
+            <!-- Collection week range: its own line directly under the Date of church service
+                 value (computed in ReceiptPdfGenerator) - no field of its own on the pad's
+                 design. -->
+            <textField textAdjust="ScaleFont">
+                <reportElement x="138" y="276" width="168" height="18" uuid="d1f1b111-1111-4111-8111-111111111218"/>
+                <textElement><font fontName="Noto Sans" size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{collectionWeek}]]></textFieldExpression>
             </textField>
             <textField textAdjust="ScaleFont">
                 <reportElement x="138" y="300" width="168" height="18" uuid="d1f1b111-1111-4111-8111-111111111208">

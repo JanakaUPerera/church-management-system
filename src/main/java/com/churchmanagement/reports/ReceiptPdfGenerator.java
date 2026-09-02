@@ -283,16 +283,18 @@ public class ReceiptPdfGenerator {
         parameters.put("branchChurch", truncate(receipt.getChurchName(), 14));
         parameters.put("number", nullToDash(receipt.getChurchCode()));
         parameters.put("titheAmount", amountFor(receipt, CollectionType.TITHES));
-        // Week range, Other Donations and Total have no field of their own on the physical pad,
-        // so rather than add new rows below them, they ride along on rows that already exist.
-        // Week (no room for a whole extra line - the gap between rows on the real pad is only
-        // ~15-17pt) is tacked onto the end of the Date of church service row.
         String churchServiceDate = receipt.getChurchServiceDate() == null
                 ? "-" : dateTimeFormatter.formatDate(receipt.getChurchServiceDate());
-        parameters.put("churchServiceDate", churchServiceDate + "   (Week: "
+        parameters.put("churchServiceDate", churchServiceDate);
+        // Own line directly under the Date of church service value - no field of its own on the
+        // physical pad, but unlike Other Donations/Total below it gets a dedicated line rather
+        // than riding along an existing row.
+        parameters.put("collectionWeek", "Week: "
                 + dateTimeFormatter.formatDate(receipt.getWeekStartDate())
-                + " - " + dateTimeFormatter.formatDate(receipt.getWeekEndDate()) + ")");
+                + " - " + dateTimeFormatter.formatDate(receipt.getWeekEndDate()));
 
+        // Other Donations and Total have no field of their own on the physical pad either, so
+        // rather than add new rows below them, they ride along on rows that already exist.
         // Total (roomy row, full-width label fits in every language) is tacked onto the end of
         // the Date Received row as "<label>: <amount>". Other Donations (only when the receipt
         // actually has one) rides the Offerings row instead - that column is only ~66pt wide,
@@ -318,7 +320,7 @@ public class ReceiptPdfGenerator {
 
         parameters.put("receiptNo", nullToDash(receipt.getReceiptNo()));
         parameters.put("printedAt", formatDateTime(LocalDateTime.now(clock)));
-        parameters.put("issuedBy", truncate(receipt.getIssuedByFullName(), 16));
+        parameters.put("issuedBy", truncate(receipt.getIssuedByFullName(), 21));
 
         parameters.put("cancelledWatermark", receipt.getStatus() == ReceiptStatus.CANCELLED ? "CANCELLED" : "");
         return parameters;
