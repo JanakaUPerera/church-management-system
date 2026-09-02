@@ -206,7 +206,7 @@ public class ReceiptEntryController {
 
         LocalDate serviceDate = churchServiceDatePicker.getValue();
         if (start != null && identifier != null
-                && (serviceDate == null || serviceDate.isBefore(start) || serviceDate.isAfter(identifier))) {
+                && serviceDate != null && (serviceDate.isBefore(start) || serviceDate.isAfter(identifier))) {
             churchServiceDatePicker.setValue(identifier);
         }
 
@@ -487,6 +487,7 @@ public class ReceiptEntryController {
         churchComboBox.getSelectionModel().clearSelection();
         updateSelectedRegion();
         weekStartDatePicker.setValue(WeekUtil.currentIdentifier(LocalDate.now(), resolveIdentifierDay()));
+        churchServiceDatePicker.setValue(null);
         submittedByNameField.clear();
         lateSubmissionReasonArea.clear();
         correctedFromReceiptId = null;
