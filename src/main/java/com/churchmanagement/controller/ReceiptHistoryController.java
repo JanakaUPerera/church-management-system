@@ -405,7 +405,6 @@ public class ReceiptHistoryController {
             dialog.setHeaderText("Receipt " + details.getReceiptNo());
             ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
             ButtonType previewButton = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
-            ButtonType previewPdfButton = new ButtonType("Preview PDF", ButtonBar.ButtonData.LEFT);
             ButtonType exportPdfButton = new ButtonType("Export PDF", ButtonBar.ButtonData.LEFT);
             ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
             ButtonType reprintTestButton = new ButtonType("Reprint (Test)", ButtonBar.ButtonData.LEFT);
@@ -413,9 +412,8 @@ public class ReceiptHistoryController {
             ButtonType recreateButton = new ButtonType("Re-create Receipt", ButtonBar.ButtonData.LEFT);
             if (ReceiptPdfGenerator.PREVIEW_FEATURE_ENABLED) {
                 dialog.getDialogPane().getButtonTypes().add(previewButton);
-                dialog.getDialogPane().getButtonTypes().add(previewPdfButton);
+                dialog.getDialogPane().getButtonTypes().add(exportPdfButton);
             }
-            dialog.getDialogPane().getButtonTypes().add(exportPdfButton);
             if (canPrintOriginal(details)) {
                 dialog.getDialogPane().getButtonTypes().add(printOriginalButton);
             }
@@ -435,8 +433,6 @@ public class ReceiptHistoryController {
             Optional<ButtonType> result = dialog.showAndWait();
             if (result.filter(previewButton::equals).isPresent()) {
                 previewReceipt(details);
-            } else if (result.filter(previewPdfButton::equals).isPresent()) {
-                previewPdf(details);
             } else if (result.filter(exportPdfButton::equals).isPresent()) {
                 exportPdf(details);
             } else if (result.filter(printOriginalButton::equals).isPresent()) {
@@ -803,32 +799,16 @@ public class ReceiptHistoryController {
     }
 
     /**
-     * Saves the full-design PDF into the configured Receipt PDF Export Location, records that
-     * path on the receipt, then opens it — for deliberately keeping/sharing a copy (e.g. by
-     * email or WhatsApp). Reuses an already-exported file rather than regenerating one.
+     * Opens the full-design PDF for sharing (e.g. by email or WhatsApp) — written to a throwaway
+     * temp file, never saved into the configured receipts folder and never recorded on the
+     * receipt. Opening it is enough to attach/forward it from the default PDF viewer, so there's
+     * no separate persisted export.
      */
     private void exportPdf(ReceiptResponseDto receipt) {
-        ProcessingDialog.run("Export PDF", "Preparing PDF...",
-                () -> {
-                    String path = receipt.getPdfFilePath();
-                    if (path == null || path.isBlank()) {
-                        path = receiptPrintService.generatePdf(receipt.getId());
-                    }
-                    openInDefaultViewer(path);
-                },
+        ProcessingDialog.run("Export PDF", "Rendering receipt PDF...",
+                () -> openInDefaultViewer(receiptPdfGenerator.generateTemporaryPdf(receipt.getId())),
                 () -> setMessage("PDF exported."),
                 throwable -> showProcessingError("Export PDF", throwable));
-    }
-
-    /**
-     * Opens the full-design PDF for a quick look only — written to a throwaway temp file, never
-     * saved into the configured receipts folder and never recorded on the receipt.
-     */
-    private void previewPdf(ReceiptResponseDto receipt) {
-        ProcessingDialog.run("Preview PDF", "Rendering receipt PDF...",
-                () -> openInDefaultViewer(receiptPdfGenerator.generateTemporaryPdf(receipt.getId())),
-                () -> setMessage("PDF preview opened."),
-                throwable -> showProcessingError("Preview PDF", throwable));
     }
 
     private void openInDefaultViewer(String path) throws IOException {
@@ -1023,27 +1003,27 @@ public class ReceiptHistoryController {
 
     private class ViewButtonCell extends TableCell<ReceiptResponseDto, Void> {
         private final Button viewButton = new Button();
-        private final Button pdfButton = new Button();
+        private final Button previewButton = new Button();
         private final Button printButton = new Button();
         private final Button smsButton = new Button();
         private final Button recreateButton = new Button();
-        private final HBox actionBox = new HBox(6, viewButton, pdfButton, printButton, smsButton, recreateButton);
+        private final HBox actionBox = new HBox(6, viewButton, previewButton, printButton, smsButton, recreateButton);
 
         private ViewButtonCell() {
             getStyleClass().add("receipt-action-cell");
             actionBox.setAlignment(Pos.CENTER);
             viewButton.getStyleClass().add("table-action-button");
             recreateButton.getStyleClass().add("table-action-button");
-            pdfButton.getStyleClass().add("table-action-button");
+            previewButton.getStyleClass().add("table-action-button");
             printButton.getStyleClass().add("table-action-button");
             smsButton.getStyleClass().add("table-action-button");
             ButtonIconUtil.applyTableActionIcon(viewButton, "fas-eye", "View receipt");
-            ButtonIconUtil.applyTableActionIcon(pdfButton, "fas-file-pdf", "Preview PDF");
+            ButtonIconUtil.applyTableActionIcon(previewButton, "fas-image", "Preview");
             ButtonIconUtil.applyTableActionIcon(printButton, "fas-print", "Print original");
             ButtonIconUtil.applyTableActionIcon(smsButton, "fas-paper-plane", "Send SMS");
             ButtonIconUtil.applyTableActionIcon(recreateButton, "fas-redo", "Re-create receipt");
             viewButton.setOnAction(event -> showReceiptDetailsDialog(getTableView().getItems().get(getIndex())));
-            pdfButton.setOnAction(event -> previewPdf(getTableView().getItems().get(getIndex())));
+            previewButton.setOnAction(event -> previewReceipt(getTableView().getItems().get(getIndex())));
             printButton.setOnAction(event -> printOriginal(getTableView().getItems().get(getIndex())));
             smsButton.setOnAction(event -> sendSms(getTableView().getItems().get(getIndex())));
             recreateButton.setOnAction(event -> recreateReceipt(getTableView().getItems().get(getIndex())));
