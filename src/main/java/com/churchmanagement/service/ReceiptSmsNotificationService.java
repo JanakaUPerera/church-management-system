@@ -1,10 +1,7 @@
 package com.churchmanagement.service;
 
-import com.churchmanagement.dto.SmsResult;
-import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.dto.ReceiptResponseDto;
-import com.churchmanagement.enums.SmsDeliveryStatus;
-import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Receipt;
 import com.churchmanagement.exception.DatabaseException;
@@ -25,27 +22,29 @@ public class ReceiptSmsNotificationService {
     private final ChurchRepository churchRepository;
     private final SmsSettingsRepository smsSettingsRepository;
     private final SmsLogRepository smsLogRepository;
-    private final SmsService smsService;
     private final ActivityLogService activityLogService;
     private final Clock clock;
 
     public ReceiptSmsNotificationService() {
         this(new ReceiptRepository(), new ChurchRepository(), new SmsSettingsRepository(), new SmsLogRepository(),
-                new SmsServiceFactory().createRoutingSmsService(), new ActivityLogService(), Clock.systemDefaultZone());
+                new ActivityLogService(), Clock.systemDefaultZone());
     }
 
     public ReceiptSmsNotificationService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
                                          SmsSettingsRepository smsSettingsRepository, SmsLogRepository smsLogRepository,
-                                         SmsService smsService, ActivityLogService activityLogService, Clock clock) {
+                                         ActivityLogService activityLogService, Clock clock) {
         this.receiptRepository = receiptRepository;
         this.churchRepository = churchRepository;
         this.smsSettingsRepository = smsSettingsRepository;
         this.smsLogRepository = smsLogRepository;
-        this.smsService = smsService;
         this.activityLogService = activityLogService;
         this.clock = clock;
     }
 
+    /**
+     * Queues the receipt-submission SMS for the server machine's {@link SmsQueueProcessor}
+     * to send. Does not touch the modem itself — this may run on any machine.
+     */
     public void sendReceiptSubmissionSms(long receiptId) {
         Long userId = currentUserId();
         Receipt receipt = receiptRepository.findReceiptById(receiptId)
@@ -69,36 +68,10 @@ public class ReceiptSmsNotificationService {
                 .orElseThrow(() -> new SmsNotificationException("Receipt details could not be found for SMS notification."));
         String message = buildMessage(receipt, church, receiptDetails.getTotalAmount());
         try {
-            SmsResult result = smsService.sendSms(mobileNumber, message);
-            LocalDateTime now = LocalDateTime.now(clock);
-            if (result.isSuccess()) {
-                smsLogRepository.insertSmsLog(receiptId, church.getId(), mobileNumber, message, result.getProvider(),
-                        result.getSendStatus(), result.getDeliveryStatus(), result.getModemMessageReference(),
-                        result.getModemRawResponse(), null, result.getErrorCode(), null, result.getAttemptCount(), now,
-                        result.getSentAt(), now);
-                activityLogService.logSmsSentAcceptedByModem(userId, receiptId, church.getId(), mobileNumber,
-                        result.getProvider(), result.getModemMessageReference());
-                if (result.getDeliveryStatus() == SmsDeliveryStatus.NOT_SUPPORTED
-                        || result.getDeliveryStatus() == SmsDeliveryStatus.UNKNOWN) {
-                    activityLogService.logSmsDeliveryStatusUnknown(userId, receiptId, church.getId(), mobileNumber);
-                }
-            } else {
-                smsLogRepository.insertSmsLog(receiptId, church.getId(), mobileNumber, message, result.getProvider(),
-                        SmsSendStatus.FAILED, SmsDeliveryStatus.FAILED, result.getModemMessageReference(),
-                        result.getModemRawResponse(), null, result.getErrorCode(), result.getErrorMessage(),
-                        result.getAttemptCount(), now, result.getSentAt(), now);
-                activityLogService.logSmsSendFailed(userId, receiptId, church.getId(), mobileNumber,
-                        result.getErrorMessage());
-            }
-        } catch (RuntimeException exception) {
-            try {
-                smsLogRepository.insertSmsLog(receiptId, church.getId(), mobileNumber, message, MockSmsService.PROVIDER,
-                        SmsSendStatus.FAILED, SmsDeliveryStatus.FAILED, null, null, null, null,
-                        exception.getMessage(), 1, LocalDateTime.now(clock), null, LocalDateTime.now(clock));
-            } catch (DatabaseException logException) {
-                System.err.println("SMS failure log insert failed: " + logException.getMessage());
-            }
-            activityLogService.logSmsSendFailed(userId, receiptId, church.getId(), mobileNumber, exception.getMessage());
+            smsLogRepository.enqueue(receiptId, church.getId(), mobileNumber, message, userId,
+                    LocalDateTime.now(clock));
+        } catch (DatabaseException exception) {
+            throw new SmsNotificationException("Unable to queue SMS notification.", exception);
         }
     }
 

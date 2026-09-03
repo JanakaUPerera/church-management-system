@@ -1,13 +1,11 @@
 package com.churchmanagement.service;
 
 import com.churchmanagement.dto.ReceiptResponseDto;
-import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Receipt;
 import com.churchmanagement.enums.ReceiptStatus;
-import com.churchmanagement.enums.SmsDeliveryStatus;
-import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.ReceiptRepository;
 import com.churchmanagement.repository.SmsLogRepository;
@@ -20,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -30,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReceiptSmsNotificationServiceTest {
@@ -37,7 +37,6 @@ class ReceiptSmsNotificationServiceTest {
     private FakeChurchRepository churchRepository;
     private FakeSmsSettingsRepository smsSettingsRepository;
     private FakeSmsLogRepository smsLogRepository;
-    private FakeSmsService smsService;
     private FakeActivityLogService activityLogService;
     private ReceiptSmsNotificationService notificationService;
 
@@ -47,10 +46,9 @@ class ReceiptSmsNotificationServiceTest {
         churchRepository = new FakeChurchRepository();
         smsSettingsRepository = new FakeSmsSettingsRepository();
         smsLogRepository = new FakeSmsLogRepository();
-        smsService = new FakeSmsService();
         activityLogService = new FakeActivityLogService();
         notificationService = new ReceiptSmsNotificationService(receiptRepository, churchRepository,
-                smsSettingsRepository, smsLogRepository, smsService, activityLogService, fixedClock());
+                smsSettingsRepository, smsLogRepository, activityLogService, fixedClock());
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("sms.settings.manage")));
     }
@@ -61,13 +59,14 @@ class ReceiptSmsNotificationServiceTest {
     }
 
     @Test
-    void sendSmsSuccessfullyWithMockService() {
+    void queuesSmsForReceiptSubmission() {
         notificationService.sendReceiptSubmissionSms(100L);
 
-        assertEquals("0712345678", smsService.mobileNumber);
-        assertTrue(smsService.message.contains("Receipt REC26000001 received for CH001 - St. Mary's Church"));
-        assertEquals(SmsSendStatus.SENT, smsLogRepository.status);
-        assertEquals(ActivityLogService.SMS_SENT_ACCEPTED_BY_MODEM, activityLogService.action);
+        assertEquals(1, smsLogRepository.enqueueCount);
+        assertEquals("0712345678", smsLogRepository.mobileNumber);
+        assertTrue(smsLogRepository.message.contains("Receipt REC26000001 received for CH001 - St. Mary's Church"));
+        assertEquals(7L, smsLogRepository.queuedByUserId);
+        assertEquals(LocalDateTime.of(2026, 5, 18, 9, 0), smsLogRepository.queuedAt);
     }
 
     @Test
@@ -76,8 +75,7 @@ class ReceiptSmsNotificationServiceTest {
 
         notificationService.sendReceiptSubmissionSms(100L);
 
-        assertFalse(smsService.called);
-        assertEquals(0, smsLogRepository.insertCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
         assertEquals(ActivityLogService.SMS_SKIPPED, activityLogService.action);
     }
 
@@ -87,27 +85,26 @@ class ReceiptSmsNotificationServiceTest {
 
         notificationService.sendReceiptSubmissionSms(100L);
 
-        assertFalse(smsService.called);
-        assertEquals(0, smsLogRepository.insertCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
         assertEquals(ActivityLogService.SMS_SKIPPED, activityLogService.action);
     }
 
     @Test
-    void insertSmsLogOnFailure() {
-        smsService.result = new SmsResult(false, "Gateway rejected message.", MockSmsService.PROVIDER, null);
+    void wrapsQueueFailureAsNotificationException() {
+        smsLogRepository.throwOnEnqueue = true;
 
-        notificationService.sendReceiptSubmissionSms(100L);
+        ReceiptSmsNotificationService.SmsNotificationException exception = assertThrows(
+                ReceiptSmsNotificationService.SmsNotificationException.class,
+                () -> notificationService.sendReceiptSubmissionSms(100L));
 
-        assertEquals(SmsSendStatus.FAILED, smsLogRepository.status);
-        assertEquals("Gateway rejected message.", smsLogRepository.errorMessage);
-        assertEquals(ActivityLogService.SMS_SEND_FAILED, activityLogService.action);
+        assertEquals("Unable to queue SMS notification.", exception.getMessage());
     }
 
     @Test
     void mockSmsServiceValidatesAndSends() {
         MockSmsService mockSmsService = new MockSmsService(fixedClock());
 
-        SmsResult result = mockSmsService.sendSms("0712345678", "Receipt received.");
+        var result = mockSmsService.sendSms("0712345678", "Receipt received.");
 
         assertTrue(result.isSuccess());
         assertEquals(MockSmsService.PROVIDER, result.getProvider());
@@ -180,47 +177,28 @@ class ReceiptSmsNotificationServiceTest {
     }
 
     private static class FakeSmsLogRepository extends SmsLogRepository {
-        private int insertCount;
-        private SmsSendStatus status;
-        private String errorMessage;
-
-        private FakeSmsLogRepository() {
-            super(null);
-        }
-
-        @Override
-        public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
-                                 SmsStatus status, String errorMessage, LocalDateTime sentAt, LocalDateTime createdAt) {
-            insertCount++;
-            this.status = status == SmsStatus.SUCCESS ? SmsSendStatus.SENT : SmsSendStatus.valueOf(status.name());
-            this.errorMessage = errorMessage;
-        }
-
-        @Override
-        public void insertSmsLog(Long receiptId, Long churchId, String mobileNumber, String message, String provider,
-                                 SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus,
-                                 String modemMessageReference, String modemRawResponse, String deliveryReportRaw,
-                                 String errorCode, String errorMessage, int attemptCount,
-                                 LocalDateTime lastAttemptAt, LocalDateTime sentAt, LocalDateTime createdAt) {
-            insertCount++;
-            this.status = sendStatus;
-            this.errorMessage = errorMessage;
-        }
-    }
-
-    private static class FakeSmsService implements SmsService {
-        private SmsResult result = new SmsResult(true, "SMS sent successfully.", MockSmsService.PROVIDER,
-                LocalDateTime.of(2026, 5, 18, 9, 0));
-        private boolean called;
+        private int enqueueCount;
         private String mobileNumber;
         private String message;
+        private Long queuedByUserId;
+        private LocalDateTime queuedAt;
+        private boolean throwOnEnqueue;
+
+        private FakeSmsLogRepository() {
+            super((DataSource) null);
+        }
 
         @Override
-        public SmsResult sendSms(String mobileNumber, String message) {
-            called = true;
+        public void enqueue(Long receiptId, Long churchId, String mobileNumber, String message,
+                            Long queuedByUserId, LocalDateTime queuedAt) {
+            if (throwOnEnqueue) {
+                throw new DatabaseException("Unable to queue SMS.", new SQLException("boom"));
+            }
+            enqueueCount++;
             this.mobileNumber = mobileNumber;
             this.message = message;
-            return result;
+            this.queuedByUserId = queuedByUserId;
+            this.queuedAt = queuedAt;
         }
     }
 
@@ -229,21 +207,6 @@ class ReceiptSmsNotificationServiceTest {
 
         private FakeActivityLogService() {
             super(null);
-        }
-
-        @Override
-        public void logSmsSentAcceptedByModem(Long userId, Long receiptId, Long churchId, String mobileNumber,
-                                             String provider, String modemReference) {
-            action = SMS_SENT_ACCEPTED_BY_MODEM;
-        }
-
-        @Override
-        public void logSmsSendFailed(Long userId, Long receiptId, Long churchId, String mobileNumber, String reason) {
-            action = SMS_SEND_FAILED;
-        }
-
-        @Override
-        public void logSmsDeliveryStatusUnknown(Long userId, Long receiptId, Long churchId, String mobileNumber) {
         }
 
         @Override

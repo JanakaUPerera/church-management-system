@@ -579,7 +579,7 @@ class ReceiptServiceTest {
         private long receiptId;
 
         private FakeReceiptSmsNotificationService() {
-            super(null, null, null, null, null, null, Clock.systemUTC());
+            super(null, null, null, null, null, Clock.systemUTC());
         }
 
         @Override

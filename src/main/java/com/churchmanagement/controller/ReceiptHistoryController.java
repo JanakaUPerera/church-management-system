@@ -865,13 +865,13 @@ public class ReceiptHistoryController {
     }
 
     private void sendSms(ReceiptResponseDto receipt) {
-        ProcessingDialog.run("Send SMS", "Sending SMS notification...",
+        ProcessingDialog.run("Send SMS", "Queueing SMS notification...",
                 () -> receiptSmsNotificationService.sendReceiptSubmissionSms(receipt.getId()),
                 () -> {
             if (receiptTable != null) {
                 handleSearch();
             }
-            setMessage("SMS notification processed for receipt " + receipt.getReceiptNo() + ".");
+            setMessage("SMS queued for receipt " + receipt.getReceiptNo() + ".");
                 },
                 throwable -> showProcessingError("Send SMS", throwable));
     }
