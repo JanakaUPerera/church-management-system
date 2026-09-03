@@ -113,8 +113,20 @@ class SmsLogServiceTest {
         assertEquals("You do not have permission to view SMS logs.", exception.getMessage());
     }
 
+    @Test
+    void queuedSmsCannotBeResent() {
+        AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
+                "Admin", List.of("sms.logs.view", "sms.resend")));
+        smsLogRepository.nextStatus = SmsSendStatus.QUEUED.name();
+
+        List<SmsLogDto> logs = smsLogService.latestLogs(100);
+
+        assertEquals("SMS is still queued and has not been sent yet.", logs.get(0).getResendDisabledReason());
+    }
+
     private static class FakeSmsLogRepository extends SmsLogRepository {
         private SmsLogSearchCriteria criteria;
+        private String nextStatus;
 
         private FakeSmsLogRepository() {
             super((DataSource) null);
@@ -124,7 +136,9 @@ class SmsLogServiceTest {
         public List<SmsLogDto> searchSmsLogs(SmsLogSearchCriteria criteria) {
             this.criteria = criteria;
             List<SmsLogDto> logs = new ArrayList<>();
-            logs.add(new SmsLogDto());
+            SmsLogDto first = new SmsLogDto();
+            first.setStatus(nextStatus);
+            logs.add(first);
             logs.add(new SmsLogDto());
             return logs;
         }

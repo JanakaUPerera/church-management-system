@@ -2,6 +2,7 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsLogSearchCriteria;
+import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
@@ -66,6 +67,8 @@ public class SmsLogService {
         for (SmsLogDto log : logs) {
             if (!hasPermission) {
                 disableResend(log, "You do not have permission to resend SMS.");
+            } else if (isQueuedOrSending(log)) {
+                disableResend(log, "SMS is still queued and has not been sent yet.");
             } else if (log.getCreatedAt() == null
                     || now.isAfter(log.getCreatedAt().plusDays(RESEND_WINDOW_DAYS))) {
                 disableResend(log, "SMS resend period has expired. Resend is allowed only within 7 days.");
@@ -83,6 +86,11 @@ public class SmsLogService {
     private void disableResend(SmsLogDto log, String reason) {
         log.setCanResend(false);
         log.setResendDisabledReason(reason);
+    }
+
+    private boolean isQueuedOrSending(SmsLogDto log) {
+        String status = log.getSendStatus();
+        return SmsSendStatus.QUEUED.name().equals(status) || SmsSendStatus.SENDING.name().equals(status);
     }
 
     private boolean hasResend(SmsLogDto log) {
