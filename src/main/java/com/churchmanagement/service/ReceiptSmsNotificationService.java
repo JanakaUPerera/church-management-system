@@ -61,7 +61,7 @@ public class ReceiptSmsNotificationService {
         String mobileNumber = church.getSmsMobileNumber();
         if (mobileNumber == null || mobileNumber.isBlank()) {
             activityLogService.logSmsSkipped(userId, receiptId, church.getId(), "Church SMS mobile number is not set.");
-            return;
+            throw new SmsNotificationException("Can't send a SMS without a Mobile number.");
         }
 
         ReceiptResponseDto receiptDetails = receiptRepository.findReceiptDetailsById(receiptId)

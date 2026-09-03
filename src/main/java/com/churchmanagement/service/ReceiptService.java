@@ -150,7 +150,7 @@ public class ReceiptService {
                 try {
                     receiptSmsNotificationService.sendReceiptSubmissionSms(receiptId);
                 } catch (ReceiptSmsNotificationService.SmsNotificationException exception) {
-                    warningMessage = "Receipt saved, but SMS notification failed.";
+                    warningMessage = exception.getMessage();
                 }
             }
             ReceiptResponseDto response = receiptRepository.findReceiptDetailsById(receiptId)

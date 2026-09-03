@@ -80,11 +80,14 @@ class ReceiptSmsNotificationServiceTest {
     }
 
     @Test
-    void skipIfChurchMobileNumberMissing() {
+    void throwsWhenChurchMobileNumberMissing() {
         churchRepository.smsMobileNumber = " ";
 
-        notificationService.sendReceiptSubmissionSms(100L);
+        ReceiptSmsNotificationService.SmsNotificationException exception = assertThrows(
+                ReceiptSmsNotificationService.SmsNotificationException.class,
+                () -> notificationService.sendReceiptSubmissionSms(100L));
 
+        assertEquals("Can't send a SMS without a Mobile number.", exception.getMessage());
         assertEquals(0, smsLogRepository.enqueueCount);
         assertEquals(ActivityLogService.SMS_SKIPPED, activityLogService.action);
     }

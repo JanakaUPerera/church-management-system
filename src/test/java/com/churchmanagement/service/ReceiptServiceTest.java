@@ -129,7 +129,7 @@ class ReceiptServiceTest {
         assertTrue(dataSource.connection.committed);
         assertFalse(dataSource.connection.rolledBack);
         assertEquals(100L, smsNotificationService.receiptId);
-        assertEquals("Receipt saved, but SMS notification failed.", response.getWarningMessage());
+        assertEquals("SMS gateway unavailable", response.getWarningMessage());
     }
 
     @Test
