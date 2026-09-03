@@ -10,7 +10,6 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.AtCommandService;
-import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.service.SmsQueueProcessor;
 import com.churchmanagement.service.SystemConfigurationCache;
@@ -219,7 +218,6 @@ public class DashboardController {
         applyMenuIcons();
         configureSidebarToggle();
         applyMenuVisibility();
-        AutoBackupScheduler.getInstance().reloadSchedule();
         SmsQueueProcessor.getInstance().start();
         loadMenu(menuDefinitions.getFirst());
     }
@@ -240,7 +238,6 @@ public class DashboardController {
     @FXML
     private void handleLogout() throws IOException {
         stopStatusMonitors();
-        AutoBackupScheduler.getInstance().cancel();
         AuthContext.getCurrentUser()
                 .ifPresent(user -> activityLogService.logLogout(user.getUserId(), user.getUsername()));
         AuthContext.clear();

@@ -71,7 +71,10 @@ public class MainApplication extends Application {
             stage.setY(screen.getMinY());
             stage.show();
 
-            controller.setOnReady(() -> transitionToLogin(stage));
+            controller.setOnReady(() -> {
+                startAutoBackupScheduler();
+                transitionToLogin(stage);
+            });
             controller.setOnConfigure(() ->
                     showDatabaseSetup(stage, () -> {
                         DatabaseConfig.reset();
@@ -80,6 +83,20 @@ public class MainApplication extends Application {
             controller.startChecks();
         } catch (IOException e) {
             throw new RuntimeException("Failed to load startup view.", e);
+        }
+    }
+
+    /**
+     * Starts the in-app scheduled-backup timer as soon as the database is
+     * reachable — before anyone signs in, and independent of login state
+     * from here on (see {@link com.churchmanagement.controller.DashboardController},
+     * which no longer starts or cancels it). It keeps running through
+     * logout and only stops when the app process itself exits ({@link #stop()}).
+     */
+    private void startAutoBackupScheduler() {
+        try {
+            AutoBackupScheduler.getInstance().reloadSchedule();
+        } catch (Exception ignored) {
         }
     }
 
