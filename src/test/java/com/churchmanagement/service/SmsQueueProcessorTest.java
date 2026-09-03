@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SmsQueueProcessorTest {
@@ -91,6 +92,52 @@ class SmsQueueProcessorTest {
     }
 
     @Test
+    void gatewayUnavailableFailureRequeuesRowWithoutConsumingAttemptAndStopsTick() {
+        FakeSmsLogRepository repository = new FakeSmsLogRepository();
+        repository.rows.add(queuedRow(1L, LocalDateTime.of(2026, 6, 6, 10, 0)));
+        repository.rows.add(queuedRow(2L, LocalDateTime.of(2026, 6, 6, 10, 1)));
+        SmsQueueProcessor processor = processor(repository,
+                new FakeSmsServiceFactory(false, "SMS is disabled."), () -> true);
+
+        processor.processTick();
+
+        assertEquals(SmsSendStatus.QUEUED.name(), repository.rows.get(0).getStatus());
+        assertEquals(0, repository.rows.get(0).getAttemptCount());
+        assertEquals(SmsSendStatus.QUEUED.name(), repository.rows.get(1).getStatus());
+        assertEquals(List.of(1L), repository.processedOrder);
+    }
+
+    @Test
+    void ordinaryGatewayRejectionStillEndsUpFailed() {
+        FakeSmsLogRepository repository = new FakeSmsLogRepository();
+        repository.rows.add(queuedRow(1L, LocalDateTime.of(2026, 6, 6, 10, 0)));
+        repository.rows.add(queuedRow(2L, LocalDateTime.of(2026, 6, 6, 10, 1)));
+        SmsQueueProcessor processor = processor(repository, new FakeSmsServiceFactory(false), () -> true);
+
+        processor.processTick();
+
+        assertTrue(repository.rows.stream().allMatch(row -> "FAILED".equals(row.getStatus())));
+        assertEquals("Gateway rejected message.", repository.rows.get(0).getErrorMessage());
+        assertEquals(List.of(1L, 2L), repository.processedOrder);
+    }
+
+    @Test
+    void persistenceFailureAfterSuccessfulSendDoesNotMislabelAsFailed() {
+        FakeSmsLogRepository repository = new FakeSmsLogRepository();
+        repository.rows.add(queuedRow(1L, LocalDateTime.of(2026, 6, 6, 10, 0)));
+        repository.throwOnUpdateSendResult = true;
+        FakeActivityLogService activityLogService = new FakeActivityLogService();
+        SmsQueueProcessor processor = new SmsQueueProcessor(repository, new FakeSmsServiceFactory(true),
+                activityLogService, new FakeSystemConfigurationCache(Map.of("sms.retry.max.attempts", "3")),
+                () -> true, fixedClock());
+
+        processor.processTick();
+
+        assertNull(activityLogService.action);
+        assertEquals(SmsSendStatus.SENDING.name(), repository.rows.get(0).getStatus());
+    }
+
+    @Test
     void resendRowLogsThroughResendActivityMethods() {
         FakeSmsLogRepository repository = new FakeSmsLogRepository();
         SmsLogDto resendRow = queuedRow(1L, LocalDateTime.of(2026, 6, 6, 10, 0));
@@ -148,9 +195,21 @@ class SmsQueueProcessorTest {
     private static class FakeSmsLogRepository extends SmsLogRepository {
         private final List<SmsLogDto> rows = new ArrayList<>();
         private final List<Long> processedOrder = new ArrayList<>();
+        private boolean throwOnUpdateSendResult;
 
         private FakeSmsLogRepository() {
             super((DataSource) null);
+        }
+
+        @Override
+        public boolean requeueForRetry(long id) {
+            for (SmsLogDto row : rows) {
+                if (row.getId() == id && SmsSendStatus.SENDING.name().equals(row.getStatus())) {
+                    row.setStatus(SmsSendStatus.QUEUED.name());
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
@@ -191,6 +250,14 @@ class SmsQueueProcessorTest {
                                      String provider, String modemMessageReference, String modemRawResponse,
                                      String errorCode, String errorMessage, int attemptCount,
                                      LocalDateTime lastAttemptAt, LocalDateTime sentAt) {
+            if (throwOnUpdateSendResult) {
+                // Throw exactly once, mimicking a transient DB hiccup rather than a
+                // permanently broken connection — lets the test tell apart "the send-result
+                // write failed and nothing else happened" from "a retry-path write silently
+                // papered over the original failure".
+                throwOnUpdateSendResult = false;
+                throw new RuntimeException("Simulated persistence failure after send.");
+            }
             for (SmsLogDto row : rows) {
                 if (row.getId() == id) {
                     row.setStatus(sendStatus.name());
@@ -208,10 +275,16 @@ class SmsQueueProcessorTest {
 
     private static class FakeSmsServiceFactory extends SmsServiceFactory {
         private final boolean succeed;
+        private final String failureMessage;
 
         private FakeSmsServiceFactory(boolean succeed) {
+            this(succeed, "Gateway rejected message.");
+        }
+
+        private FakeSmsServiceFactory(boolean succeed, String failureMessage) {
             super(null);
             this.succeed = succeed;
+            this.failureMessage = failureMessage;
         }
 
         @Override
@@ -219,7 +292,7 @@ class SmsQueueProcessorTest {
             return (mobileNumber, message) -> succeed
                     ? new SmsResult(true, "SMS sent successfully.", MockSmsService.PROVIDER,
                             LocalDateTime.of(2026, 6, 6, 10, 0))
-                    : new SmsResult(false, "Gateway rejected message.", MockSmsService.PROVIDER, null);
+                    : new SmsResult(false, failureMessage, MockSmsService.PROVIDER, null);
         }
     }
 

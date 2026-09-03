@@ -142,6 +142,20 @@ class SmsLogRepositoryTest {
     }
 
     @Test
+    void requeueForRetryClaimsSendingRowOnly() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        boolean requeued = repository.requeueForRetry(5L);
+
+        assertTrue(dataSource.sql.contains("WHERE id = ? AND status = ?"));
+        assertEquals(SmsSendStatus.QUEUED.name(), dataSource.valueAt(1));
+        assertEquals(5L, dataSource.valueAt(2));
+        assertEquals(SmsSendStatus.SENDING.name(), dataSource.valueAt(3));
+        assertTrue(requeued);
+    }
+
+    @Test
     void updateSendResultWritesFinalOutcome() {
         RecordingDataSource dataSource = new RecordingDataSource();
         SmsLogRepository repository = new SmsLogRepository(dataSource);
