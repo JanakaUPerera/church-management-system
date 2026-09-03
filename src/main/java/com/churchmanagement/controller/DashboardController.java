@@ -12,6 +12,7 @@ import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.AtCommandService;
 import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.service.SerialPortService;
+import com.churchmanagement.service.SmsQueueProcessor;
 import com.churchmanagement.service.SystemConfigurationCache;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
@@ -219,6 +220,7 @@ public class DashboardController {
         configureSidebarToggle();
         applyMenuVisibility();
         AutoBackupScheduler.getInstance().reloadSchedule();
+        SmsQueueProcessor.getInstance().start();
         loadMenu(menuDefinitions.getFirst());
     }
 

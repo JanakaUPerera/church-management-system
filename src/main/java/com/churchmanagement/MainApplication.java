@@ -6,6 +6,7 @@ import com.churchmanagement.controller.DatabaseSetupController;
 import com.churchmanagement.controller.StartupController;
 import com.churchmanagement.service.AutoBackupScheduler;
 import com.churchmanagement.service.DatabaseSetupService;
+import com.churchmanagement.service.SmsQueueProcessor;
 import com.churchmanagement.util.ApplicationRestartUtil;
 import com.churchmanagement.util.ThemeService;
 import javafx.application.Application;
@@ -38,6 +39,10 @@ public class MainApplication extends Application {
     public void stop() {
         try {
             AutoBackupScheduler.getInstance().cancel();
+        } catch (Exception ignored) {
+        }
+        try {
+            SmsQueueProcessor.getInstance().cancel();
         } catch (Exception ignored) {
         }
         DatabaseConfig.closeDataSource();
