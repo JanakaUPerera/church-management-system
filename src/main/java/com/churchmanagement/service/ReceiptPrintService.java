@@ -66,32 +66,6 @@ public class ReceiptPrintService {
         attemptOriginalPrint(receiptId, currentUser);
     }
 
-    /**
-     * Sends the receipt straight to the physical printer for alignment/testing purposes only —
-     * bypasses the cancelled/already-printed guard so it can be re-run freely, and makes no
-     * database changes at all (no print-attempt count, no "original printed" flag, no print log
-     * entry). Never treat this as producing an official original.
-     *
-     * @return the printer's result message — for {@link DotMatrixReceiptPrinterService} this
-     * includes the validated page/imageable-area geometry actually used, so a clipped printout
-     * can be diagnosed from what's shown after this action instead of guessing blind.
-     */
-    public String testPrint(long receiptId) {
-        AuthenticatedUser currentUser = AuthContext.getCurrentUser()
-                .orElseThrow(() -> new ReceiptPrintException("Please sign in to print receipts."));
-        PermissionGuard permissionGuard = new PermissionGuard(currentUser);
-        if (!permissionGuard.can("receipt.print")) {
-            throw new ReceiptPrintException("You do not have permission to print receipts.");
-        }
-
-        JasperPrint printJob = receiptPdfGenerator.renderPrintJasperPrint(receiptId);
-        PrintResult printResult = receiptPrinterService.print(printJob);
-        if (!printResult.isSuccess()) {
-            throw new ReceiptPrintException(printResult.getMessage());
-        }
-        return printResult.getMessage();
-    }
-
     private void attemptOriginalPrint(long receiptId, AuthenticatedUser currentUser) {
         Connection connection = null;
         boolean previousAutoCommit = true;

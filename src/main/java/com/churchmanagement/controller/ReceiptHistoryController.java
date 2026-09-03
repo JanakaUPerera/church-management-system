@@ -407,7 +407,6 @@ public class ReceiptHistoryController {
             ButtonType previewButton = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
             ButtonType exportPdfButton = new ButtonType("Export PDF", ButtonBar.ButtonData.LEFT);
             ButtonType printOriginalButton = new ButtonType("Print Original", ButtonBar.ButtonData.LEFT);
-            ButtonType reprintTestButton = new ButtonType("Reprint (Test)", ButtonBar.ButtonData.LEFT);
             ButtonType cancelReceiptButton = new ButtonType("Cancel Receipt", ButtonBar.ButtonData.LEFT);
             ButtonType recreateButton = new ButtonType("Re-create Receipt", ButtonBar.ButtonData.LEFT);
             if (ReceiptPdfGenerator.PREVIEW_FEATURE_ENABLED) {
@@ -416,9 +415,6 @@ public class ReceiptHistoryController {
             }
             if (canPrintOriginal(details)) {
                 dialog.getDialogPane().getButtonTypes().add(printOriginalButton);
-            }
-            if (canTestPrint(details)) {
-                dialog.getDialogPane().getButtonTypes().add(reprintTestButton);
             }
             if (allowCancelReceipt && canCancelReceipt(details)) {
                 dialog.getDialogPane().getButtonTypes().add(cancelReceiptButton);
@@ -437,8 +433,6 @@ public class ReceiptHistoryController {
                 exportPdf(details);
             } else if (result.filter(printOriginalButton::equals).isPresent()) {
                 printOriginal(details);
-            } else if (result.filter(reprintTestButton::equals).isPresent()) {
-                reprintTest(details);
             } else if (result.filter(cancelReceiptButton::equals).isPresent()) {
                 cancelReceipt(details);
             } else if (result.filter(recreateButton::equals).isPresent()) {
@@ -831,19 +825,6 @@ public class ReceiptHistoryController {
                 throwable -> showProcessingError("Print Original", throwable));
     }
 
-    /**
-     * Sends the receipt straight to the physical printer for alignment/testing purposes only —
-     * see {@link ReceiptPrintService#testPrint(long)}. Works regardless of status or how many
-     * times it's already been printed, and leaves no trace in the database.
-     */
-    private void reprintTest(ReceiptResponseDto receipt) {
-        ProcessingDialog.run("Reprint (Test)", "Sending receipt to printer...",
-                () -> receiptPrintService.testPrint(receipt.getId()),
-                (String printerMessage) -> showInfo("Reprint (Test)",
-                        "Test print of receipt " + receipt.getReceiptNo() + " sent.\n" + printerMessage),
-                throwable -> showProcessingError("Reprint (Test)", throwable));
-    }
-
     private void sendSms(ReceiptResponseDto receipt) {
         ProcessingDialog.run("Send SMS", "Queueing SMS notification...",
                 () -> receiptSmsNotificationService.sendReceiptSubmissionSms(receipt.getId()),
@@ -862,14 +843,6 @@ public class ReceiptHistoryController {
                 && receipt != null
                 && receipt.getStatus() == ReceiptStatus.ACTIVE
                 && !receipt.isOriginalPrinted();
-    }
-
-    /**
-     * Unlike {@link #canPrintOriginal}, not gated on status or original-printed state - a test
-     * print is for checking physical print alignment, not producing an official original.
-     */
-    private boolean canTestPrint(ReceiptResponseDto receipt) {
-        return permissionGuard != null && permissionGuard.can("receipt.print") && receipt != null;
     }
 
     private void ensurePermissionGuard() {
@@ -980,15 +953,6 @@ public class ReceiptHistoryController {
 
     private void showError(String title, String message) {
         Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.ERROR));
-        alert.setTitle(title);
-        alert.setHeaderText(title);
-        alert.setContentText(message);
-        alert.showAndWait();
-        setMessage(message);
-    }
-
-    private void showInfo(String title, String message) {
-        Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.INFORMATION));
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(message);

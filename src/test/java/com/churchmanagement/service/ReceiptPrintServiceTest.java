@@ -147,64 +147,6 @@ class ReceiptPrintServiceTest {
     }
 
     @Test
-    void testPrintSendsReceiptToThePrinterEvenWhenAlreadyPrinted() {
-        printRepository.receipt.setOriginalPrinted(true);
-
-        service.testPrint(100L);
-
-        assertEquals(100L, pdfGenerator.printJasperPrintReceiptId);
-        assertEquals(1, receiptPrinterService.printCount);
-    }
-
-    @Test
-    void testPrintReturnsThePrintersResultMessageForDiagnosingAlignment() {
-        String message = service.testPrint(100L);
-
-        assertEquals("Printed", message);
-    }
-
-    @Test
-    void testPrintSendsReceiptToThePrinterEvenWhenCancelled() {
-        printRepository.receipt.setStatus(ReceiptStatus.CANCELLED);
-
-        service.testPrint(100L);
-
-        assertEquals(1, receiptPrinterService.printCount);
-    }
-
-    @Test
-    void testPrintMakesNoDatabaseChanges() {
-        service.testPrint(100L);
-
-        assertFalse(printRepository.receipt.isOriginalPrinted());
-        assertEquals(0, printRepository.receipt.getPrintAttemptCount());
-        assertEquals(0, printRepository.successLogs);
-        assertEquals(0, printRepository.failureLogs);
-    }
-
-    @Test
-    void testPrintPropagatesPrinterFailure() {
-        receiptPrinterService.failPrint = true;
-
-        ReceiptPrintService.ReceiptPrintException exception = assertThrows(
-                ReceiptPrintService.ReceiptPrintException.class, () -> service.testPrint(100L));
-
-        assertEquals("Printer offline", exception.getMessage());
-    }
-
-    @Test
-    void testPrintRequiresReceiptPrintPermission() {
-        AuthContext.setCurrentUser(new AuthenticatedUser(8L, "user", "Standard User", 2L,
-                "User", List.of("receipt.create")));
-
-        ReceiptPrintService.ReceiptPrintException exception = assertThrows(
-                ReceiptPrintService.ReceiptPrintException.class, () -> service.testPrint(100L));
-
-        assertEquals("You do not have permission to print receipts.", exception.getMessage());
-        assertEquals(0, receiptPrinterService.printCount);
-    }
-
-    @Test
     void userWithoutReceiptPrintCannotPrint() {
         AuthContext.setCurrentUser(new AuthenticatedUser(8L, "user", "Standard User", 2L,
                 "User", List.of("receipt.create")));
