@@ -235,6 +235,20 @@ public class SmsLogRepository {
         }
     }
 
+    public boolean requeueForRetry(long id) {
+        String sql = "UPDATE sms_logs SET status = ? WHERE id = ? AND status = ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, SmsSendStatus.QUEUED.name());
+            statement.setLong(2, id);
+            statement.setString(3, SmsSendStatus.SENDING.name());
+            return statement.executeUpdate() == 1;
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to requeue SMS for retry.", exception);
+        }
+    }
+
     public void updateSendResult(long id, SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus,
                                  String provider, String modemMessageReference, String modemRawResponse,
                                  String errorCode, String errorMessage, int attemptCount,

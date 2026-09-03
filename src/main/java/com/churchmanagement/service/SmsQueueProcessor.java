@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -26,6 +27,16 @@ public class SmsQueueProcessor {
     static final Duration POLL_INTERVAL = Duration.ofSeconds(5);
     static final Duration STALE_SENDING_THRESHOLD = Duration.ofMinutes(2);
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
+
+    // These four exact strings come from SimDongleSmsService's pre-send validation
+    // checks (SimDongleSmsService.java, the failed(...) calls before any modem I/O
+    // is attempted) — they mean "this machine cannot even try to send," not "this
+    // message was rejected." Keep this set in sync if those messages ever change.
+    private static final Set<String> GATEWAY_UNAVAILABLE_MESSAGES = Set.of(
+            "SMS is disabled.",
+            "SMS gateway is not configured for SIM dongle.",
+            "SIM dongle COM port is not configured.",
+            "Unable to open COM port.");
 
     private final SmsLogRepository smsLogRepository;
     private final SmsServiceFactory smsServiceFactory;
@@ -66,8 +77,11 @@ public class SmsQueueProcessor {
         if (!isPrimaryMachine.getAsBoolean()) {
             // Client machine — the modem lives on the primary/server machine only,
             // so nothing here should ever try to drain the queue.
+            System.out.println("SMS queue processor: secondary machine, not starting.");
             return;
         }
+        System.out.println("SMS queue processor: primary machine, starting (poll every "
+                + POLL_INTERVAL.toSeconds() + "s).");
         scheduledTask = executorService.scheduleWithFixedDelay(this::processTick,
                 0, POLL_INTERVAL.toSeconds(), TimeUnit.SECONDS);
     }
@@ -103,15 +117,34 @@ public class SmsQueueProcessor {
         }
 
         int priorAttemptCount = row.getAttemptCount();
+        SmsResult result;
         try {
             int remainingAttempts = Math.max(1, configuredMaxAttempts() - priorAttemptCount);
-            SmsResult result = smsServiceFactory.createRoutingSmsService(remainingAttempts)
+            result = smsServiceFactory.createRoutingSmsService(remainingAttempts)
                     .sendSms(row.getMobileNumber(), row.getMessage());
-            recordResult(row, result, priorAttemptCount);
         } catch (RuntimeException exception) {
+            // Only the send itself is guarded here — recordResult()'s persistence call is
+            // deliberately outside this try so a DB hiccup after a successful send can't be
+            // mislabeled as a send failure.
             recordUnexpectedFailure(row, priorAttemptCount, exception);
+            return true;
         }
+        if (isGatewayUnavailable(result)) {
+            // The machine itself couldn't attempt the send (SMS disabled, gateway/COM port
+            // misconfigured) — not a message-level or carrier failure. Put the row back to
+            // QUEUED without consuming an attempt or logging anything, and stop this tick so
+            // we don't hammer every other queued row against the same broken machine. It will
+            // be retried on the next poll.
+            smsLogRepository.requeueForRetry(row.getId());
+            return false;
+        }
+        recordResult(row, result, priorAttemptCount);
         return true;
+    }
+
+    private boolean isGatewayUnavailable(SmsResult result) {
+        return !result.isSuccess() && result.getErrorCode() == null
+                && GATEWAY_UNAVAILABLE_MESSAGES.contains(result.getErrorMessage());
     }
 
     private void recordResult(SmsLogDto row, SmsResult result, int priorAttemptCount) {
