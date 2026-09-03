@@ -2,6 +2,7 @@ package com.churchmanagement.controller;
 
 import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
+import com.churchmanagement.config.PrimaryMachine;
 import com.churchmanagement.dto.SmsSettings;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
@@ -586,8 +587,10 @@ public class DashboardController {
     }
 
     private void applyMenuVisibility() {
+        boolean primaryMachine = PrimaryMachine.isPrimary();
         for (MenuDefinition menuDefinition : menuDefinitions) {
-            boolean visible = permissionGuard.canAny((String[]) menuDefinition.permissionCodes());
+            boolean visible = permissionGuard.canAny((String[]) menuDefinition.permissionCodes())
+                    && (menuDefinition.button() != backupButton || primaryMachine);
             menuDefinition.button().setVisible(visible);
             menuDefinition.button().setManaged(visible);
         }
@@ -647,6 +650,11 @@ public class DashboardController {
 
         if (!permissionGuard.canAny((String[]) menuDefinition.permissionCodes())) {
             showError("Access denied", "You do not have permission to open " + menuDefinition.title() + ".");
+            return;
+        }
+
+        if (menuDefinition.button() == backupButton && !PrimaryMachine.isPrimary()) {
+            showError("Access denied", "Backup & Restore is only available on the server machine.");
             return;
         }
 
