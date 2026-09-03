@@ -147,6 +147,139 @@ public class SmsLogRepository {
         }
     }
 
+    public void enqueue(Long receiptId, Long churchId, String mobileNumber, String message, Long queuedByUserId,
+                        LocalDateTime queuedAt) {
+        String sql = """
+                INSERT INTO sms_logs (
+                    sms_log_uuid, receipt_id, church_id, mobile_number, message, status, delivery_status,
+                    attempt_count, queued_by_user_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, UUID.randomUUID().toString());
+            setNullableLong(statement, 2, receiptId);
+            setNullableLong(statement, 3, churchId);
+            statement.setString(4, mobileNumber);
+            statement.setString(5, message);
+            statement.setString(6, SmsSendStatus.QUEUED.name());
+            statement.setString(7, SmsDeliveryStatus.UNKNOWN.name());
+            statement.setInt(8, 0);
+            setNullableLong(statement, 9, queuedByUserId);
+            statement.setTimestamp(10, Timestamp.valueOf(queuedAt));
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to queue SMS.", exception);
+        }
+    }
+
+    public void enqueueResend(Long receiptId, Long churchId, String mobileNumber, String message,
+                              long originalSmsLogId, long resentByUserId, String resendReason,
+                              int priorAttemptCount, LocalDateTime queuedAt) {
+        String sql = """
+                INSERT INTO sms_logs (
+                    sms_log_uuid, receipt_id, church_id, mobile_number, message, status, delivery_status,
+                    attempt_count, queued_by_user_id, created_at, resend_of_sms_log_id, resent_by_user_id,
+                    resend_reason
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, UUID.randomUUID().toString());
+            setNullableLong(statement, 2, receiptId);
+            setNullableLong(statement, 3, churchId);
+            statement.setString(4, mobileNumber);
+            statement.setString(5, message);
+            statement.setString(6, SmsSendStatus.QUEUED.name());
+            statement.setString(7, SmsDeliveryStatus.UNKNOWN.name());
+            statement.setInt(8, priorAttemptCount);
+            statement.setLong(9, resentByUserId);
+            statement.setTimestamp(10, Timestamp.valueOf(queuedAt));
+            statement.setLong(11, originalSmsLogId);
+            statement.setLong(12, resentByUserId);
+            setNullableString(statement, 13, truncate(resendReason, 255));
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to queue SMS resend.", exception);
+        }
+    }
+
+    public Optional<SmsLogDto> findOldestQueued() {
+        String sql = baseSelect() + " WHERE sl.status = ? ORDER BY sl.created_at ASC LIMIT 1";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, SmsSendStatus.QUEUED.name());
+            return mapLogs(statement).stream().findFirst();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load next queued SMS.", exception);
+        }
+    }
+
+    public boolean markSending(long id, LocalDateTime attemptAt) {
+        String sql = "UPDATE sms_logs SET status = ?, last_attempt_at = ? WHERE id = ? AND status = ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, SmsSendStatus.SENDING.name());
+            statement.setTimestamp(2, Timestamp.valueOf(attemptAt));
+            statement.setLong(3, id);
+            statement.setString(4, SmsSendStatus.QUEUED.name());
+            return statement.executeUpdate() == 1;
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to mark SMS as sending.", exception);
+        }
+    }
+
+    public void updateSendResult(long id, SmsSendStatus sendStatus, SmsDeliveryStatus deliveryStatus,
+                                 String provider, String modemMessageReference, String modemRawResponse,
+                                 String errorCode, String errorMessage, int attemptCount,
+                                 LocalDateTime lastAttemptAt, LocalDateTime sentAt) {
+        String sql = """
+                UPDATE sms_logs
+                SET status = ?, delivery_status = ?, provider = ?, modem_message_reference = ?,
+                    modem_raw_response = ?, error_code = ?, error_message = ?, attempt_count = ?,
+                    last_attempt_at = ?, sent_at = ?
+                WHERE id = ?
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, defaultSendStatus(sendStatus).name());
+            statement.setString(2, defaultDeliveryStatus(deliveryStatus).name());
+            setNullableString(statement, 3, provider);
+            setNullableString(statement, 4, modemMessageReference);
+            setNullableText(statement, 5, modemRawResponse);
+            setNullableString(statement, 6, errorCode);
+            setNullableString(statement, 7, truncate(errorMessage, 500));
+            statement.setInt(8, attemptCount);
+            setNullableTimestamp(statement, 9, lastAttemptAt);
+            setNullableTimestamp(statement, 10, sentAt);
+            statement.setLong(11, id);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to save SMS send result.", exception);
+        }
+    }
+
+    public int reclaimStaleSending(LocalDateTime staleBefore) {
+        String sql = "UPDATE sms_logs SET status = ? WHERE status = ? AND last_attempt_at < ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, SmsSendStatus.QUEUED.name());
+            statement.setString(2, SmsSendStatus.SENDING.name());
+            statement.setTimestamp(3, Timestamp.valueOf(staleBefore));
+            return statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to reclaim stale SMS sends.", exception);
+        }
+    }
+
     public Optional<SmsLogDto> findByUuid(String smsLogUuid) {
         if (smsLogUuid == null || smsLogUuid.isBlank()) {
             return Optional.empty();
@@ -274,7 +407,7 @@ public class SmsLogRepository {
                        sl.attempt_count, sl.last_attempt_at, sl.sent_at, sl.created_at,
                        sl.resend_of_sms_log_id, resent_by.full_name AS resent_by_user_full_name,
                        original_sms.sms_log_uuid AS resend_of_sms_log_uuid,
-                       sl.resend_reason
+                       sl.resend_reason, sl.queued_by_user_id
                 FROM sms_logs sl
                 LEFT JOIN receipts r ON r.id = sl.receipt_id
                 LEFT JOIN churches c ON c.id = sl.church_id
@@ -316,6 +449,7 @@ public class SmsLogRepository {
                 log.setResendOfSmsLogUuid(resultSet.getString("resend_of_sms_log_uuid"));
                 log.setResentByUserFullName(resultSet.getString("resent_by_user_full_name"));
                 log.setResendReason(resultSet.getString("resend_reason"));
+                log.setQueuedByUserId(nullableLong(resultSet, "queued_by_user_id"));
                 logs.add(log);
             }
         }

@@ -88,6 +88,85 @@ class SmsLogRepositoryTest {
         assertEquals(SmsDeliveryStatus.UNKNOWN.name(), dataSource.valueAt(1));
     }
 
+    @Test
+    void enqueueInsertsQueuedRowWithZeroAttempts() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        repository.enqueue(1L, 2L, "+94771234567", "Hello", 7L, LocalDateTime.of(2026, 6, 6, 10, 0));
+
+        assertTrue(dataSource.sql.contains("INSERT INTO sms_logs"));
+        assertEquals(SmsSendStatus.QUEUED.name(), dataSource.valueAt(6));
+        assertEquals(SmsDeliveryStatus.UNKNOWN.name(), dataSource.valueAt(7));
+        assertEquals(0, dataSource.valueAt(8));
+        assertEquals(7L, dataSource.valueAt(9));
+    }
+
+    @Test
+    void enqueueResendCarriesPriorAttemptCountAndLinkage() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        repository.enqueueResend(1L, 2L, "+94771234567", "Hello", 100L, 7L, "Asked by church office", 2,
+                LocalDateTime.of(2026, 6, 6, 10, 0));
+
+        assertEquals(2, dataSource.valueAt(8));
+        assertEquals(7L, dataSource.valueAt(9));
+        assertEquals(100L, dataSource.valueAt(11));
+        assertEquals(7L, dataSource.valueAt(12));
+        assertEquals("Asked by church office", dataSource.valueAt(13));
+    }
+
+    @Test
+    void findOldestQueuedFiltersByStatus() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        repository.findOldestQueued();
+
+        assertTrue(dataSource.sql.contains("WHERE sl.status = ? ORDER BY sl.created_at ASC LIMIT 1"));
+        assertEquals(SmsSendStatus.QUEUED.name(), dataSource.valueAt(1));
+    }
+
+    @Test
+    void markSendingClaimsQueuedRowOnly() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        boolean claimed = repository.markSending(5L, LocalDateTime.of(2026, 6, 6, 10, 0));
+
+        assertTrue(dataSource.sql.contains("WHERE id = ? AND status = ?"));
+        assertEquals(SmsSendStatus.SENDING.name(), dataSource.valueAt(1));
+        assertEquals(SmsSendStatus.QUEUED.name(), dataSource.valueAt(4));
+        assertTrue(claimed);
+    }
+
+    @Test
+    void updateSendResultWritesFinalOutcome() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        repository.updateSendResult(5L, SmsSendStatus.SENT, SmsDeliveryStatus.UNKNOWN, "SIM Dongle", "45",
+                "+CMGS: 45\r\nOK", null, null, 1, LocalDateTime.of(2026, 6, 6, 10, 0),
+                LocalDateTime.of(2026, 6, 6, 10, 0));
+
+        assertEquals(SmsSendStatus.SENT.name(), dataSource.valueAt(1));
+        assertEquals("SIM Dongle", dataSource.valueAt(3));
+        assertEquals("45", dataSource.valueAt(4));
+    }
+
+    @Test
+    void reclaimStaleSendingResetsToQueued() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        repository.reclaimStaleSending(LocalDateTime.of(2026, 6, 6, 10, 0));
+
+        assertTrue(dataSource.sql.contains("status = ? WHERE status = ? AND last_attempt_at < ?"));
+        assertEquals(SmsSendStatus.QUEUED.name(), dataSource.valueAt(1));
+        assertEquals(SmsSendStatus.SENDING.name(), dataSource.valueAt(2));
+    }
+
     private static class RecordingDataSource implements DataSource {
         private String sql;
         private final List<Object> values = new ArrayList<>();
