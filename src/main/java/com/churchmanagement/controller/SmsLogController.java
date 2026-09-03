@@ -412,10 +412,10 @@ public class SmsLogController {
         SmsResendRequest request = new SmsResendRequest();
         request.setSmsLogId(log.getId());
         request.setResendReason(reason.reason());
-        ProcessingDialog.run("Resend SMS", "Resending SMS...",
+        ProcessingDialog.run("Resend SMS", "Queueing SMS resend...",
                 () -> smsResendService.resendSms(request),
-                result -> {
-            setMessage("SMS resent for log " + log.getId() + ".");
+                () -> {
+            setMessage("SMS resend queued for log " + log.getId() + ".");
             handleSearch();
                 },
                 throwable -> showProcessingError("Resend SMS", throwable));

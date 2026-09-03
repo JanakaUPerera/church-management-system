@@ -2,10 +2,7 @@ package com.churchmanagement.service;
 
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsResendRequest;
-import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.entity.Church;
-import com.churchmanagement.enums.SmsDeliveryStatus;
-import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.security.AuthContext;
@@ -24,14 +21,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SmsResendServiceTest {
     private FakeSmsLogRepository smsLogRepository;
     private FakeChurchRepository churchRepository;
-    private FakeSmsService smsService;
     private FakeActivityLogService activityLogService;
     private SmsResendService smsResendService;
 
@@ -39,9 +33,8 @@ class SmsResendServiceTest {
     void setUp() {
         smsLogRepository = new FakeSmsLogRepository();
         churchRepository = new FakeChurchRepository();
-        smsService = new FakeSmsService();
         activityLogService = new FakeActivityLogService();
-        smsResendService = new SmsResendService(smsLogRepository, churchRepository, smsService, activityLogService,
+        smsResendService = new SmsResendService(smsLogRepository, churchRepository, activityLogService,
                 fixedClock("2026-05-05T10:00:00Z"), new FakeSystemConfigurationCache(Map.of(
                 "sms.retry.max.attempts", "3"
         )));
@@ -56,10 +49,9 @@ class SmsResendServiceTest {
 
     @Test
     void userWithPermissionCanResendSmsWithinSevenDays() {
-        SmsResult result = smsResendService.resendSms(validRequest());
+        smsResendService.resendSms(validRequest());
 
-        assertTrue(result.isSuccess());
-        assertEquals(1, smsLogRepository.insertCount);
+        assertEquals(1, smsLogRepository.enqueueCount);
         assertEquals(100L, smsLogRepository.originalSmsLogId);
         assertEquals(7L, smsLogRepository.resentByUserId);
     }
@@ -74,14 +66,14 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(validRequest()));
 
         assertEquals("You do not have permission to resend SMS.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
         assertEquals(ActivityLogService.SMS_RESEND_BLOCKED_PERMISSION, activityLogService.action);
     }
 
     @Test
     void rejectResendAfterSevenDays() {
         smsLogRepository.original.setCreatedAt(LocalDateTime.of(2026, 5, 1, 10, 0));
-        smsResendService = new SmsResendService(smsLogRepository, churchRepository, smsService, activityLogService,
+        smsResendService = new SmsResendService(smsLogRepository, churchRepository, activityLogService,
                 fixedClock("2026-05-08T10:00:01Z"), new FakeSystemConfigurationCache(Map.of(
                 "sms.retry.max.attempts", "3"
         )));
@@ -91,40 +83,18 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(validRequest()));
 
         assertEquals("SMS resend is allowed only within 7 days from the original SMS.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
         assertEquals(ActivityLogService.SMS_RESEND_BLOCKED_EXPIRED, activityLogService.action);
     }
 
     @Test
-    void resendCreatesNewSmsLogRecord() {
+    void resendEnqueuesRowLinkedToOriginal() {
         smsResendService.resendSms(validRequest());
 
-        assertEquals(1, smsLogRepository.insertCount);
-        assertEquals(500L, smsLogRepository.newSmsLogId);
-        assertEquals(SmsSendStatus.SENT.name(), smsLogRepository.insertedLog.getStatus());
-    }
-
-    @Test
-    void originalSmsLogRecordIsNotModified() {
-        String originalMessage = smsLogRepository.original.getMessage();
-        String originalStatus = smsLogRepository.original.getStatus();
-
-        smsResendService.resendSms(validRequest());
-
-        assertEquals(originalMessage, smsLogRepository.original.getMessage());
-        assertEquals(originalStatus, smsLogRepository.original.getStatus());
-        assertFalse(smsLogRepository.original == smsLogRepository.insertedLog);
-    }
-
-    @Test
-    void failedResendCreatesFailedLog() {
-        smsService.result = new SmsResult(false, "Gateway unavailable.", MockSmsService.PROVIDER, null);
-
-        SmsResult result = smsResendService.resendSms(validRequest());
-
-        assertFalse(result.isSuccess());
-        assertEquals(SmsLogRepository.SmsStatus.FAILED.name(), smsLogRepository.insertedLog.getStatus());
-        assertEquals("Gateway unavailable.", smsLogRepository.insertedLog.getErrorMessage());
+        assertEquals(1, smsLogRepository.enqueueCount);
+        assertEquals(20L, smsLogRepository.receiptId);
+        assertEquals(10L, smsLogRepository.churchId);
+        assertEquals("Asked by church office", smsLogRepository.resendReason);
     }
 
     @Test
@@ -137,7 +107,7 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(request));
 
         assertEquals("Resend reason cannot exceed 255 characters.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
     }
 
     @Test
@@ -150,7 +120,7 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(request));
 
         assertEquals("Resend reason is required.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
     }
 
     @Test
@@ -159,10 +129,8 @@ class SmsResendServiceTest {
 
         smsResendService.resendSms(validRequest());
 
-        assertEquals("+94770000002", smsService.mobileNumber);
-        assertEquals("Receipt REC26000001 received.", smsService.message);
-        assertEquals("+94770000002", smsLogRepository.insertedLog.getMobileNumber());
-        assertEquals("Receipt REC26000001 received.", smsLogRepository.insertedLog.getMessage());
+        assertEquals("+94770000002", smsLogRepository.mobileNumber);
+        assertEquals("Receipt REC26000001 received.", smsLogRepository.message);
     }
 
     @Test
@@ -174,27 +142,7 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(validRequest()));
 
         assertEquals("Church SMS mobile number is missing.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
-    }
-
-    @Test
-    void activityLogCreatedOnResendSuccess() {
-        smsResendService.resendSms(validRequest());
-
-        assertEquals(ActivityLogService.SMS_RESENT_SUCCESS, activityLogService.action);
-        assertEquals(100L, activityLogService.originalSmsLogId);
-        assertEquals(500L, activityLogService.newSmsLogId);
-    }
-
-    @Test
-    void activityLogCreatedOnResendFailure() {
-        smsService.result = new SmsResult(false, "Gateway unavailable.", MockSmsService.PROVIDER, null);
-
-        smsResendService.resendSms(validRequest());
-
-        assertEquals(ActivityLogService.SMS_RESENT_FAILED, activityLogService.action);
-        assertEquals(100L, activityLogService.originalSmsLogId);
-        assertEquals(500L, activityLogService.newSmsLogId);
+        assertEquals(0, smsLogRepository.enqueueCount);
     }
 
     @Test
@@ -206,8 +154,7 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(validRequest()));
 
         assertEquals("A newer resend already exists for this SMS.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
-        assertEquals(0, smsService.sendCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
     }
 
     @Test
@@ -219,20 +166,16 @@ class SmsResendServiceTest {
                 () -> smsResendService.resendSms(validRequest()));
 
         assertEquals("SMS resend attempt limit has been reached.", exception.getMessage());
-        assertEquals(0, smsLogRepository.insertCount);
-        assertEquals(0, smsService.sendCount);
+        assertEquals(0, smsLogRepository.enqueueCount);
     }
 
     @Test
-    void resendAttemptCountContinuesFromSelectedSmsAttemptCount() {
+    void resendCarriesPriorAttemptCountForProcessorBudget() {
         smsLogRepository.original.setAttemptCount(2);
-        smsService.result = new SmsResult(true, "SMS sent successfully.", MockSmsService.PROVIDER,
-                LocalDateTime.of(2026, 5, 5, 10, 0),
-                SmsSendStatus.SENT, SmsDeliveryStatus.UNKNOWN, null, null, null, null, 1);
 
         smsResendService.resendSms(validRequest());
 
-        assertEquals(3, smsLogRepository.insertedLog.getAttemptCount());
+        assertEquals(2, smsLogRepository.priorAttemptCount);
     }
 
     private SmsResendRequest validRequest() {
@@ -248,11 +191,15 @@ class SmsResendServiceTest {
 
     private static class FakeSmsLogRepository extends SmsLogRepository {
         private final SmsLogDto original = originalLog();
-        private int insertCount;
+        private int enqueueCount;
         private long originalSmsLogId;
         private long resentByUserId;
-        private long newSmsLogId;
-        private SmsLogDto insertedLog;
+        private Long receiptId;
+        private Long churchId;
+        private String mobileNumber;
+        private String message;
+        private String resendReason;
+        private int priorAttemptCount;
         private boolean hasResend;
 
         private FakeSmsLogRepository() {
@@ -270,14 +217,18 @@ class SmsResendServiceTest {
         }
 
         @Override
-        public long insertResendSmsLog(SmsLogDto newLog, long originalSmsLogId, long resentByUserId,
-                                       String resendReason) {
-            insertCount++;
+        public void enqueueResend(Long receiptId, Long churchId, String mobileNumber, String message,
+                                  long originalSmsLogId, long resentByUserId, String resendReason,
+                                  int priorAttemptCount, LocalDateTime queuedAt) {
+            enqueueCount++;
+            this.receiptId = receiptId;
+            this.churchId = churchId;
+            this.mobileNumber = mobileNumber;
+            this.message = message;
             this.originalSmsLogId = originalSmsLogId;
             this.resentByUserId = resentByUserId;
-            this.insertedLog = newLog;
-            newSmsLogId = 500L;
-            return newSmsLogId;
+            this.resendReason = resendReason;
+            this.priorAttemptCount = priorAttemptCount;
         }
 
         private static SmsLogDto originalLog() {
@@ -287,7 +238,6 @@ class SmsResendServiceTest {
             log.setChurchId(10L);
             log.setMobileNumber("+94712345678");
             log.setMessage("Receipt REC26000001 received.");
-            log.setProvider(MockSmsService.PROVIDER);
             log.setStatus(SmsLogRepository.SmsStatus.FAILED.name());
             log.setCreatedAt(LocalDateTime.of(2026, 5, 1, 10, 0));
             return log;
@@ -313,57 +263,21 @@ class SmsResendServiceTest {
         }
     }
 
-    private static class FakeSmsService implements SmsService {
-        private SmsResult result = new SmsResult(true, "SMS sent successfully.", MockSmsService.PROVIDER,
-                LocalDateTime.of(2026, 5, 5, 10, 0));
-        private String mobileNumber;
-        private String message;
-        private int sendCount;
-
-        @Override
-        public SmsResult sendSms(String mobileNumber, String message) {
-            sendCount++;
-            this.mobileNumber = mobileNumber;
-            this.message = message;
-            return result;
-        }
-    }
-
     private static class FakeActivityLogService extends ActivityLogService {
         private String action;
-        private Long originalSmsLogId;
-        private Long newSmsLogId;
 
         private FakeActivityLogService() {
             super(null);
         }
 
         @Override
-        public void logSmsResendSuccess(Long userId, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
-                                        Long churchId, String mobileNumber) {
-            action = SMS_RESENT_SUCCESS;
-            this.originalSmsLogId = originalSmsLogId;
-            this.newSmsLogId = newSmsLogId;
-        }
-
-        @Override
-        public void logSmsResendFailed(Long userId, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
-                                       Long churchId, String mobileNumber) {
-            action = SMS_RESENT_FAILED;
-            this.originalSmsLogId = originalSmsLogId;
-            this.newSmsLogId = newSmsLogId;
-        }
-
-        @Override
         public void logSmsResendBlockedExpired(Long userId, Long originalSmsLogId) {
             action = SMS_RESEND_BLOCKED_EXPIRED;
-            this.originalSmsLogId = originalSmsLogId;
         }
 
         @Override
         public void logSmsResendBlockedPermission(Long userId, Long originalSmsLogId) {
             action = SMS_RESEND_BLOCKED_PERMISSION;
-            this.originalSmsLogId = originalSmsLogId;
         }
     }
 
