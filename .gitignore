@@ -51,3 +51,6 @@ user_uploads/
 build-installer.bat
 # Local git worktrees (subagent-driven development scratch space)
 .worktrees/
+
+# Subagent-driven-development scratch space (ledgers, briefs, review packages)
+.superpowers/
