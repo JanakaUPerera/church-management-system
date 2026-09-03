@@ -154,12 +154,15 @@
                         <Button fx:id="browseReceiptPdfExportFolderButton" onAction="#browseReceiptPdfExportFolder" text="Browse"/>
                     </HBox>
 
-                    <Label text="PDF Report Charts" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-                    <CheckBox fx:id="pdfReportChartsEnabledCheckBox" text="Show charts in PDF reports" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                    <Label text="Continuous Paper" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                    <CheckBox fx:id="continuousPaperCheckBox" text="Dot-matrix printer is fed continuous (tractor-feed) paper" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
 
-                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="5"/>
+                    <Label text="PDF Report Charts" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                    <CheckBox fx:id="pdfReportChartsEnabledCheckBox" text="Show charts in PDF reports" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                    <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                    <ComboBox fx:id="themeComboBox" prefWidth="160" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+                    <Label fx:id="themeErrorLabel" styleClass="error-label" GridPane.columnIndex="2" GridPane.rowIndex="6"/>
                 </GridPane>
                 <Button onAction="#saveSystemSettings" styleClass="primary-button" text="Save System"/>
             </VBox>

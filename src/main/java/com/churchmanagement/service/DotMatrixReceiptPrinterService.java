@@ -1,5 +1,6 @@
 package com.churchmanagement.service;
 
+import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.dto.PrintResult;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperPrint;
@@ -18,36 +19,68 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
  * Sends the print-only receipt (see {@code ReceiptPdfGenerator#renderPrintJasperPrint}) straight
  * to the OS default printer — no PDF file is written. Built for the Epson LQ-310 dot-matrix
- * printer feeding the pre-printed 4.75in x 5.5in receipt pad: the page matches that card exactly,
- * and the printable area is inset by the pad's physical margins, so any field the design places
- * outside that area is clipped by the printer rather than repositioned.
+ * printer feeding the pre-printed 4.75in x 5.5in receipt pad, in either of two physical paper
+ * setups (see {@link #CONTINUOUS_PAPER_KEY}):
+ * <ul>
+ *     <li>Single cut-sheet receipts: the page matches the pad exactly, with a margin-based
+ *     imageable area inset from its edges (see {@link #buildSingleReceiptPageFormat()}).</li>
+ *     <li>Continuous tractor-feed paper: no margin/clip model applies the same way, so alignment
+ *     is a plain, empirically-tuned offset instead (see {@link #buildContinuousPageFormat()} and
+ *     the translate in {@link #printableFor(JasperPrint)}).</li>
+ * </ul>
  */
 public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
     static final double POINTS_PER_CM = 72.0 / 2.54;
     static final double PAGE_WIDTH_POINTS = 342; // 4.75in
     static final double PAGE_HEIGHT_POINTS = 396; // 5.5in
-    static final double LEFT_MARGIN_CM = 1.2;
-    static final double RIGHT_MARGIN_CM = 1.2;
+    static final double LEFT_MARGIN_CM = 1.1;
+    static final double RIGHT_MARGIN_CM = 1.1;
     static final double TOP_MARGIN_CM = 0.4;
     static final double BOTTOM_MARGIN_CM = 0.6;
+
+    /**
+     * Local per-machine setting (same rationale as the report/receipt export folder settings in
+     * SettingsController - a paper-feed choice only makes sense for the printer physically
+     * attached to this machine) - whether the dot-matrix printer is fed continuous tractor-feed
+     * paper rather than single cut-sheet receipts. Read fresh on every print, so a change in
+     * Settings takes effect on the next print without restarting the app.
+     */
+    static final String CONTINUOUS_PAPER_KEY = "receipt.print.continuous_paper";
+    static final boolean CONTINUOUS_PAPER_DEFAULT = true;
 
     private static final String PRINTER_LABEL = "Dot Matrix Printer";
 
     private final Supplier<PrintService> defaultPrintServiceSupplier;
     private final Clock clock;
+    private final BooleanSupplier continuousPaperSupplier;
 
     public DotMatrixReceiptPrinterService() {
-        this(PrintServiceLookup::lookupDefaultPrintService, Clock.systemDefaultZone());
+        this(PrintServiceLookup::lookupDefaultPrintService, Clock.systemDefaultZone(),
+                DotMatrixReceiptPrinterService::readContinuousPaperSetting);
     }
 
     DotMatrixReceiptPrinterService(Supplier<PrintService> defaultPrintServiceSupplier, Clock clock) {
+        this(defaultPrintServiceSupplier, clock, () -> CONTINUOUS_PAPER_DEFAULT);
+    }
+
+    DotMatrixReceiptPrinterService(Supplier<PrintService> defaultPrintServiceSupplier, Clock clock,
+                                   BooleanSupplier continuousPaperSupplier) {
         this.defaultPrintServiceSupplier = defaultPrintServiceSupplier;
         this.clock = clock;
+        this.continuousPaperSupplier = continuousPaperSupplier;
+    }
+
+    private static boolean readContinuousPaperSetting() {
+        String configured = DatabaseConfig.getProperty(CONTINUOUS_PAPER_KEY);
+        return configured == null || configured.isBlank()
+                ? CONTINUOUS_PAPER_DEFAULT
+                : Boolean.parseBoolean(configured);
     }
 
     @Override
@@ -77,11 +110,19 @@ public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
     }
 
     /**
-     * The physical receipt page: 4.75in x 5.5in, with an imageable area inset by the dot-matrix
-     * printer's required margins (1.2cm left/right, 0.4cm top, 0.6cm bottom). Content the report
+     * The physical receipt page: 4.75in x 5.5in, in whichever of the two paper setups
+     * {@link #CONTINUOUS_PAPER_KEY} currently selects.
+     */
+    PageFormat buildPageFormat() {
+        return continuousPaperSupplier.getAsBoolean() ? buildContinuousPageFormat() : buildSingleReceiptPageFormat();
+    }
+
+    /**
+     * Single cut-sheet receipts: imageable area inset from the pad's edges by the dot-matrix
+     * printer's required margins (1.1cm left/right, 0.4cm top, 0.6cm bottom). Content the report
      * places outside that imageable area is clipped by the printing API, not shifted to fit it.
      */
-    static PageFormat buildPageFormat() {
+    static PageFormat buildSingleReceiptPageFormat() {
         double leftMargin = LEFT_MARGIN_CM * POINTS_PER_CM;
         double rightMargin = RIGHT_MARGIN_CM * POINTS_PER_CM;
         double topMargin = TOP_MARGIN_CM * POINTS_PER_CM;
@@ -99,6 +140,22 @@ public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
         return pageFormat;
     }
 
+    /**
+     * Continuous tractor-feed paper: the whole page declared imageable (no margin/clip model -
+     * the concept of an inset "sheet" doesn't apply the same way to a continuous feed), with
+     * alignment handled instead by the plain offset in {@link #printableFor(JasperPrint)}.
+     */
+    static PageFormat buildContinuousPageFormat() {
+        Paper paper = new Paper();
+        paper.setSize(PAGE_WIDTH_POINTS, PAGE_HEIGHT_POINTS);
+        paper.setImageableArea(0, 0, PAGE_WIDTH_POINTS, PAGE_HEIGHT_POINTS);
+
+        PageFormat pageFormat = new PageFormat();
+        pageFormat.setOrientation(PageFormat.PORTRAIT);
+        pageFormat.setPaper(paper);
+        return pageFormat;
+    }
+
     Printable printableFor(JasperPrint jasperPrint) {
         return (graphics, pageFormat, pageIndex) -> {
             if (pageIndex > 0) {
@@ -109,10 +166,16 @@ public class DotMatrixReceiptPrinterService implements ReceiptPrinterService {
             // imageable area's top-left in physical page space (and clipped to its width/height),
             // but every field in the report is positioned in absolute page coordinates (e.g.
             // x=138 means physical page x=138, not "138 past the margin"). Left uncompensated,
-            // everything renders imageableX/imageableY too far right/down, and the right-column
-            // fields - already close to the page edge - get pushed past the clip and vanish
-            // entirely, exactly what happened on the physical Epson LQ-310 printout.
-            graphics2D.translate(-pageFormat.getImageableX(), -pageFormat.getImageableY());
+            // everything renders imageableX/imageableY too far right/down. For single-sheet
+            // receipts that cancels the pipeline's implicit shift exactly (see
+            // buildSingleReceiptPageFormat()'s imageableX/Y); continuous paper has no such margin
+            // model (imageableX/Y are 0) and instead needs the fixed offset below, tuned against
+            // the actual Epson LQ-310 feeding continuous paper.
+            if (continuousPaperSupplier.getAsBoolean()) {
+                graphics2D.translate(-28, -3);
+            } else {
+                graphics2D.translate(-pageFormat.getImageableX(), -pageFormat.getImageableY());
+            }
             exportToGraphics(jasperPrint, graphics2D);
             return Printable.PAGE_EXISTS;
         };

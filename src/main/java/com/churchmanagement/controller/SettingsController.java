@@ -77,6 +77,14 @@ public class SettingsController {
     private static final String RECEIPT_PDF_OUTPUT_FOLDER_KEY = "receipt.pdf.output.folder";
     private static final String RECEIPT_PDF_OUTPUT_FOLDER_DEFAULT = "./receipts";
 
+    /**
+     * Local per-machine setting, same rationale as {@link #REPORT_EXPORT_FOLDER_KEY} — whether
+     * the dot-matrix printer attached to this machine is fed continuous tractor-feed paper rather
+     * than single cut-sheet receipts. See {@code DotMatrixReceiptPrinterService}.
+     */
+    private static final String CONTINUOUS_PAPER_KEY = "receipt.print.continuous_paper";
+    private static final String CONTINUOUS_PAPER_DEFAULT = "true";
+
     private final SystemSettingService systemSettingService = new SystemSettingService();
     private final SmsSettingsRepository smsSettingsRepository = new SmsSettingsRepository();
     private final SerialPortService serialPortService = new SerialPortService();
@@ -120,6 +128,7 @@ public class SettingsController {
     @FXML private Button browseReportExportFolderButton;
     @FXML private TextField receiptPdfExportFolderField;
     @FXML private Button browseReceiptPdfExportFolderButton;
+    @FXML private CheckBox continuousPaperCheckBox;
     @FXML private CheckBox pdfReportChartsEnabledCheckBox;
     @FXML private ComboBox<String> themeComboBox;
     @FXML private Label themeErrorLabel;
@@ -224,6 +233,8 @@ public class SettingsController {
                     // application.properties, never to the shared system_settings table.
                     DatabaseConfig.setProperty(REPORT_EXPORT_FOLDER_KEY, reportExportFolder);
                     DatabaseConfig.setProperty(RECEIPT_PDF_OUTPUT_FOLDER_KEY, receiptPdfExportFolder);
+                    DatabaseConfig.setProperty(CONTINUOUS_PAPER_KEY,
+                            String.valueOf(continuousPaperCheckBox.isSelected()));
                     return systemSettingService.updateSettings(List.of(
                             request("system.date.format", dateFormatField.getText()),
                             request("system.time.format", timeFormatField.getText()),
@@ -457,6 +468,7 @@ public class SettingsController {
         timeFormatField.setText(values.get("system.time.format"));
         loadReportExportFolderField();
         loadReceiptPdfExportFolderField();
+        loadContinuousPaperCheckBox();
         pdfReportChartsEnabledCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
                 values.get("reports.pdf.charts.enabled"), "true")));
         themeComboBox.setValue(defaultValue(values.get("system.theme"), "ORCHID"));
@@ -480,6 +492,16 @@ public class SettingsController {
     private void loadReceiptPdfExportFolderField() {
         receiptPdfExportFolderField.setText(defaultValue(
                 DatabaseConfig.getProperty(RECEIPT_PDF_OUTPUT_FOLDER_KEY), RECEIPT_PDF_OUTPUT_FOLDER_DEFAULT));
+    }
+
+    /**
+     * Reads the continuous-paper setting from this machine's local configuration
+     * (never from the shared {@code system_settings} DTO list — see
+     * {@link #CONTINUOUS_PAPER_KEY}).
+     */
+    private void loadContinuousPaperCheckBox() {
+        continuousPaperCheckBox.setSelected(Boolean.parseBoolean(defaultValue(
+                DatabaseConfig.getProperty(CONTINUOUS_PAPER_KEY), CONTINUOUS_PAPER_DEFAULT)));
     }
 
     private void configureButtonIcons() {
