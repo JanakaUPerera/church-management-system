@@ -26,6 +26,7 @@ public class SmsLogDto {
     private LocalDateTime sentAt;
     private LocalDateTime createdAt;
     private Long resendOfSmsLogId;
+    private Long queuedByUserId;
     private String resendOfSmsLogUuid;
     private String resentByUserFullName;
     private String resendReason;
@@ -216,6 +217,14 @@ public class SmsLogDto {
 
     public void setResendOfSmsLogId(Long resendOfSmsLogId) {
         this.resendOfSmsLogId = resendOfSmsLogId;
+    }
+
+    public Long getQueuedByUserId() {
+        return queuedByUserId;
+    }
+
+    public void setQueuedByUserId(Long queuedByUserId) {
+        this.queuedByUserId = queuedByUserId;
     }
 
     public String getResendOfSmsLogUuid() {
