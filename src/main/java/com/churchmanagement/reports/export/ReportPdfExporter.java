@@ -1,5 +1,6 @@
 package com.churchmanagement.reports.export;
 
+import com.churchmanagement.dto.report.ReportExclusion;
 import com.churchmanagement.dto.report.ReportSearchCriteria;
 import com.churchmanagement.dto.report.ReportSummaryTotals;
 import com.churchmanagement.dto.report.ReportTableRow;
@@ -1438,6 +1439,9 @@ public class ReportPdfExporter {
         addFilter(filterItems, "Status:", criteria.getStatus());
         addFilter(filterItems, "Receipt No:", criteria.getReceiptNo());
         addFilter(filterItems, "User ID:", criteria.getUserId());
+        addFilter(filterItems, "Except:", String.join("; ", criteria.getExclusions().stream()
+                .map(ReportExclusion::displayText)
+                .toList()));
         return String.join("   ", filterItems);
     }
 
