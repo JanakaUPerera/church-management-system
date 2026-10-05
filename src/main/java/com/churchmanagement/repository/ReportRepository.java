@@ -67,6 +67,32 @@ public class ReportRepository {
         return query(sql.toString(), parameters, this::mapWeeklyChurchCollection);
     }
 
+    public List<ReceiptCollectionReportDto> getReceiptCollectionReport(ReportSearchCriteria criteria) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT r.id receipt_id, rg.region_code, rg.region_name, c.church_code, c.church_name,
+                       r.receipt_datetime, r.week_start_date, r.receipt_no,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OFFERTORY' THEN ri.amount ELSE 0 END), 0) offertory_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'TITHES' THEN ri.amount ELSE 0 END), 0) tithes_total,
+                       COALESCE(SUM(CASE WHEN ri.collection_type = 'OTHER_DONATIONS' THEN ri.amount ELSE 0 END), 0) other_donations_total,
+                       COALESCE(SUM(ri.amount), 0) grand_total
+                FROM receipts r
+                JOIN regions rg ON rg.id = r.region_id
+                JOIN churches c ON c.id = r.church_id
+                JOIN receipt_items ri ON ri.receipt_id = r.id
+                WHERE r.status = 'ACTIVE'
+                """);
+        List<Object> parameters = new ArrayList<>();
+        appendEnteredDateRangeFilter(sql, parameters, criteria);
+        appendRegionChurchReceiptFilters(sql, parameters, criteria, "r");
+        sql.append("""
+                GROUP BY r.id, rg.region_code, rg.region_name, c.church_code, c.church_name, r.receipt_datetime,
+                         r.week_start_date, r.receipt_no
+                ORDER BY rg.region_code, c.church_code, r.receipt_datetime, r.receipt_no
+                """);
+        appendPagination(sql, parameters, criteria);
+        return query(sql.toString(), parameters, this::mapReceiptCollection);
+    }
+
     public List<WeeklyRegionSummaryReportDto> getWeeklyRegionSummaryReport(ReportSearchCriteria criteria) {
         StringBuilder sql = new StringBuilder("""
                 SELECT rg.id region_id, rg.region_code, rg.region_name, ? week_start_date,
@@ -400,6 +426,8 @@ public class ReportRepository {
         List<Object> parameters = new ArrayList<>();
         if (criteria.getWeekStartDate() != null && isWeekly(criteria.getReportType())) {
             appendWeekFilter(sql, parameters, criteria);
+        } else if (criteria.getReportType() == ReportType.RECEIPT_COLLECTION) {
+            appendEnteredDateRangeFilter(sql, parameters, criteria);
         } else {
             appendDateRangeFilter(sql, parameters, criteria, "r.week_start_date");
         }
@@ -422,6 +450,22 @@ public class ReportRepository {
         if (criteria.getDateTo() != null) {
             sql.append("AND ").append(column).append(" <= ? ");
             parameters.add(Date.valueOf(criteria.getDateTo()));
+        }
+    }
+
+    /**
+     * Filters on the day a receipt was entered. Uses a half-open range on
+     * {@code receipt_datetime} so the whole "Date To" day is included without
+     * wrapping the column in {@code DATE()}.
+     */
+    private void appendEnteredDateRangeFilter(StringBuilder sql, List<Object> parameters, ReportSearchCriteria criteria) {
+        if (criteria.getDateFrom() != null) {
+            sql.append("AND r.receipt_datetime >= ? ");
+            parameters.add(Timestamp.valueOf(criteria.getDateFrom().atStartOfDay()));
+        }
+        if (criteria.getDateTo() != null) {
+            sql.append("AND r.receipt_datetime < ? ");
+            parameters.add(Timestamp.valueOf(criteria.getDateTo().plusDays(1).atStartOfDay()));
         }
     }
 
@@ -584,6 +628,23 @@ public class ReportRepository {
         dto.setRegionName(rs.getString("region_name"));
         dto.setChurchCode(rs.getString("church_code"));
         dto.setChurchName(rs.getString("church_name"));
+        dto.setWeekStartDate(localDate(rs, "week_start_date"));
+        dto.setReceiptNo(rs.getString("receipt_no"));
+        dto.setOffertoryTotal(rs.getBigDecimal("offertory_total"));
+        dto.setTithesTotal(rs.getBigDecimal("tithes_total"));
+        dto.setOtherDonationsTotal(rs.getBigDecimal("other_donations_total"));
+        dto.setGrandTotal(rs.getBigDecimal("grand_total"));
+        return dto;
+    }
+
+    private ReceiptCollectionReportDto mapReceiptCollection(ResultSet rs) throws SQLException {
+        ReceiptCollectionReportDto dto = new ReceiptCollectionReportDto();
+        dto.setReceiptId(rs.getLong("receipt_id"));
+        dto.setRegionCode(rs.getString("region_code"));
+        dto.setRegionName(rs.getString("region_name"));
+        dto.setChurchCode(rs.getString("church_code"));
+        dto.setChurchName(rs.getString("church_name"));
+        dto.setEnteredAt(localDateTime(rs, "receipt_datetime"));
         dto.setWeekStartDate(localDate(rs, "week_start_date"));
         dto.setReceiptNo(rs.getString("receipt_no"));
         dto.setOffertoryTotal(rs.getBigDecimal("offertory_total"));

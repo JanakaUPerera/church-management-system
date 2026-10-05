@@ -112,9 +112,13 @@ public class ReportService {
         ReportType selectedType = reportType == null ? ReportType.WEEKLY_CHURCH_COLLECTION : reportType;
         criteria.setReportType(selectedType);
         LocalDate today = LocalDate.now(clock);
-        criteria.setDateFrom(isAnnualCollectionReport(selectedType)
-                ? LocalDate.of(today.getYear(), 1, 1)
-                : today.withDayOfMonth(1));
+        if (isAnnualCollectionReport(selectedType)) {
+            criteria.setDateFrom(LocalDate.of(today.getYear(), 1, 1));
+        } else if (selectedType == ReportType.RECEIPT_COLLECTION) {
+            criteria.setDateFrom(today);
+        } else {
+            criteria.setDateFrom(today.withDayOfMonth(1));
+        }
         criteria.setDateTo(today);
         criteria.setWeekStartDate(WeekUtil.weekStartFor(WeekUtil.currentIdentifier(today, resolveIdentifierDay())));
         return criteria;
@@ -166,6 +170,7 @@ public class ReportService {
         return switch (criteria.getReportType()) {
             case WEEKLY_CHURCH_COLLECTION -> reportRepository.getWeeklyChurchCollectionReport(criteria);
             case WEEKLY_REGION_SUMMARY -> reportRepository.getWeeklyRegionSummaryReport(criteria);
+            case RECEIPT_COLLECTION -> reportRepository.getReceiptCollectionReport(criteria);
             case SUBMISSION_STATUS -> reportRepository.getSubmissionStatusReport(criteria);
             case LATE_SUBMISSION -> reportRepository.getLateSubmissionReport(criteria);
             case CHURCH_ANNUAL_COLLECTION -> reportRepository.getCollectionReport(criteria, true, false);
@@ -210,6 +215,7 @@ public class ReportService {
     private boolean supportsCollectionColumnSelection(ReportType reportType) {
         return reportType == ReportType.WEEKLY_CHURCH_COLLECTION
                 || reportType == ReportType.WEEKLY_REGION_SUMMARY
+                || reportType == ReportType.RECEIPT_COLLECTION
                 || reportType == ReportType.SUBMISSION_STATUS
                 || reportType == ReportType.LATE_SUBMISSION
                 || reportType == ReportType.CHURCH_ANNUAL_COLLECTION

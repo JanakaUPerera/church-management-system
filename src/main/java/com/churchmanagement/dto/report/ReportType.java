@@ -1,6 +1,7 @@
 package com.churchmanagement.dto.report;
 
 public enum ReportType {
+    RECEIPT_COLLECTION("Receipt Collection Report"),
     WEEKLY_CHURCH_COLLECTION("Weekly Church-wise Collection Report"),
     WEEKLY_REGION_SUMMARY("Weekly Region-wise Collection Report"),
     SUBMISSION_STATUS("Submission Status Report"),

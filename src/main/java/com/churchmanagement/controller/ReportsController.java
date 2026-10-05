@@ -87,6 +87,7 @@ public class ReportsController {
     private static final List<ReportType> COLLECTION_COLUMN_REPORT_TYPES = List.of(
             ReportType.WEEKLY_CHURCH_COLLECTION,
             ReportType.WEEKLY_REGION_SUMMARY,
+            ReportType.RECEIPT_COLLECTION,
             ReportType.SUBMISSION_STATUS,
             ReportType.LATE_SUBMISSION,
             ReportType.CHURCH_ANNUAL_COLLECTION,
@@ -698,6 +699,7 @@ public class ReportsController {
         return switch (reportType) {
             case WEEKLY_CHURCH_COLLECTION -> "fas-church";
             case WEEKLY_REGION_SUMMARY -> "fas-map-marked-alt";
+            case RECEIPT_COLLECTION -> "fas-calendar-check";
             case SUBMISSION_STATUS -> "fas-tasks";
             case LATE_SUBMISSION -> "fas-clock";
             case CHURCH_ANNUAL_COLLECTION, REGION_ANNUAL_COLLECTION -> "fas-calendar-alt";
