@@ -1,6 +1,7 @@
 package com.churchmanagement.controller;
 
 import com.churchmanagement.dto.PrintResult;
+import com.churchmanagement.dto.report.ReportExclusion;
 import com.churchmanagement.dto.report.ReportResult;
 import com.churchmanagement.dto.report.ReportSearchCriteria;
 import com.churchmanagement.dto.report.ReportSummaryTotals;
@@ -8,6 +9,7 @@ import com.churchmanagement.dto.report.ReportTableRow;
 import com.churchmanagement.dto.report.ReportType;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
+import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.repository.UserRepository;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.RegionService;
@@ -29,18 +31,22 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.GridPane;
@@ -57,12 +63,16 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 public class ReportsController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
     private static final String ALL = "ALL";
+    private static final String ENTIRE_CHURCH = "Entire Church (all collections)";
+    private static final List<ReportType> EXCLUSION_REPORT_TYPES = List.of(ReportType.RECEIPT_COLLECTION);
     private static final List<ReportType> WEEKLY_REPORT_TYPES = List.of(
             ReportType.WEEKLY_CHURCH_COLLECTION,
             ReportType.WEEKLY_REGION_SUMMARY,
@@ -114,6 +124,7 @@ public class ReportsController {
     private final ObservableList<Church> churches = FXCollections.observableArrayList();
     private final ObservableList<Church> filteredChurches = FXCollections.observableArrayList();
     private final ObservableList<UserRepository.UserSummary> users = FXCollections.observableArrayList();
+    private final List<ReportExclusion> exclusions = new ArrayList<>();
     private ReportType currentReportType = ReportType.WEEKLY_CHURCH_COLLECTION;
 
     @FXML private StackPane reportContentHost;
@@ -161,6 +172,10 @@ public class ReportsController {
     @FXML private CheckBox tithesColumnCheckBox;
     @FXML private CheckBox otherDonationsColumnCheckBox;
     @FXML private CheckBox grandTotalColumnCheckBox;
+    @FXML private Label exceptLabel;
+    @FXML private HBox exceptBox;
+    @FXML private Button exceptButton;
+    @FXML private Label exceptSummaryLabel;
     private boolean updatingCollectionColumnSelection;
 
     @FXML
@@ -197,6 +212,8 @@ public class ReportsController {
         receiptNoField.clear();
         userComboBox.getSelectionModel().selectFirst();
         setAllCollectionColumnsSelected(true);
+        exclusions.clear();
+        updateExceptSummary();
         tableSearchField.clear();
         refreshReport(true);
     }
@@ -232,6 +249,126 @@ public class ReportsController {
     }
 
     @FXML
+    private void handleExceptList() {
+        ObservableList<ReportExclusion> draft = FXCollections.observableArrayList(exclusions);
+
+        ComboBox<Church> churchPicker = new ComboBox<>(FXCollections.observableArrayList(churches));
+        ComboBoxUtil.makeSearchable(churchPicker, this::churchText);
+        churchPicker.setPromptText("Select church...");
+        churchPicker.setMaxWidth(Double.MAX_VALUE);
+
+        List<String> parts = new ArrayList<>(List.of(ENTIRE_CHURCH));
+        Arrays.stream(CollectionType.values()).map(CollectionType::getDisplayLabel).forEach(parts::add);
+        ComboBox<String> partPicker = new ComboBox<>(FXCollections.observableArrayList(parts));
+        partPicker.setValue(ENTIRE_CHURCH);
+        partPicker.setMaxWidth(Double.MAX_VALUE);
+
+        Label dialogMessage = new Label();
+        dialogMessage.getStyleClass().add("form-message");
+        dialogMessage.setWrapText(true);
+
+        Button addButton = new Button("Add to Except List");
+        ButtonIconUtil.applyIcon(addButton, "fas-plus");
+        addButton.getStyleClass().add("primary-button");
+        addButton.setOnAction(event -> {
+            Church church = churchPicker.getValue();
+            if (church == null || church.getId() == null) {
+                dialogMessage.setText("Select a church first.");
+                return;
+            }
+            dialogMessage.setText(addExclusion(draft,
+                    new ReportExclusion(church.getId(), churchText(church), collectionTypeFor(partPicker.getValue()))));
+        });
+
+        ListView<ReportExclusion> exceptListView = new ListView<>(draft);
+        exceptListView.setPlaceholder(new Label("Nothing excluded yet."));
+        exceptListView.setPrefHeight(220);
+        exceptListView.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(ReportExclusion item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.displayText());
+            }
+        });
+
+        Button removeButton = new Button("Remove");
+        ButtonIconUtil.applyIcon(removeButton, "fas-minus");
+        removeButton.disableProperty().bind(exceptListView.getSelectionModel().selectedItemProperty().isNull());
+        removeButton.setOnAction(event -> draft.remove(exceptListView.getSelectionModel().getSelectedItem()));
+        Button clearAllButton = new Button("Clear All");
+        ButtonIconUtil.applyIcon(clearAllButton, "fas-eraser");
+        clearAllButton.disableProperty().bind(javafx.beans.binding.Bindings.isEmpty(draft));
+        clearAllButton.setOnAction(event -> draft.clear());
+
+        GridPane pickerGrid = new GridPane();
+        pickerGrid.setHgap(10);
+        pickerGrid.setVgap(8);
+        pickerGrid.addRow(0, DialogStyler.fieldLabel("Church"), churchPicker);
+        pickerGrid.addRow(1, DialogStyler.fieldLabel("Exclude"), partPicker);
+        pickerGrid.add(addButton, 1, 2);
+        GridPane.setHgrow(churchPicker, Priority.ALWAYS);
+
+        VBox content = new VBox(10, pickerGrid, dialogMessage, DialogStyler.fieldLabel("Except List"),
+                exceptListView, new HBox(8, removeButton, clearAllButton));
+
+        Dialog<ButtonType> dialog = DialogStyler.apply(new Dialog<>());
+        dialog.setTitle("Except List");
+        dialog.setHeaderText("Except churches or collections from this report");
+        ButtonType applyButtonType = new ButtonType("Apply", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(applyButtonType, ButtonType.CANCEL);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().setPrefWidth(560);
+        dialog.showAndWait()
+                .filter(applyButtonType::equals)
+                .ifPresent(ignored -> {
+                    exclusions.clear();
+                    exclusions.addAll(draft);
+                    updateExceptSummary();
+                    refreshReport(true);
+                });
+    }
+
+    /**
+     * Adds to the draft Except List, keeping it free of redundant entries:
+     * excluding a whole church replaces that church's per-collection entries.
+     * Returns a message for the dialog, or empty on success.
+     */
+    private String addExclusion(List<ReportExclusion> draft, ReportExclusion candidate) {
+        boolean churchFullyExcluded = draft.stream()
+                .anyMatch(existing -> existing.churchId().equals(candidate.churchId()) && existing.entireChurch());
+        if (churchFullyExcluded) {
+            return candidate.churchLabel() + " is already excluded entirely.";
+        }
+        if (draft.contains(candidate)) {
+            return candidate.displayText() + " is already in the Except List.";
+        }
+        if (candidate.entireChurch()) {
+            draft.removeIf(existing -> existing.churchId().equals(candidate.churchId()));
+        }
+        draft.add(candidate);
+        return "";
+    }
+
+    private CollectionType collectionTypeFor(String part) {
+        return Arrays.stream(CollectionType.values())
+                .filter(type -> type.getDisplayLabel().equals(part))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void updateExceptSummary() {
+        if (exclusions.isEmpty()) {
+            exceptSummaryLabel.setText("None");
+            exceptSummaryLabel.setTooltip(null);
+            return;
+        }
+        String summary = String.join("; ", exclusions.stream().map(ReportExclusion::displayText).toList());
+        exceptSummaryLabel.setText(exclusions.size() + " excluded: " + summary);
+        exceptSummaryLabel.setTooltip(new Tooltip(String.join("\n",
+                exclusions.stream().map(ReportExclusion::displayText).toList())));
+    }
+
+    @FXML
     private void handleExportPdf() {
         ProcessingDialog.run("Export PDF", "Exporting report...",
                 () -> reportService.exportPdf(criteriaForAction()),
@@ -261,6 +398,7 @@ public class ReportsController {
         ButtonIconUtil.applyIcon(printButton, "fas-print");
         ButtonIconUtil.applyIcon(searchButton, "fas-search");
         ButtonIconUtil.applyIcon(clearButton, "fas-eraser");
+        ButtonIconUtil.applyIcon(exceptButton, "fas-minus-circle");
     }
 
     private void configureFilters() {
@@ -538,6 +676,7 @@ public class ReportsController {
         criteria.setTithesColumnSelected(tithesColumnCheckBox.isSelected());
         criteria.setOtherDonationsColumnSelected(otherDonationsColumnCheckBox.isSelected());
         criteria.setGrandTotalColumnSelected(grandTotalColumnCheckBox.isSelected() || !anyCollectionTypeSelected());
+        criteria.setExclusions(EXCLUSION_REPORT_TYPES.contains(criteria.getReportType()) ? exclusions : List.of());
         return criteria;
     }
 
@@ -568,6 +707,7 @@ public class ReportsController {
         setVisible(status, statusLabel, statusComboBox);
         setVisible(reportType == ReportType.USER_ACTIVITY, userLabel, userComboBox);
         setVisible(collectionColumns, collectionColumnsLabel, collectionColumnsBox);
+        setVisible(EXCLUSION_REPORT_TYPES.contains(reportType), exceptLabel, exceptBox);
         setVisible(!TOTALS_ROW_DISABLED_REPORT_TYPES.contains(reportType), totalsRow);
     }
 

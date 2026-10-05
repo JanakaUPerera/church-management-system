@@ -288,6 +288,7 @@ public class ReportService {
         copy.setTithesColumnSelected(source.isTithesColumnSelected());
         copy.setOtherDonationsColumnSelected(source.isOtherDonationsColumnSelected());
         copy.setGrandTotalColumnSelected(source.isGrandTotalColumnSelected());
+        copy.setExclusions(source.getExclusions());
         return copy;
     }
 
@@ -319,7 +320,11 @@ public class ReportService {
                 + (criteria.isOffertoryColumnSelected() ? "Offertory;" : "")
                 + (criteria.isTithesColumnSelected() ? "tithes;" : "")
                 + (criteria.isOtherDonationsColumnSelected() ? "other_donations;" : "")
-                + (criteria.isGrandTotalColumnSelected() ? "grand_total;" : "");
+                + (criteria.isGrandTotalColumnSelected() ? "grand_total;" : "")
+                + ", exclusions=" + criteria.getExclusions().stream()
+                        .map(ReportExclusion::displayText)
+                        .reduce((left, right) -> left + ";" + right)
+                        .orElse("");
     }
 
     private record CollectionColumnFilteredReportRow(ReportTableRow delegate, boolean showOffertory,

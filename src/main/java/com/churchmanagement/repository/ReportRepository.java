@@ -84,6 +84,7 @@ public class ReportRepository {
         List<Object> parameters = new ArrayList<>();
         appendEnteredDateRangeFilter(sql, parameters, criteria);
         appendRegionChurchReceiptFilters(sql, parameters, criteria, "r");
+        appendExclusionFilter(sql, parameters, criteria);
         sql.append("""
                 GROUP BY r.id, rg.region_code, rg.region_name, c.church_code, c.church_name, r.receipt_datetime,
                          r.week_start_date, r.receipt_no
@@ -428,6 +429,7 @@ public class ReportRepository {
             appendWeekFilter(sql, parameters, criteria);
         } else if (criteria.getReportType() == ReportType.RECEIPT_COLLECTION) {
             appendEnteredDateRangeFilter(sql, parameters, criteria);
+            appendExclusionFilter(sql, parameters, criteria);
         } else {
             appendDateRangeFilter(sql, parameters, criteria, "r.week_start_date");
         }
@@ -466,6 +468,24 @@ public class ReportRepository {
         if (criteria.getDateTo() != null) {
             sql.append("AND r.receipt_datetime < ? ");
             parameters.add(Timestamp.valueOf(criteria.getDateTo().plusDays(1).atStartOfDay()));
+        }
+    }
+
+    /**
+     * Applies the Except List. Works on receipt_items rows, so excluding one
+     * collection type of a church removes just those amounts, and a receipt
+     * left with no items drops out of the (inner-joined) result.
+     */
+    private void appendExclusionFilter(StringBuilder sql, List<Object> parameters, ReportSearchCriteria criteria) {
+        for (ReportExclusion exclusion : criteria.getExclusions()) {
+            if (exclusion.entireChurch()) {
+                sql.append("AND r.church_id <> ? ");
+                parameters.add(exclusion.churchId());
+            } else {
+                sql.append("AND NOT (r.church_id = ? AND ri.collection_type = ?) ");
+                parameters.add(exclusion.churchId());
+                parameters.add(exclusion.collectionType().name());
+            }
         }
     }
 

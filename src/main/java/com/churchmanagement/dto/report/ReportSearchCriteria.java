@@ -1,6 +1,7 @@
 package com.churchmanagement.dto.report;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class ReportSearchCriteria {
     private LocalDate dateFrom;
@@ -18,6 +19,7 @@ public class ReportSearchCriteria {
     private boolean tithesColumnSelected = true;
     private boolean otherDonationsColumnSelected = true;
     private boolean grandTotalColumnSelected = true;
+    private List<ReportExclusion> exclusions = List.of();
 
     public LocalDate getDateFrom() {
         return dateFrom;
@@ -137,5 +139,13 @@ public class ReportSearchCriteria {
 
     public void setGrandTotalColumnSelected(boolean grandTotalColumnSelected) {
         this.grandTotalColumnSelected = grandTotalColumnSelected;
+    }
+
+    public List<ReportExclusion> getExclusions() {
+        return exclusions;
+    }
+
+    public void setExclusions(List<ReportExclusion> exclusions) {
+        this.exclusions = exclusions == null ? List.of() : List.copyOf(exclusions);
     }
 }
