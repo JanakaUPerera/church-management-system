@@ -188,7 +188,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void exportReceiptDateRangePdfAndExcelCreateFiles() {
+    void exportReceiptCollectionPdfAndExcelCreateFiles() {
         Path pdf = service.exportPdf(criteria(ReportType.RECEIPT_COLLECTION));
         Path excel = service.exportExcel(criteria(ReportType.RECEIPT_COLLECTION));
 
