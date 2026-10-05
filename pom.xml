@@ -6,7 +6,7 @@
 
     <groupId>com.churchmanagement</groupId>
     <artifactId>church-management-system</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.1</version>
     <name>church-management-system</name>
 
     <properties>
