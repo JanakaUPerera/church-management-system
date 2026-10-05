@@ -188,6 +188,30 @@ class ReportServiceTest {
     }
 
     @Test
+    void receiptCollectionReportPassesExceptListToRepository() {
+        ReportSearchCriteria criteria = criteria(ReportType.RECEIPT_COLLECTION);
+        List<ReportExclusion> exclusions = List.of(
+                new ReportExclusion(7L, "CH007 - Seventh Church", null),
+                new ReportExclusion(9L, "CH009 - Ninth Church", com.churchmanagement.enums.CollectionType.TITHES));
+        criteria.setExclusions(exclusions);
+
+        service.loadReport(criteria);
+
+        assertEquals(exclusions, repository.lastCriteria.getExclusions());
+    }
+
+    @Test
+    void exportReceiptCollectionPdfWithExceptListCreatesFile() {
+        ReportSearchCriteria criteria = criteria(ReportType.RECEIPT_COLLECTION);
+        criteria.setExclusions(List.of(
+                new ReportExclusion(9L, "CH009 - Ninth Church", com.churchmanagement.enums.CollectionType.OFFERTORY)));
+
+        Path pdf = service.exportPdf(criteria);
+
+        assertTrue(Files.exists(pdf));
+    }
+
+    @Test
     void exportReceiptCollectionPdfAndExcelCreateFiles() {
         Path pdf = service.exportPdf(criteria(ReportType.RECEIPT_COLLECTION));
         Path excel = service.exportExcel(criteria(ReportType.RECEIPT_COLLECTION));
