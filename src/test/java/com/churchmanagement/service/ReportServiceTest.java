@@ -145,6 +145,58 @@ class ReportServiceTest {
     }
 
     @Test
+    void receiptCollectionReportUsesSelectedDateRangeNotWeek() {
+        ReportSearchCriteria criteria = criteria(ReportType.RECEIPT_COLLECTION);
+        criteria.setDateFrom(LocalDate.of(2026, 6, 1));
+        criteria.setDateTo(LocalDate.of(2026, 6, 5));
+
+        ReportResult<? extends ReportTableRow> result = service.loadReport(criteria);
+
+        assertEquals(LocalDate.of(2026, 6, 1), repository.lastCriteria.getDateFrom());
+        assertEquals(LocalDate.of(2026, 6, 5), repository.lastCriteria.getDateTo());
+        assertEquals(2, result.getRows().size());
+        assertTrue(result.getRows().getFirst().columns().containsKey("Entered At"));
+        assertEquals(new BigDecimal("140.00"), result.getTotals().getGrandTotal());
+    }
+
+    @Test
+    void receiptCollectionReportRejectsInvertedRange() {
+        ReportSearchCriteria criteria = criteria(ReportType.RECEIPT_COLLECTION);
+        criteria.setDateFrom(LocalDate.of(2026, 6, 5));
+        criteria.setDateTo(LocalDate.of(2026, 6, 1));
+
+        assertThrows(ReportService.ReportException.class, () -> service.loadReport(criteria));
+    }
+
+    @Test
+    void receiptCollectionReportDefaultsToToday() {
+        ReportSearchCriteria defaults = service.defaultCriteria(ReportType.RECEIPT_COLLECTION);
+
+        assertEquals(LocalDate.of(2026, 6, 8), defaults.getDateFrom());
+        assertEquals(LocalDate.of(2026, 6, 8), defaults.getDateTo());
+    }
+
+    @Test
+    void receiptCollectionReportHonoursCollectionColumnSelection() {
+        ReportSearchCriteria criteria = criteria(ReportType.RECEIPT_COLLECTION);
+        criteria.setTithesColumnSelected(false);
+
+        ReportResult<? extends ReportTableRow> result = service.loadReport(criteria);
+
+        assertFalse(result.getRows().getFirst().columns().containsKey("Tithes"));
+        assertTrue(result.getRows().getFirst().columns().containsKey("Offerings"));
+    }
+
+    @Test
+    void exportReceiptDateRangePdfAndExcelCreateFiles() {
+        Path pdf = service.exportPdf(criteria(ReportType.RECEIPT_COLLECTION));
+        Path excel = service.exportExcel(criteria(ReportType.RECEIPT_COLLECTION));
+
+        assertTrue(Files.exists(pdf));
+        assertTrue(Files.exists(excel));
+    }
+
+    @Test
     void exportPdfCreatesFile() {
         Path pdf = service.exportPdf(criteria(ReportType.WEEKLY_CHURCH_COLLECTION));
 
@@ -535,6 +587,28 @@ class ReportServiceTest {
                         row.setTithesTotal(new BigDecimal("2.00"));
                         row.setOtherDonationsTotal(new BigDecimal("3.00"));
                         row.setGrandTotal(new BigDecimal(index + 5 + ".00"));
+                        return row;
+                    })
+                    .toList();
+        }
+
+        @Override
+        public List<ReceiptCollectionReportDto> getReceiptCollectionReport(ReportSearchCriteria criteria) {
+            lastCriteria = criteria;
+            return java.util.stream.IntStream.rangeClosed(1, 2)
+                    .mapToObj(index -> {
+                        ReceiptCollectionReportDto row = new ReceiptCollectionReportDto();
+                        row.setReceiptId((long) index);
+                        row.setRegionName("North");
+                        row.setChurchCode("CH%03d".formatted(index));
+                        row.setChurchName("Church %02d".formatted(index));
+                        row.setEnteredAt(criteria.getDateFrom().atTime(9, index));
+                        row.setWeekStartDate(LocalDate.of(2026, 5, 26));
+                        row.setReceiptNo("R-" + index);
+                        row.setOffertoryTotal(new BigDecimal("50.00"));
+                        row.setTithesTotal(new BigDecimal("12.50"));
+                        row.setOtherDonationsTotal(new BigDecimal("7.50"));
+                        row.setGrandTotal(new BigDecimal("70.00"));
                         return row;
                     })
                     .toList();
