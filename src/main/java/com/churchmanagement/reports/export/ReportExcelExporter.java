@@ -68,6 +68,7 @@ public class ReportExcelExporter {
     private static final Set<ReportType> CHART_REPORT_TYPES = Set.of(
             ReportType.WEEKLY_CHURCH_COLLECTION,
             ReportType.WEEKLY_REGION_SUMMARY,
+            ReportType.RECEIPT_COLLECTION,
             ReportType.SUBMISSION_STATUS,
             ReportType.CHURCH_ANNUAL_COLLECTION,
             ReportType.REGION_ANNUAL_COLLECTION,
@@ -300,7 +301,8 @@ public class ReportExcelExporter {
     }
 
     private boolean supportsWeeklyCollectionCharts(ReportType reportType) {
-        return reportType == ReportType.WEEKLY_CHURCH_COLLECTION || reportType == ReportType.WEEKLY_REGION_SUMMARY;
+        return reportType == ReportType.WEEKLY_CHURCH_COLLECTION || reportType == ReportType.WEEKLY_REGION_SUMMARY
+                || reportType == ReportType.RECEIPT_COLLECTION;
     }
 
     private boolean supportsAnnualCollectionCharts(ReportType reportType) {
@@ -1144,7 +1146,8 @@ public class ReportExcelExporter {
 
     private String chartLabel(ReportType reportType, LinkedHashMap<String, Object> columns) {
         return switch (reportType) {
-            case WEEKLY_CHURCH_COLLECTION, CHURCH_ANNUAL_COLLECTION -> text(columns.get("Church"));
+            case WEEKLY_CHURCH_COLLECTION, RECEIPT_COLLECTION, CHURCH_ANNUAL_COLLECTION ->
+                    text(columns.get("Church"));
             case WEEKLY_REGION_SUMMARY, REGION_ANNUAL_COLLECTION -> text(columns.get("Region"));
             case CHURCH_MONTHLY_COLLECTION -> text(columns.get("Month")) + " - " + text(columns.get("Church"));
             case REGION_MONTHLY_COLLECTION -> text(columns.get("Month")) + " - " + text(columns.get("Region"));

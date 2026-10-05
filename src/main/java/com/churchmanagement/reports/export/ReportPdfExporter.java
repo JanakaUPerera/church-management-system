@@ -336,7 +336,8 @@ public class ReportPdfExporter {
     }
 
     private boolean supportsWeeklyCollectionCharts(ReportType reportType) {
-        return reportType == ReportType.WEEKLY_CHURCH_COLLECTION || reportType == ReportType.WEEKLY_REGION_SUMMARY;
+        return reportType == ReportType.WEEKLY_CHURCH_COLLECTION || reportType == ReportType.WEEKLY_REGION_SUMMARY
+                || reportType == ReportType.RECEIPT_COLLECTION;
     }
 
     private boolean supportsAnnualCollectionCharts(ReportType reportType) {
@@ -1604,7 +1605,7 @@ public class ReportPdfExporter {
             case "Church Code" -> 1.05;
             case "Week Start" -> 1.35;
             case "Receipt No" -> 1.45;
-            case "Submitted At" -> 1.65;
+            case "Submitted At", "Entered At" -> 1.65;
             case "Status" -> 1.25;
             case "Late Submission" -> 0.95;
             case "Offerings", "Tithes", "Other Donations", "Grand Total" -> 1.20;
@@ -1841,7 +1842,7 @@ public class ReportPdfExporter {
 
     private String templateName(ReportType reportType) {
         return switch (reportType) {
-            case WEEKLY_CHURCH_COLLECTION -> "weekly_church_collection.jrxml";
+            case WEEKLY_CHURCH_COLLECTION, RECEIPT_COLLECTION -> "weekly_church_collection.jrxml";
             case WEEKLY_REGION_SUMMARY -> "weekly_region_summary.jrxml";
             case SUBMISSION_STATUS -> "submission_status.jrxml";
             case LATE_SUBMISSION -> "late_submission.jrxml";
