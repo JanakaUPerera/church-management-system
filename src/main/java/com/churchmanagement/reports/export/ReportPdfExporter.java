@@ -101,10 +101,25 @@ public class ReportPdfExporter {
 
     public <T extends ReportTableRow> Path export(ReportType reportType, ReportSearchCriteria criteria,
                                                   List<T> rows, ReportSummaryTotals totals) {
+        JasperPrint jasperPrint = build(reportType, criteria, rows, totals);
         try {
             Path folder = ReportExportLocationResolver.exportFolder();
             Files.createDirectories(folder);
             Path output = folder.resolve(reportType.name().toLowerCase() + "-" + System.currentTimeMillis() + ".pdf");
+            JasperExportManager.exportReportToPdfFile(jasperPrint, output.toString());
+            return output;
+        } catch (Exception exception) {
+            throw new ReportExportException("Export failed.", exception);
+        }
+    }
+
+    /**
+     * Fills the report (table pages plus any chart pages) without writing a
+     * file. Used directly for printing, and by {@link #export} for PDFs.
+     */
+    public <T extends ReportTableRow> JasperPrint build(ReportType reportType, ReportSearchCriteria criteria,
+                                                        List<T> rows, ReportSummaryTotals totals) {
+        try {
             Map<String, Object> parameters = parameters(reportType, criteria, rows, totals);
             InputStream template = getClass().getResourceAsStream("/reports/" + templateName(reportType));
             if (template == null) {
@@ -114,9 +129,9 @@ public class ReportPdfExporter {
                     compileReport(template, reportType, rows),
                     parameters,
                     new JRBeanCollectionDataSource(exportRows(reportType, rows, totals)));
+            jasperPrint.setName(reportType.getDisplayName());
             appendReportChartPages(jasperPrint, reportType, rows);
-            JasperExportManager.exportReportToPdfFile(jasperPrint, output.toString());
-            return output;
+            return jasperPrint;
         } catch (Exception exception) {
             throw new ReportExportException("Export failed.", exception);
         }
