@@ -9,6 +9,7 @@ import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.util.WeekUtil;
+import net.sf.jasperreports.engine.JasperPrint;
 
 import java.nio.file.Path;
 import java.time.Clock;
@@ -24,25 +25,25 @@ public class ReportService {
     private final ActivityLogService activityLogService;
     private final ReportPdfExporter pdfExporter;
     private final ReportExcelExporter excelExporter;
-    private final PrinterService printerService;
+    private final ReportPrinterService printerService;
     private final Clock clock;
     private final SystemConfigurationCache configurationCache;
 
     public ReportService() {
         this(new ReportRepository(), new ActivityLogService(), new ReportPdfExporter(),
-                new ReportExcelExporter(), new MockPrinterService(), Clock.systemDefaultZone());
+                new ReportExcelExporter(), new JasperReportPrinterService(), Clock.systemDefaultZone());
     }
 
     public ReportService(ReportRepository reportRepository, ActivityLogService activityLogService,
                          ReportPdfExporter pdfExporter, ReportExcelExporter excelExporter,
-                         PrinterService printerService, Clock clock) {
+                         ReportPrinterService printerService, Clock clock) {
         this(reportRepository, activityLogService, pdfExporter, excelExporter, printerService, clock,
                 SystemConfigurationCache.getInstance());
     }
 
     public ReportService(ReportRepository reportRepository, ActivityLogService activityLogService,
                          ReportPdfExporter pdfExporter, ReportExcelExporter excelExporter,
-                         PrinterService printerService, Clock clock, SystemConfigurationCache configurationCache) {
+                         ReportPrinterService printerService, Clock clock, SystemConfigurationCache configurationCache) {
         this.reportRepository = reportRepository;
         this.activityLogService = activityLogService;
         this.pdfExporter = pdfExporter;
@@ -91,12 +92,17 @@ public class ReportService {
         requirePermission(user, "report.print", "Print failed.");
         ReportSearchCriteria printCriteria = exportCriteria(criteria);
         ReportResult<? extends ReportTableRow> report = loadReportWithUser(printCriteria, user);
-        Path pdfPath = pdfExporter.export(report.getReportType(), printCriteria, report.getRows(), report.getTotals());
-        PrintResult result = printerService.printPdf(pdfPath.toString());
-        if (!result.isSuccess()) {
-            throw new ReportException("Print failed.");
+        JasperPrint jasperPrint = pdfExporter.build(report.getReportType(), printCriteria, report.getRows(),
+                report.getTotals());
+        PrintResult result = printerService.print(jasperPrint);
+        if (result.isCancelled()) {
+            return result;
         }
-        activityLogService.logReportPrinted(user.getUserId(), printCriteria.getReportType().name(), pdfPath.toString());
+        if (!result.isSuccess()) {
+            throw new ReportException(result.getMessage() == null ? "Print failed." : result.getMessage());
+        }
+        activityLogService.logReportPrinted(user.getUserId(), printCriteria.getReportType().name(),
+                result.getPrinterName());
         return result;
     }
 

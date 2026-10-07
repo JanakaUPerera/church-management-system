@@ -528,9 +528,9 @@ public class ActivityLogService {
                 "report_type: " + nullToBlank(reportType) + ", excel_file_path: " + nullToBlank(path));
     }
 
-    public void logReportPrinted(long userId, String reportType, String path) {
+    public void logReportPrinted(long userId, String reportType, String printerName) {
         log(userId, REPORT_PRINTED, "Reports", reportType,
-                "report_type: " + nullToBlank(reportType) + ", pdf_file_path: " + nullToBlank(path));
+                "report_type: " + nullToBlank(reportType) + ", printer: " + nullToBlank(printerName));
     }
 
     public void logProfileUpdated(long userId, String username) {

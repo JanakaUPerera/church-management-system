@@ -7,8 +7,16 @@ public class PrintResult {
     private String message;
     private String printerName;
     private LocalDateTime printedAt;
+    private boolean cancelled;
 
     public PrintResult() {
+    }
+
+    /** The user closed the print dialog without printing; not an error. */
+    public static PrintResult cancelled(LocalDateTime at) {
+        PrintResult result = new PrintResult(false, "Print cancelled.", null, at);
+        result.cancelled = true;
+        return result;
     }
 
     public PrintResult(boolean success, String message, String printerName, LocalDateTime printedAt) {
@@ -48,5 +56,9 @@ public class PrintResult {
 
     public void setPrintedAt(LocalDateTime printedAt) {
         this.printedAt = printedAt;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
     }
 }

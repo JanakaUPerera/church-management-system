@@ -386,7 +386,7 @@ public class ReportsController {
 
     @FXML
     private void handlePrint() {
-        ProcessingDialog.run("Print Report", "Generating PDF and sending to printer...",
+        ProcessingDialog.run("Print Report", "Preparing report for printing...",
                 () -> reportService.printReport(criteriaForAction()),
                 this::showPrintResult,
                 throwable -> showError("Print Report", friendly(throwable, "Print failed.")));
@@ -861,6 +861,9 @@ public class ReportsController {
     }
 
     private void showPrintResult(PrintResult result) {
+        if (result.isCancelled()) {
+            return;
+        }
         showInfo("Print Report", result.getMessage());
     }
 

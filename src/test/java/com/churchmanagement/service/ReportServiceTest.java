@@ -29,14 +29,16 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReportServiceTest {
     private FakeReportRepository repository;
     private FakeSystemConfigurationCache configurationCache;
+    private CapturingPrinterService printer;
     private ReportService service;
 
     @BeforeEach
     void setUp() {
         repository = new FakeReportRepository();
         configurationCache = new FakeSystemConfigurationCache();
+        printer = new CapturingPrinterService();
         service = new ReportService(repository, new ActivityLogService(null), new ReportPdfExporter(fixedClock()),
-                new ReportExcelExporter(), new CapturingPrinterService(), fixedClock(), configurationCache);
+                new ReportExcelExporter(), printer, fixedClock(), configurationCache);
         AuthContext.setCurrentUser(user("report.view", "report.export", "report.print"));
     }
 
@@ -496,6 +498,36 @@ class ReportServiceTest {
     }
 
     @Test
+    void printSendsFilledReportWithChartPagesToPrinter() {
+        PrintResult result = service.printReport(criteria(ReportType.RECEIPT_COLLECTION));
+
+        assertTrue(result.isSuccess());
+        assertNotNull(printer.lastPrint);
+        assertEquals("Receipt Collection Report", printer.lastPrint.getName());
+        assertTrue(printer.lastPrint.getPages().size() >= 3, "table page plus bar and pie chart pages");
+    }
+
+    @Test
+    void cancellingPrintDialogIsNotAnError() {
+        printer.nextResult = PrintResult.cancelled(null);
+
+        PrintResult result = assertDoesNotThrow(() -> service.printReport(criteria(ReportType.RECEIPT_COLLECTION)));
+
+        assertTrue(result.isCancelled());
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void printerFailureIsReportedWithItsMessage() {
+        printer.nextResult = new PrintResult(false, "Print failed. Printer is offline", null, null);
+
+        ReportService.ReportException exception = assertThrows(ReportService.ReportException.class,
+                () -> service.printReport(criteria(ReportType.RECEIPT_COLLECTION)));
+
+        assertEquals("Print failed. Printer is offline", exception.getMessage());
+    }
+
+    @Test
     void paginationIsPassedToRepository() {
         ReportSearchCriteria criteria = criteria(ReportType.WEEKLY_CHURCH_COLLECTION);
         criteria.setOffset(25);
@@ -814,10 +846,14 @@ class ReportServiceTest {
         }
     }
 
-    private static class CapturingPrinterService implements PrinterService {
+    private static class CapturingPrinterService implements ReportPrinterService {
+        private net.sf.jasperreports.engine.JasperPrint lastPrint;
+        private PrintResult nextResult = new PrintResult(true, "Printed", "Test Printer", null);
+
         @Override
-        public PrintResult printPdf(String pdfFilePath) {
-            return new PrintResult(true, "Printed", "Test Printer", null);
+        public PrintResult print(net.sf.jasperreports.engine.JasperPrint jasperPrint) {
+            lastPrint = jasperPrint;
+            return nextResult;
         }
     }
 
