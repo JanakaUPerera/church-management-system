@@ -295,7 +295,7 @@ public class RegionController {
 
     private GridPane regionDialogContent(RegionDto region) {
         TextField regionCodeField = new TextField();
-        regionCodeField.setPromptText("REG001");
+        regionCodeField.setPromptText("R001");
         TextField regionNameField = new TextField();
         regionNameField.setPromptText("Colombo Region");
         ComboBox<Region.Status> statusComboBox = new ComboBox<>(
@@ -303,6 +303,7 @@ public class RegionController {
         statusComboBox.setMaxWidth(Double.MAX_VALUE);
 
         if (region == null) {
+            regionCodeField.setText(suggestNextRegionCode());
             statusComboBox.setValue(Region.Status.ACTIVE);
         } else {
             regionCodeField.setText(region.getRegionCode());
@@ -327,6 +328,14 @@ public class RegionController {
         grid.add(statusComboBox, 1, 2);
         grid.setUserData(new RegionDialogFields(regionCodeField, regionNameField, statusComboBox));
         return grid;
+    }
+
+    private String suggestNextRegionCode() {
+        try {
+            return regionService.suggestNextCode();
+        } catch (RegionService.RegionException exception) {
+            return "";
+        }
     }
 
     private void toggleRegionStatus(RegionDto region) {

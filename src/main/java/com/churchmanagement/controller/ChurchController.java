@@ -399,7 +399,7 @@ public class ChurchController {
 
     private GridPane churchDialogContent(ChurchDto church) {
         TextField churchCodeField = new TextField();
-        churchCodeField.setPromptText("CH001");
+        churchCodeField.setPromptText("0001");
         TextField churchNameField = new TextField();
         churchNameField.setPromptText("Main Church");
         ComboBox<Region> regionComboBox = new ComboBox<>(activeRegions);
@@ -439,6 +439,7 @@ public class ChurchController {
                 .addListener((observable, oldValue, newValue) -> updateOtherPositionVisibility.run());
 
         if (church == null) {
+            churchCodeField.setText(suggestNextChurchCode());
             statusComboBox.setValue(Church.Status.ACTIVE);
             receiptLanguageComboBox.setValue(ReceiptLanguage.ENGLISH);
         } else {
@@ -501,6 +502,14 @@ public class ChurchController {
             return region.getRegionName();
         }
         return region.getRegionCode() + " - " + region.getRegionName();
+    }
+
+    private String suggestNextChurchCode() {
+        try {
+            return churchService.suggestNextCode();
+        } catch (ChurchService.ChurchException exception) {
+            return "";
+        }
     }
 
     private record ChurchDialogFields(TextField churchCodeField, TextField churchNameField,
