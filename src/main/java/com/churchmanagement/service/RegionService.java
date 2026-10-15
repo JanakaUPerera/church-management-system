@@ -3,6 +3,7 @@ package com.churchmanagement.service;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.RegionRepository;
+import com.churchmanagement.util.NextCodeGenerator;
 import com.churchmanagement.validation.RegionValidator;
 
 import java.time.Clock;
@@ -42,6 +43,15 @@ public class RegionService {
             return regionRepository.search(searchText.strip());
         } catch (DatabaseException exception) {
             throw new RegionException("Unable to search regions right now. Please try again later.", exception);
+        }
+    }
+
+    public String suggestNextCode() {
+        try {
+            List<String> codes = regionRepository.findAll().stream().map(Region::getRegionCode).toList();
+            return NextCodeGenerator.next(codes, "R", 3);
+        } catch (DatabaseException exception) {
+            throw new RegionException("Unable to suggest the next region code right now.", exception);
         }
     }
 

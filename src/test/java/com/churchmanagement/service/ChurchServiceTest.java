@@ -275,12 +275,52 @@ class ChurchServiceTest {
         assertTrue(activityLogService.loggedActions.contains(ActivityLogService.CHURCH_DEACTIVATED));
     }
 
+    @Test
+    void suggestFirstChurchCodeWhenNoChurchesExist() {
+        assertEquals("0001", churchService.suggestNextCode());
+    }
+
+    @Test
+    void suggestChurchCodeAfterHighestExistingCode() {
+        createChurchWithCode("0001");
+        createChurchWithCode("0111");
+        createChurchWithCode("0050");
+
+        assertEquals("0112", churchService.suggestNextCode());
+    }
+
+    @Test
+    void suggestChurchCodeIgnoresNonNumericLegacyCodes() {
+        createChurchWithCode("CH001");
+        createChurchWithCode("0007");
+        createChurchWithCode("12A");
+
+        assertEquals("0008", churchService.suggestNextCode());
+    }
+
+    @Test
+    void suggestChurchCodeGrowsBeyondFourDigits() {
+        createChurchWithCode("9999");
+
+        assertEquals("10000", churchService.suggestNextCode());
+    }
+
+    private void createChurchWithCode(String churchCode) {
+        churchService.create(churchCode, "Church " + churchCode, 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
+    }
+
     private static class FakeChurchRepository extends ChurchRepository {
         private final List<Church> churches = new ArrayList<>();
         private long nextId = 1L;
 
         private FakeChurchRepository() {
             super((DataSource) null);
+        }
+
+        @Override
+        public List<Church> findAll() {
+            return List.copyOf(churches);
         }
 
         @Override

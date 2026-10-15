@@ -91,6 +91,36 @@ class RegionServiceTest {
         assertTrue(activityLogService.loggedActions.contains(ActivityLogService.REGION_DEACTIVATED));
     }
 
+    @Test
+    void suggestFirstRegionCodeWhenNoRegionsExist() {
+        assertEquals("R001", regionService.suggestNextCode());
+    }
+
+    @Test
+    void suggestRegionCodeAfterHighestExistingCode() {
+        regionService.create("R001", "Katunayake", Region.Status.ACTIVE, 1L);
+        regionService.create("R008", "Kandy", Region.Status.ACTIVE, 1L);
+        regionService.create("R003", "Galle", Region.Status.INACTIVE, 1L);
+
+        assertEquals("R009", regionService.suggestNextCode());
+    }
+
+    @Test
+    void suggestRegionCodeIgnoresNonNumericLegacyCodes() {
+        regionService.create("REG001", "Legacy", Region.Status.ACTIVE, 1L);
+        regionService.create("RX", "Other", Region.Status.ACTIVE, 1L);
+        regionService.create("R002", "Colombo", Region.Status.ACTIVE, 1L);
+
+        assertEquals("R003", regionService.suggestNextCode());
+    }
+
+    @Test
+    void suggestRegionCodeGrowsBeyondThreeDigits() {
+        regionService.create("R999", "Last", Region.Status.ACTIVE, 1L);
+
+        assertEquals("R1000", regionService.suggestNextCode());
+    }
+
     private static class FakeRegionRepository extends RegionRepository {
         private final List<Region> regions = new ArrayList<>();
         private long nextId = 1L;

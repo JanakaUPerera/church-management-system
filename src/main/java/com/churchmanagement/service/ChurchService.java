@@ -7,6 +7,7 @@ import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.RegionRepository;
+import com.churchmanagement.util.NextCodeGenerator;
 import com.churchmanagement.validation.ChurchValidator;
 
 import java.time.Clock;
@@ -76,6 +77,15 @@ public class ChurchService {
             return regionRepository.findActiveRegions();
         } catch (DatabaseException exception) {
             throw new ChurchException("Unable to load active regions right now. Please try again later.", exception);
+        }
+    }
+
+    public String suggestNextCode() {
+        try {
+            List<String> codes = churchRepository.findAll().stream().map(Church::getChurchCode).toList();
+            return NextCodeGenerator.next(codes, "", 4);
+        } catch (DatabaseException exception) {
+            throw new ChurchException("Unable to suggest the next church code right now.", exception);
         }
     }
 
