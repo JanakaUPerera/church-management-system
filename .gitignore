@@ -54,3 +54,10 @@ build-installer.bat
 
 # Subagent-driven-development scratch space (ledgers, briefs, review packages)
 .superpowers/
+
+# mock data
+/src/main/resources/db/seed/cleanup_mock_receipts.sql
+/src/main/resources/db/seed/seed_mock_receipts_last_3_months.sql
+
+# docs
+/docs/INVOICE.md
