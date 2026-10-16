@@ -156,6 +156,9 @@ public class DashboardController {
     private Button churchesButton;
 
     @FXML
+    private Button categoriesButton;
+
+    @FXML
     private Button weeklyReceiptsButton;
 
     @FXML
@@ -482,6 +485,11 @@ public class DashboardController {
     }
 
     @FXML
+    private void showCategories() {
+        loadMenu(findMenu(categoriesButton));
+    }
+
+    @FXML
     private void showWeeklyReceipts() {
         loadMenu(findMenu(weeklyReceiptsButton));
     }
@@ -562,6 +570,8 @@ public class DashboardController {
                         regionsButton, ActivityLogService.NAVIGATE_REGIONS, "region.menu.view"),
                 new MenuDefinition("Churches", "/com/churchmanagement/view/church-view.fxml",
                         churchesButton, ActivityLogService.NAVIGATE_CHURCHES, "church.menu.view"),
+                new MenuDefinition("Categories", "/com/churchmanagement/view/category-view.fxml",
+                        categoriesButton, ActivityLogService.NAVIGATE_CATEGORIES, "category.menu.view"),
                 new MenuDefinition("Receipt", "/com/churchmanagement/view/receipt-entry-view.fxml",
                         weeklyReceiptsButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.entry.menu.view"),
                 new MenuDefinition("Receipt History", "/com/churchmanagement/view/receipt-history-view.fxml",
@@ -599,6 +609,7 @@ public class DashboardController {
         setMenuIcon(dashboardButton, "fas-home");
         setMenuIcon(regionsButton, "fas-map");
         setMenuIcon(churchesButton, "fas-church");
+        setMenuIcon(categoriesButton, "fas-tags");
         setMenuIcon(weeklyReceiptsButton, "fas-receipt");
         setMenuIcon(receiptHistoryButton, "fas-history");
         setMenuIcon(submissionStatusButton, "fas-tasks");
