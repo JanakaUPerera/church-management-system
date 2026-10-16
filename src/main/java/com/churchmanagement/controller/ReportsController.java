@@ -188,6 +188,7 @@ public class ReportsController {
     @FXML private HBox exceptBox;
     @FXML private Button exceptButton;
     @FXML private Label exceptSummaryLabel;
+    @FXML private HBox exportSpacer;
     private boolean updatingCollectionColumnSelection;
 
     @FXML
@@ -783,7 +784,10 @@ public class ReportsController {
         setVisible(status, statusLabel, statusComboBox);
         setVisible(reportType == ReportType.USER_ACTIVITY, userLabel, userComboBox);
         setVisible(collectionColumns, collectionColumnsLabel, collectionColumnsBox);
-        setVisible(EXCLUSION_REPORT_TYPES.contains(reportType), exceptLabel, exceptBox);
+        setVisible(EXCLUSION_REPORT_TYPES.contains(reportType), exceptLabel, exceptBox,
+                exceptButton, exceptSummaryLabel);
+        // The centred Except List summary pushes the export buttons right; without it the spacer does.
+        setVisible(!EXCLUSION_REPORT_TYPES.contains(reportType), exportSpacer);
         setVisible(!TOTALS_ROW_DISABLED_REPORT_TYPES.contains(reportType), totalsRow);
     }
 
