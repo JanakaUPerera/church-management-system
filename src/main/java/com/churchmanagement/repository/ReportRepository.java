@@ -85,6 +85,7 @@ public class ReportRepository {
         appendEnteredDateRangeFilter(sql, parameters, criteria);
         appendRegionChurchReceiptFilters(sql, parameters, criteria, "r");
         appendExclusionFilter(sql, parameters, criteria);
+        appendCategoryFilter(sql, parameters, criteria);
         sql.append("""
                 GROUP BY r.id, rg.region_code, rg.region_name, c.church_code, c.church_name, r.receipt_datetime,
                          r.week_start_date, r.receipt_no
@@ -430,6 +431,7 @@ public class ReportRepository {
         } else if (criteria.getReportType() == ReportType.RECEIPT_COLLECTION) {
             appendEnteredDateRangeFilter(sql, parameters, criteria);
             appendExclusionFilter(sql, parameters, criteria);
+            appendCategoryFilter(sql, parameters, criteria);
         } else {
             appendDateRangeFilter(sql, parameters, criteria, "r.week_start_date");
         }
@@ -486,6 +488,14 @@ public class ReportRepository {
                 parameters.add(exclusion.churchId());
                 parameters.add(exclusion.collectionType().name());
             }
+        }
+    }
+
+    /** Category quick filter: keeps only receipt lines in the chosen category, so totals follow. */
+    private void appendCategoryFilter(StringBuilder sql, List<Object> parameters, ReportSearchCriteria criteria) {
+        if (criteria.getCategoryId() != null) {
+            sql.append("AND ri.category_id = ? ");
+            parameters.add(criteria.getCategoryId());
         }
     }
 

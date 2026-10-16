@@ -98,6 +98,7 @@
                             </HBox>
                             <Label fx:id="exceptLabel" styleClass="field-label" text="Except" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                             <HBox fx:id="exceptBox" alignment="CENTER_LEFT" spacing="8" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1">
+                                <ComboBox fx:id="categoryComboBox" prefWidth="200" promptText="Category" minWidth="-Infinity"/>
                                 <Button fx:id="exceptButton" onAction="#handleExceptList" text="Except List" minWidth="-Infinity"/>
                                 <Label fx:id="exceptSummaryLabel" styleClass="value-label field-hint" text="None" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                             </HBox>

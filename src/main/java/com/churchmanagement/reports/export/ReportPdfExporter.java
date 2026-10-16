@@ -1457,6 +1457,7 @@ public class ReportPdfExporter {
         addFilter(filterItems, "Except:", String.join("; ", criteria.getExclusions().stream()
                 .map(ReportExclusion::displayText)
                 .toList()));
+        addFilter(filterItems, "Category:", criteria.getCategoryLabel());
         return String.join("   ", filterItems);
     }
 

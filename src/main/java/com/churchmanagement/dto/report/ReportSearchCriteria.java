@@ -20,6 +20,8 @@ public class ReportSearchCriteria {
     private boolean otherDonationsColumnSelected = true;
     private boolean grandTotalColumnSelected = true;
     private List<ReportExclusion> exclusions = List.of();
+    private Long categoryId;
+    private String categoryLabel;
 
     public LocalDate getDateFrom() {
         return dateFrom;
@@ -147,5 +149,22 @@ public class ReportSearchCriteria {
 
     public void setExclusions(List<ReportExclusion> exclusions) {
         this.exclusions = exclusions == null ? List.of() : List.copyOf(exclusions);
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    /** "A - Category A" for export headers and the activity log; null when no category is selected. */
+    public String getCategoryLabel() {
+        return categoryLabel;
+    }
+
+    public void setCategoryLabel(String categoryLabel) {
+        this.categoryLabel = categoryLabel;
     }
 }

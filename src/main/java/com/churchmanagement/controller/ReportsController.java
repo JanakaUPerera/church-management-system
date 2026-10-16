@@ -8,10 +8,12 @@ import com.churchmanagement.dto.report.ReportSummaryTotals;
 import com.churchmanagement.dto.report.ReportTableRow;
 import com.churchmanagement.dto.report.ReportType;
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.entity.CollectionCategory;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.repository.UserRepository;
 import com.churchmanagement.service.ChurchService;
+import com.churchmanagement.service.CollectionCategoryService;
 import com.churchmanagement.service.RegionService;
 import com.churchmanagement.service.ReportService;
 import com.churchmanagement.service.SystemConfigurationCache;
@@ -116,6 +118,7 @@ public class ReportsController {
     private final ReportService reportService = new ReportService();
     private final RegionService regionService = new RegionService();
     private final ChurchService churchService = new ChurchService();
+    private final CollectionCategoryService categoryService = new CollectionCategoryService();
     private final UserRepository userRepository = new UserRepository();
     private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final ObservableList<ReportTableRow> reportRows = FXCollections.observableArrayList();
@@ -135,6 +138,7 @@ public class ReportsController {
     @FXML private DatePicker weekStartDatePicker;
     @FXML private ComboBox<Region> regionComboBox;
     @FXML private ComboBox<Church> churchComboBox;
+    @FXML private ComboBox<CollectionCategory> categoryComboBox;
     @FXML private ComboBox<String> statusComboBox;
     @FXML private TextField receiptNoField;
     @FXML private ComboBox<UserRepository.UserSummary> userComboBox;
@@ -214,6 +218,9 @@ public class ReportsController {
         setAllCollectionColumnsSelected(true);
         exclusions.clear();
         updateExceptSummary();
+        if (!categoryComboBox.getItems().isEmpty()) {
+            categoryComboBox.setValue(categoryComboBox.getItems().getFirst());
+        }
         tableSearchField.clear();
         refreshReport(true);
     }
@@ -411,6 +418,8 @@ public class ReportsController {
         regionComboBox.setItems(regions);
         churchComboBox.setItems(filteredChurches);
         userComboBox.setItems(users);
+        categoryComboBox.setCellFactory(list -> new CategoryFilterCell());
+        categoryComboBox.setButtonCell(new CategoryFilterCell());
         ComboBoxUtil.makeSearchable(regionComboBox, this::regionText);
         ComboBoxUtil.makeSearchable(churchComboBox, this::churchText);
 
@@ -523,6 +532,12 @@ public class ReportsController {
         churches.setAll(churchService.findAll());
         filteredChurches.setAll(allChurches);
         filteredChurches.addAll(churches);
+
+        CollectionCategory allCategories = new CollectionCategory();
+        allCategories.setName(ALL);
+        categoryComboBox.setItems(FXCollections.observableArrayList(allCategories));
+        categoryComboBox.getItems().addAll(categoryService.findAll());
+        categoryComboBox.setValue(allCategories);
 
         users.setAll(new UserRepository.UserSummary(0L, ALL, ALL));
         users.addAll(userRepository.findActiveUserSummaries());
@@ -677,6 +692,11 @@ public class ReportsController {
         criteria.setOtherDonationsColumnSelected(otherDonationsColumnCheckBox.isSelected());
         criteria.setGrandTotalColumnSelected(grandTotalColumnCheckBox.isSelected() || !anyCollectionTypeSelected());
         criteria.setExclusions(EXCLUSION_REPORT_TYPES.contains(criteria.getReportType()) ? exclusions : List.of());
+        CollectionCategory category = categoryComboBox.getValue();
+        boolean categoryFilter = EXCLUSION_REPORT_TYPES.contains(criteria.getReportType())
+                && category != null && category.getId() != null;
+        criteria.setCategoryId(categoryFilter ? category.getId() : null);
+        criteria.setCategoryLabel(categoryFilter ? category.displayText() : null);
         return criteria;
     }
 
@@ -893,5 +913,14 @@ public class ReportsController {
             current = current.getCause();
         }
         return throwable == null ? fallback : fallback + " (" + throwable.getClass().getSimpleName() + ")";
+    }
+
+    private static class CategoryFilterCell extends ListCell<CollectionCategory> {
+        @Override
+        protected void updateItem(CollectionCategory category, boolean empty) {
+            super.updateItem(category, empty);
+            setText(empty || category == null ? null
+                    : category.getId() == null ? category.getName() : category.displayText());
+        }
     }
 }

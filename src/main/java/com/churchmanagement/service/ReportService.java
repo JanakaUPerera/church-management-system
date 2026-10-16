@@ -327,6 +327,7 @@ public class ReportService {
                 + (criteria.isTithesColumnSelected() ? "tithes;" : "")
                 + (criteria.isOtherDonationsColumnSelected() ? "other_donations;" : "")
                 + (criteria.isGrandTotalColumnSelected() ? "grand_total;" : "")
+                + ", category=" + (criteria.getCategoryLabel() == null ? "" : criteria.getCategoryLabel())
                 + ", exclusions=" + criteria.getExclusions().stream()
                         .map(ReportExclusion::displayText)
                         .reduce((left, right) -> left + ";" + right)
