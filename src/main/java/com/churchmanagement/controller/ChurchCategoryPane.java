@@ -7,7 +7,6 @@ import com.churchmanagement.service.CategoryAssignmentService;
 import com.churchmanagement.service.CollectionCategoryService;
 import com.churchmanagement.util.DialogStyler;
 import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -16,8 +15,11 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -25,6 +27,8 @@ import java.util.Objects;
 public class ChurchCategoryPane extends VBox {
     private static final List<CollectionType> TYPES =
             List.of(CollectionType.TITHES, CollectionType.OFFERTORY, CollectionType.OTHER_DONATIONS);
+
+    private static final DateTimeFormatter PERIOD_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
 
     private final CategoryAssignmentService assignmentService;
     private final Long churchId;
@@ -41,7 +45,9 @@ public class ChurchCategoryPane extends VBox {
         this.assignmentService = assignmentService;
         this.churchId = churchId;
         this.allCategories = categoryService.findAll();
-        setPadding(new Insets(12, 0, 0, 0));
+        yearComboBox.setMaxWidth(Double.MAX_VALUE);
+        yearComboBox.setCellFactory(list -> new YearCell());
+        yearComboBox.setButtonCell(new YearCell());
 
         GridPane grid = new GridPane();
         grid.setHgap(12);
@@ -136,6 +142,16 @@ public class ChurchCategoryPane extends VBox {
                     .filter(category -> category.getId().equals(selectedId))
                     .findFirst().orElse(null));
             combo.setDisable(disable);
+        }
+    }
+
+    /** Accounting years are calendar years; show the period they cover. */
+    private static class YearCell extends ListCell<Integer> {
+        @Override
+        protected void updateItem(Integer year, boolean empty) {
+            super.updateItem(year, empty);
+            setText(empty || year == null ? null : year + "  (" + LocalDate.of(year, 1, 1).format(PERIOD_FORMAT)
+                    + " to " + LocalDate.of(year, 12, 31).format(PERIOD_FORMAT) + ")");
         }
     }
 
