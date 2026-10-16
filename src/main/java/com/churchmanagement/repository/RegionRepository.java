@@ -111,6 +111,35 @@ public class RegionRepository {
         }
     }
 
+    public boolean existsByRegionName(String regionName) {
+        String sql = "SELECT 1 FROM regions WHERE LOWER(TRIM(region_name)) = LOWER(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, regionName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to check region name.", exception);
+        }
+    }
+
+    public boolean existsByRegionNameAndIdNot(String regionName, long id) {
+        String sql = "SELECT 1 FROM regions WHERE LOWER(TRIM(region_name)) = LOWER(?) AND id <> ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, regionName);
+            statement.setLong(2, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to check region name.", exception);
+        }
+    }
+
     public Region save(Region region) {
         String sql = """
                 INSERT INTO regions (region_code, region_name, status, created_at)

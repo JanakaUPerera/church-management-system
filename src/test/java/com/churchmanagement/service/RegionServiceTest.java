@@ -70,6 +70,31 @@ class RegionServiceTest {
     }
 
     @Test
+    void rejectDuplicateNameIgnoringCase() {
+        regionService.create("REG001", "Colombo", Region.Status.ACTIVE, 1L);
+
+        RegionService.RegionException exception = assertThrows(
+                RegionService.RegionException.class,
+                () -> regionService.create("REG002", " colombo ", Region.Status.ACTIVE, 1L)
+        );
+
+        assertEquals("A region with this name already exists.", exception.getMessage());
+    }
+
+    @Test
+    void rejectUpdateToAnotherRegionName() {
+        regionService.create("REG001", "Colombo", Region.Status.ACTIVE, 1L);
+        Region other = regionService.create("REG002", "Kandy", Region.Status.ACTIVE, 1L);
+
+        RegionService.RegionException exception = assertThrows(
+                RegionService.RegionException.class,
+                () -> regionService.update(other.getId(), "REG002", "COLOMBO", Region.Status.ACTIVE, 1L)
+        );
+
+        assertEquals("A region with this name already exists.", exception.getMessage());
+    }
+
+    @Test
     void updateRegion() {
         Region region = regionService.create("REG001", "Colombo", Region.Status.ACTIVE, 1L);
 
@@ -150,6 +175,17 @@ class RegionServiceTest {
         public boolean existsByRegionCodeAndIdNot(String regionCode, long id) {
             return regions.stream()
                     .anyMatch(region -> region.getRegionCode().equals(regionCode) && region.getId() != id);
+        }
+
+        @Override
+        public boolean existsByRegionName(String regionName) {
+            return regions.stream().anyMatch(region -> region.getRegionName().equalsIgnoreCase(regionName));
+        }
+
+        @Override
+        public boolean existsByRegionNameAndIdNot(String regionName, long id) {
+            return regions.stream()
+                    .anyMatch(region -> region.getRegionName().equalsIgnoreCase(regionName) && region.getId() != id);
         }
 
         @Override

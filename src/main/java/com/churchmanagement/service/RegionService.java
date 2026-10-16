@@ -63,6 +63,9 @@ public class RegionService {
             if (regionRepository.existsByRegionCode(region.getRegionCode())) {
                 throw new RegionException("A region with this code already exists.");
             }
+            if (regionRepository.existsByRegionName(region.getRegionName())) {
+                throw new RegionException("A region with this name already exists.");
+            }
 
             region.setCreatedAt(LocalDateTime.now(clock));
             Region savedRegion = regionRepository.save(region);
@@ -87,6 +90,9 @@ public class RegionService {
                     existing.getStatus(), existing.getCreatedAt(), existing.getUpdatedAt());
             if (regionRepository.existsByRegionCodeAndIdNot(region.getRegionCode(), id)) {
                 throw new RegionException("A region with this code already exists.");
+            }
+            if (regionRepository.existsByRegionNameAndIdNot(region.getRegionName(), id)) {
+                throw new RegionException("A region with this name already exists.");
             }
 
             region.setUpdatedAt(LocalDateTime.now(clock));
