@@ -21,7 +21,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -41,6 +43,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -367,11 +370,13 @@ public class ChurchController {
             showFriendlyError("Unable to load categories right now. Please try again later.");
             return;
         }
-        Tab detailsTab = new Tab("Details", detailsGrid);
-        Tab categoriesTab = new Tab("Categories", categoryPane);
+        Tab detailsTab = new Tab("Details", tabContent(detailsGrid));
+        Tab categoriesTab = new Tab("Categories", tabContent(categoryPane));
         detailsTab.setClosable(false);
         categoriesTab.setClosable(false);
         TabPane tabPane = new TabPane(detailsTab, categoriesTab);
+        tabPane.getStyleClass().add("receipt-detail-tabs");
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         // Keep the existing getContent().getUserData() lookup of the detail fields working.
         tabPane.setUserData(detailsGrid.getUserData());
         dialog.getDialogPane().setContent(tabPane);
@@ -423,6 +428,13 @@ public class ChurchController {
         });
 
         dialog.showAndWait();
+    }
+
+    private VBox tabContent(Node content) {
+        VBox body = new VBox(content);
+        body.getStyleClass().add("receipt-detail-tab-body");
+        body.setPadding(new Insets(12));
+        return body;
     }
 
     private GridPane churchDialogContent(ChurchDto church) {
