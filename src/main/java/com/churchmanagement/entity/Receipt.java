@@ -14,6 +14,7 @@ public class Receipt {
     private LocalDate weekEndDate;
     private LocalDate churchServiceDate;
     private LocalDateTime receiptDateTime;
+    private Integer accountingYear;
     private String submittedByName;
     private Long issuedByUserId;
     private ReceiptStatus status;
@@ -90,6 +91,14 @@ public class Receipt {
 
     public void setReceiptDateTime(LocalDateTime receiptDateTime) {
         this.receiptDateTime = receiptDateTime;
+    }
+
+    public Integer getAccountingYear() {
+        return accountingYear;
+    }
+
+    public void setAccountingYear(Integer accountingYear) {
+        this.accountingYear = accountingYear;
     }
 
     public String getSubmittedByName() {

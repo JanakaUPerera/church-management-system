@@ -71,7 +71,7 @@ public class ReceiptRepository {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
                        church_service_date,
-                       receipt_datetime, submitted_by_name, issued_by_user_id, status,
+                       receipt_datetime, accounting_year, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
                        original_printed_by_user_id, print_attempt_count, created_at, updated_at
@@ -98,7 +98,7 @@ public class ReceiptRepository {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
                        church_service_date,
-                       receipt_datetime, submitted_by_name, issued_by_user_id, status,
+                       receipt_datetime, accounting_year, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
                        original_printed_by_user_id, print_attempt_count, created_at, updated_at
@@ -124,7 +124,7 @@ public class ReceiptRepository {
         String sql = """
                 SELECT id, receipt_no, church_id, region_id, week_start_date, week_end_date,
                        church_service_date,
-                       receipt_datetime, submitted_by_name, issued_by_user_id, status,
+                       receipt_datetime, accounting_year, submitted_by_name, issued_by_user_id, status,
                        is_late_submission, late_submission_reason, corrected_from_receipt_id,
                        pdf_file_path, original_printed, original_printed_at,
                        original_printed_by_user_id, print_attempt_count, created_at, updated_at
@@ -169,9 +169,10 @@ public class ReceiptRepository {
                 INSERT INTO receipts (
                     receipt_no, church_id, region_id, week_start_date, week_end_date, church_service_date,
                     receipt_datetime, submitted_by_name, issued_by_user_id, status,
-                    is_late_submission, late_submission_reason, corrected_from_receipt_id, created_at
+                    is_late_submission, late_submission_reason, corrected_from_receipt_id, created_at,
+                    accounting_year
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -189,6 +190,7 @@ public class ReceiptRepository {
             setNullableString(statement, 12, receipt.getLateSubmissionReason());
             setNullableLong(statement, 13, receipt.getCorrectedFromReceiptId());
             statement.setTimestamp(14, Timestamp.valueOf(receipt.getCreatedAt()));
+            statement.setInt(15, receipt.getAccountingYear());
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -204,16 +206,17 @@ public class ReceiptRepository {
 
     public void insertReceiptItem(long receiptId, ReceiptItem item, Connection connection) {
         String sql = """
-                INSERT INTO receipt_items (receipt_id, collection_type, amount, note, created_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO receipt_items (receipt_id, collection_type, category_id, amount, note, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, receiptId);
             statement.setString(2, item.getCollectionType().name());
-            statement.setBigDecimal(3, item.getAmount());
-            setNullableString(statement, 4, item.getNote());
-            statement.setTimestamp(5, Timestamp.valueOf(item.getCreatedAt()));
+            statement.setLong(3, item.getCategoryId());
+            statement.setBigDecimal(4, item.getAmount());
+            setNullableString(statement, 5, item.getNote());
+            statement.setTimestamp(6, Timestamp.valueOf(item.getCreatedAt()));
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Unable to insert receipt item.", exception);
@@ -473,6 +476,7 @@ public class ReceiptRepository {
         Date churchServiceDate = resultSet.getDate("church_service_date");
         receipt.setChurchServiceDate(churchServiceDate == null ? null : churchServiceDate.toLocalDate());
         receipt.setReceiptDateTime(resultSet.getTimestamp("receipt_datetime").toLocalDateTime());
+        receipt.setAccountingYear(resultSet.getInt("accounting_year"));
         receipt.setSubmittedByName(resultSet.getString("submitted_by_name"));
         receipt.setIssuedByUserId(resultSet.getLong("issued_by_user_id"));
         receipt.setStatus(ReceiptStatus.valueOf(resultSet.getString("status")));

@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -53,6 +54,7 @@ class ReceiptServiceTest {
     private FakeReceiptPrintService receiptPrintService;
     private FakeActivityLogService activityLogService;
     private FakeDataSource dataSource;
+    private FakeCategoryAssignmentService categoryAssignmentService;
     private FakeSystemConfigurationCache configurationCache;
     private ReceiptService receiptService;
 
@@ -65,8 +67,9 @@ class ReceiptServiceTest {
         activityLogService = new FakeActivityLogService();
         dataSource = new FakeDataSource();
         configurationCache = new FakeSystemConfigurationCache();
+        categoryAssignmentService = new FakeCategoryAssignmentService();
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                null, null, activityLogService, fixedClock(), dataSource, configurationCache);
+                null, null, activityLogService, fixedClock(), dataSource, configurationCache, categoryAssignmentService);
         AuthContext.setCurrentUser(new AuthenticatedUser(7L, "admin", "System Administrator", 1L,
                 "Admin", List.of("receipt.create")));
     }
@@ -91,7 +94,7 @@ class ReceiptServiceTest {
     @Test
     void createReceiptPrintsOriginalAfterSaveWhenPrintServiceIsAvailable() {
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                receiptPrintService, null, activityLogService, fixedClock(), dataSource, configurationCache);
+                receiptPrintService, null, activityLogService, fixedClock(), dataSource, configurationCache, categoryAssignmentService);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
@@ -104,7 +107,7 @@ class ReceiptServiceTest {
     void createReceiptRemainsSavedWhenAutomaticPrintFails() {
         receiptPrintService.failPrint = true;
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
-                receiptPrintService, null, activityLogService, fixedClock(), dataSource, configurationCache);
+                receiptPrintService, null, activityLogService, fixedClock(), dataSource, configurationCache, categoryAssignmentService);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
@@ -120,7 +123,7 @@ class ReceiptServiceTest {
         smsNotificationService.fail = true;
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
                 receiptPrintService, smsNotificationService, activityLogService, fixedClock(), dataSource,
-                configurationCache);
+                configurationCache, categoryAssignmentService);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest());
 
@@ -137,7 +140,7 @@ class ReceiptServiceTest {
         FakeReceiptSmsNotificationService smsNotificationService = new FakeReceiptSmsNotificationService();
         receiptService = new ReceiptService(receiptRepository, churchRepository, receiptNumberGeneratorService,
                 receiptPrintService, smsNotificationService, activityLogService, fixedClock(), dataSource,
-                configurationCache);
+                configurationCache, categoryAssignmentService);
 
         ReceiptResponseDto response = receiptService.createReceipt(validRequest(), false);
 
@@ -406,6 +409,52 @@ class ReceiptServiceTest {
         assertFalse(original.getReceiptNo().equals(corrected.getReceiptNo()));
     }
 
+    @Test
+    void receiptLinesGetCategoryForTheirCollectionType() {
+        receiptService.createReceipt(validRequest());
+
+        assertEquals(2026, receiptRepository.lastReceipt.getAccountingYear());
+        assertEquals(2026, categoryAssignmentService.requestedYear);
+        for (ReceiptItem item : receiptRepository.insertedItems) {
+            assertEquals(FakeCategoryAssignmentService.CATEGORY_IDS.get(item.getCollectionType()), item.getCategoryId());
+        }
+    }
+
+    @Test
+    void correctionUsesOriginalReceiptAccountingYear() {
+        Receipt original = cancelledReceiptForCorrection();
+        original.setAccountingYear(2025);
+        receiptRepository.correctionReceipt = original;
+        CreateReceiptRequest request = validRequest();
+        request.setCorrectedFromReceiptId(original.getId());
+
+        receiptService.createReceipt(request);
+
+        assertEquals(2025, receiptRepository.lastReceipt.getAccountingYear());
+        assertEquals(2025, categoryAssignmentService.requestedYear);
+    }
+
+    @Test
+    void receiptIsRejectedWhenBranchHasNoCategories() {
+        categoryAssignmentService.notAssigned = true;
+
+        ReceiptService.ReceiptException exception = assertThrows(ReceiptService.ReceiptException.class,
+                () -> receiptService.createReceipt(validRequest()));
+
+        assertEquals(CategoryAssignmentService.NOT_ASSIGNED_MESSAGE, exception.getMessage());
+        assertTrue(receiptRepository.insertedReceipts.isEmpty());
+        assertTrue(dataSource.connection.rolledBack);
+    }
+
+    @Test
+    void carryForwardIsLoggedAfterCommit() {
+        categoryAssignmentService.carriedForwardFrom = 2025;
+
+        receiptService.createReceipt(validRequest());
+
+        assertTrue(activityLogService.carriedForward);
+    }
+
     private CreateReceiptRequest validRequest() {
         CreateReceiptRequest request = new CreateReceiptRequest();
         request.setChurchId(10L);
@@ -433,6 +482,7 @@ class ReceiptServiceTest {
         receipt.setWeekStartDate(CURRENT_WEEK_START);
         receipt.setWeekEndDate(CURRENT_WEEK_END);
         receipt.setStatus(ReceiptStatus.CANCELLED);
+        receipt.setAccountingYear(2026);
         receipt.setCreatedAt(LocalDateTime.now());
         return receipt;
     }
@@ -593,6 +643,12 @@ class ReceiptServiceTest {
 
     private static class FakeActivityLogService extends ActivityLogService {
         private String createdAction;
+        private boolean carriedForward;
+
+        @Override
+        public void logCategoryAssignmentsCarriedForward(long userId, String churchCode, int fromYear, int toYear) {
+            carriedForward = true;
+        }
 
         private FakeActivityLogService() {
             super(null);
@@ -606,6 +662,27 @@ class ReceiptServiceTest {
         @Override
         public void logReceiptCreateFailed(Long userId, CreateReceiptRequest request, Church church,
                                            BigDecimal totalAmount, boolean lateSubmission, String reason) {
+        }
+    }
+
+    private static class FakeCategoryAssignmentService extends CategoryAssignmentService {
+        private static final Map<CollectionType, Long> CATEGORY_IDS = Map.of(
+                CollectionType.TITHES, 1L, CollectionType.OFFERTORY, 5L, CollectionType.OTHER_DONATIONS, 1L);
+        private Integer requestedYear;
+        private boolean notAssigned;
+        private Integer carriedForwardFrom;
+
+        private FakeCategoryAssignmentService() {
+            super(null, null, null, null, null);
+        }
+
+        @Override
+        public ResolvedCategories resolveForReceipt(long churchId, int year, Connection connection) {
+            requestedYear = year;
+            if (notAssigned) {
+                throw new CategoryAssignmentException(NOT_ASSIGNED_MESSAGE);
+            }
+            return new ResolvedCategories(CATEGORY_IDS, carriedForwardFrom);
         }
     }
 

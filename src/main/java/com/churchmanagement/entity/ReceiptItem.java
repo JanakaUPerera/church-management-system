@@ -9,6 +9,7 @@ public class ReceiptItem {
     private Long id;
     private Long receiptId;
     private CollectionType collectionType;
+    private Long categoryId;
     private BigDecimal amount;
     private String note;
     private LocalDateTime createdAt;
@@ -35,6 +36,14 @@ public class ReceiptItem {
 
     public void setCollectionType(CollectionType collectionType) {
         this.collectionType = collectionType;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public BigDecimal getAmount() {

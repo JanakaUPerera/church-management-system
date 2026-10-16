@@ -42,6 +42,7 @@ public class ReceiptService {
     private final Clock clock;
     private final DataSource dataSource;
     private final SystemConfigurationCache configurationCache;
+    private final CategoryAssignmentService categoryAssignmentService;
 
     public ReceiptService() {
         this(new ReceiptRepository(), new ChurchRepository(), new ReceiptNumberGeneratorService(),
@@ -80,6 +81,18 @@ public class ReceiptService {
                           ReceiptSmsNotificationService receiptSmsNotificationService,
                           ActivityLogService activityLogService, Clock clock, DataSource dataSource,
                           SystemConfigurationCache configurationCache) {
+        this(receiptRepository, churchRepository, receiptNumberGeneratorService, receiptPrintService,
+                receiptSmsNotificationService, activityLogService, clock, dataSource, configurationCache,
+                new CategoryAssignmentService());
+    }
+
+    public ReceiptService(ReceiptRepository receiptRepository, ChurchRepository churchRepository,
+                          ReceiptNumberGeneratorService receiptNumberGeneratorService,
+                          ReceiptPrintService receiptPrintService,
+                          ReceiptSmsNotificationService receiptSmsNotificationService,
+                          ActivityLogService activityLogService, Clock clock, DataSource dataSource,
+                          SystemConfigurationCache configurationCache,
+                          CategoryAssignmentService categoryAssignmentService) {
         this.receiptRepository = receiptRepository;
         this.churchRepository = churchRepository;
         this.receiptNumberGeneratorService = receiptNumberGeneratorService;
@@ -89,6 +102,7 @@ public class ReceiptService {
         this.clock = clock;
         this.dataSource = dataSource;
         this.configurationCache = configurationCache;
+        this.categoryAssignmentService = categoryAssignmentService;
     }
 
     public ReceiptResponseDto createReceipt(CreateReceiptRequest request) {
@@ -125,20 +139,29 @@ public class ReceiptService {
                     church.getId(), request.getWeekStartDate(), connection).isPresent()) {
                 throw new ReceiptException(DUPLICATE_ACTIVE_RECEIPT_MESSAGE);
             }
-            validateCorrectionReceipt(request, church, connection);
+            Receipt correctedReceipt = validateCorrectionReceipt(request, church, connection);
 
             LocalDateTime now = LocalDateTime.now(clock);
+            int accountingYear = correctedReceipt == null ? now.getYear() : correctedReceipt.getAccountingYear();
+            CategoryAssignmentService.ResolvedCategories categories =
+                    resolveCategories(church.getId(), accountingYear, connection);
             Receipt receipt = buildReceipt(request, church, currentUser.getUserId(), lateSubmission, now);
+            receipt.setAccountingYear(accountingYear);
             receipt.setReceiptNo(receiptNumberGeneratorService.generateReceiptNumber(connection));
 
             long receiptId = receiptRepository.insertReceipt(receipt, connection);
             for (ReceiptItem item : items) {
                 item.setCreatedAt(now);
+                item.setCategoryId(categories.categoryIds().get(item.getCollectionType()));
                 receiptRepository.insertReceiptItem(receiptId, item, connection);
             }
 
             connection.commit();
             receiptCommitted = true;
+            if (categories.carriedForwardFrom() != null) {
+                activityLogService.logCategoryAssignmentsCarriedForward(currentUser.getUserId(),
+                        church.getChurchCode(), categories.carriedForwardFrom(), accountingYear);
+            }
             if (printOriginal && receiptPrintService != null) {
                 try {
                     receiptPrintService.printOriginalReceipt(receiptId);
@@ -264,10 +287,10 @@ public class ReceiptService {
         return reason == null || reason.isBlank() ? null : reason.strip();
     }
 
-    private void validateCorrectionReceipt(CreateReceiptRequest request, Church church, Connection connection) {
+    private Receipt validateCorrectionReceipt(CreateReceiptRequest request, Church church, Connection connection) {
         Long correctedFromReceiptId = request.getCorrectedFromReceiptId();
         if (correctedFromReceiptId == null) {
-            return;
+            return null;
         }
 
         Receipt correctedReceipt = receiptRepository.findReceiptByIdForUpdate(correctedFromReceiptId, connection)
@@ -278,6 +301,16 @@ public class ReceiptService {
         if (!church.getId().equals(correctedReceipt.getChurchId())
                 || !request.getWeekStartDate().equals(correctedReceipt.getWeekStartDate())) {
             throw new ReceiptException("Corrected receipt must belong to the same church and week.");
+        }
+        return correctedReceipt;
+    }
+
+    private CategoryAssignmentService.ResolvedCategories resolveCategories(long churchId, int accountingYear,
+                                                                          Connection connection) {
+        try {
+            return categoryAssignmentService.resolveForReceipt(churchId, accountingYear, connection);
+        } catch (CategoryAssignmentService.CategoryAssignmentException exception) {
+            throw new ReceiptException(exception.getMessage(), exception);
         }
     }
 
