@@ -84,9 +84,9 @@ Add `category.menu.view`, `category.create`, `category.update` and `category.del
 | R2 | Assignments for unlocked years, including future years, can be edited freely. |
 | R3 | **Carry-forward:** when a receipt needs (branch, year) and no assignment exists, the branch's **most recent earlier year** is copied into that year (all three types), in the receipt's transaction, and logged. |
 | R4 | If no earlier year exists either, the receipt is rejected with "Categories are not assigned for this branch. Assign them in the branch's Categories tab." |
-| R5 | A new branch must have all three types assigned. The branch form saves the current-year assignments together with the branch. The default is **C** for all three types. |
-| R6 | A category that is in use (referenced by any assignment or receipt line) cannot be deleted, only deactivated. |
-| R7 | An inactive category cannot be chosen for new or edited assignments. Existing assignments, including carry-forward copies, keep working so that receipts are never blocked. |
+| R5 | A new branch must have all three types assigned. The branch form saves the current-year assignments together with the branch. The default is **A** for all three types. |
+| R6 | A category that is in use (referenced by any assignment or receipt line) can be neither deleted nor deactivated. Both actions are available only for an unused category. |
+| R7 | An inactive category cannot be chosen for new or edited assignments. (Because of R6, an inactive category is never referenced by an assignment.) |
 | R8 | Category codes are required, unique and stored in upper case. Names are required. |
 
 ## 5. Components
@@ -94,14 +94,14 @@ Add `category.menu.view`, `category.create`, `category.update` and `category.del
 ### 5.1 Category master
 - `entity/CollectionCategory`, `repository/CollectionCategoryRepository`, `service/CollectionCategoryService`, `validation/CollectionCategoryValidator`.
 - Service: `findAll`, `findActive`, `search`, `create`, `update`, `activate`, `deactivate`, `delete`.
-- `delete` throws "Category is in use; deactivate it instead." when the category is referenced (R6).
+- `delete` throws "Category is in use and cannot be deleted." and `deactivate` throws "Category is in use and cannot be deactivated." when the category is referenced (R6). `activate` is always allowed.
 
 ### 5.2 Assignments
 - `entity/CategoryAssignment`, `repository/CategoryAssignmentRepository`, `service/CategoryAssignmentService`.
 - `findForChurch(churchId, year)` → a `ChurchCategoryAssignments` DTO containing the three category ids, `locked`, `lockReason`, and `carriedForwardFrom` (an Integer, set when no rows exist yet and the values shown are the ones that would be carried forward).
 - `saveAssignments(churchId, year, Map<CollectionType, Long>, userId)` rejects a locked year (R1), an inactive category (R7) or a missing type.
-- `assignDefaults(churchId, year, Map<CollectionType, Long>, connection)` is used when a branch is created (R5).
-- `resolveForReceipt(churchId, year, connection)` → `Map<CollectionType, Long>`. It locks the branch's assignment rows (`SELECT … FOR UPDATE`), applies R3 and R4, and runs on the caller's connection.
+- `assignInitial(churchId, year, Map<CollectionType, Long>, connection)` is used when a branch is created (R5); a null map means A for every type.
+- `resolveForReceipt(churchId, year, connection)` → `ResolvedCategories(Map<CollectionType, Long> categoryIds, Integer carriedForwardFrom)`. It locks the branch's assignment rows (`SELECT … FOR UPDATE`), applies R3 and R4, and runs on the caller's connection. It doesn't write to the activity log. `ReceiptService` logs the carry-forward **after** the receipt commits, so a receipt that rolls back never leaves a false log entry.
 
 ### 5.3 Receipt creation (`ReceiptService.createReceipt`)
 - After `validateCorrectionReceipt`, work out `accountingYear`: the original's `accounting_year` for a correction, otherwise `receiptDateTime.getYear()`.
@@ -129,7 +129,7 @@ New actions:
 - **Categories tab:**
   - A year selector. It lists the years that have assignments, plus the current year and next year. The default is the current year.
   - Three combos (Tithes, Offerings, Other Donations) listing active categories. For an inactive category that is already assigned, the combo shows it marked "(inactive)".
-  - **Create mode:** current year only, with C pre-selected for all three types.
+  - **Create mode:** current year only, with A pre-selected for all three types.
   - **Locked year:** the combos are disabled and a 🔒 label shows the lock reason.
   - **Year with no rows:** a note reads "Not set — will carry forward from {year} on first receipt", with the values pre-filled. Saving makes them explicit.
 - Changed assignments are saved when **Update** is clicked, through `saveAssignments`.
@@ -137,7 +137,7 @@ New actions:
 ### 6.3 Receipt Collection Report
 - A new **Category** combo (All / one entry per category), next to the Except List button. It appears only for `RECEIPT_COLLECTION`.
 - `ReportSearchCriteria.categoryId`. When it is set, `AND ri.category_id = ?` is added next to `appendExclusionFilter`, in both the row query and the summary-totals query. Totals recalculate, and receipts with no matching lines drop out.
-- PDF and Excel exports show "Category: {code} – {name}" (or "All categories") in the existing filter summary in the header. There is no per-row category column.
+- The PDF export shows "Category: {code} - {name}" in its existing header filter line when a category is selected. Like the other filters, it is left out when none is selected. The Excel export has no filter header today, so its rows and totals are filtered but its layout is unchanged. There is no per-row category column.
 - A change to the filter is recorded through the existing `logFilterChanged`.
 
 ## 7. Testing
@@ -150,8 +150,8 @@ Service-level unit tests with fake repositories, in the style of `RegionServiceT
 - **No assignment (R4):** the receipt is rejected and nothing is saved.
 - **Snapshot:** each receipt line gets the category for its type. A later change to a future year's assignment does not affect existing lines.
 - **Correction (D3):** a correction entered in January for a December original uses the original's year.
-- **New branch (R5):** saving creates three assignments; the default is C.
-- **Category master (R6–R8):** delete is blocked when in use; an inactive category is rejected in assignments; a duplicate code is rejected; the code is upper-cased.
+- **New branch (R5):** saving creates three assignments; the default is A.
+- **Category master (R6–R8):** delete and deactivate are blocked when in use; an inactive category is rejected in assignments; a duplicate code is rejected; the code is upper-cased.
 - **Report:** the Category filter combined with the Except List gives the correct rows and totals (`ReportServiceTest`).
 
 ## 8. Out of scope (M1)

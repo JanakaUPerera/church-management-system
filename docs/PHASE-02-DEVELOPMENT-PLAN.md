@@ -60,7 +60,7 @@ A **Category** (A, B, C, … with any name) is assigned per **branch × collecti
 2. An assignment for (branch, year) **cannot be changed once any receipt exists** for that branch in that year, including cancelled receipts. The UI shows it as locked, with the reason.
 3. **To change a category:** set it up for the new year before the first receipt of that year is entered. Assignments for future years can be edited freely.
 4. **Carry forward:** if a branch has no assignment for the new year when its first receipt is entered, the previous year's assignment is copied automatically.
-5. A new branch must have all three collection types assigned before receipts can be issued. Default: **C** (pre-selected on the branch form).
+5. A new branch must have all three collection types assigned before receipts can be issued. Default: **A** (pre-selected on the branch form).
 6. Categories that are in use cannot be deleted, only deactivated.
 
 ### 3.4 Seed data (from the client's list)

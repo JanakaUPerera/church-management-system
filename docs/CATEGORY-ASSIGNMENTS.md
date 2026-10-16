@@ -23,7 +23,8 @@
 | 0013, 0037, 0053, 0087, 0097, 0105 | A | **E** | A |
 | 0001 Katunayake, 0002 Seeduwa | D | D | D |
 | 0010 Kandy, 0050 Kachchirawa, 0051 Ganemulla, 0057 Meerigama | B | A | B |
-| All other branches (and new branches by default) | C | C | C |
+| All other existing branches | C | C | C |
+| New branches (default on the branch form) | A | A | A |
 
 ## Category A
 
@@ -122,7 +123,7 @@
 
 ## Category C
 
-_No seeded branches at present. Any branch outside the lists above (and new branches by default) falls into this category for all collection types._
+_No seeded branches at present. Any existing branch outside the lists above falls into this category for all collection types. New branches default to A._
 
 ## Category D
 
