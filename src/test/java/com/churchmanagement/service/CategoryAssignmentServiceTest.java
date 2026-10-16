@@ -16,11 +16,13 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -179,6 +181,28 @@ class CategoryAssignmentServiceTest {
         assertEquals(List.of(2025, 2026, 2027), service.selectableYears(CHURCH));
     }
 
+    @Test
+    void partsInCategoryCarryAnEarlierYearForward() {
+        assignAll(2025, A);
+        assignments.put(2025, CollectionType.TITHES, E);
+
+        Map<Long, Set<CollectionType>> parts = service.partsInCategory(E, 2026, 2026);
+
+        assertEquals(Map.of(CHURCH, Set.of(CollectionType.TITHES)), parts);
+    }
+
+    @Test
+    void partsInCategoryCoverEveryYearOfTheRange() {
+        assignAll(2025, A);
+        assignAll(2026, A);
+        assignments.put(2026, CollectionType.OFFERTORY, E);
+
+        assertEquals(Map.of(), service.partsInCategory(E, 2025, 2025));
+        assertEquals(Map.of(CHURCH, Set.of(CollectionType.OFFERTORY)), service.partsInCategory(E, 2025, 2026));
+        assertEquals(Map.of(CHURCH, Set.of(CollectionType.TITHES, CollectionType.OTHER_DONATIONS)),
+                service.partsInCategory(A, 2026, 2026));
+    }
+
     private void assignAll(int year, long categoryId) {
         for (CollectionType type : CollectionType.values()) {
             assignments.put(year, type, categoryId);
@@ -229,6 +253,14 @@ class CategoryAssignmentServiceTest {
                     .filter(row -> row.churchId() == churchId && row.accountingYear() < year)
                     .mapToInt(CategoryAssignment::accountingYear)
                     .max();
+        }
+
+        @Override
+        public List<CategoryAssignment> findAllUpToYear(int year, Connection connection) {
+            return rows.stream()
+                    .filter(row -> row.accountingYear() <= year)
+                    .sorted(Comparator.comparingInt(CategoryAssignment::accountingYear))
+                    .toList();
         }
 
         @Override

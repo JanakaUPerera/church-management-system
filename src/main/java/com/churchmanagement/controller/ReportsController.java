@@ -12,6 +12,7 @@ import com.churchmanagement.entity.CollectionCategory;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.repository.UserRepository;
+import com.churchmanagement.service.CategoryAssignmentService;
 import com.churchmanagement.service.ChurchService;
 import com.churchmanagement.service.CollectionCategoryService;
 import com.churchmanagement.service.RegionService;
@@ -69,6 +70,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class ReportsController {
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
@@ -119,6 +123,7 @@ public class ReportsController {
     private final RegionService regionService = new RegionService();
     private final ChurchService churchService = new ChurchService();
     private final CollectionCategoryService categoryService = new CollectionCategoryService();
+    private final CategoryAssignmentService categoryAssignmentService = new CategoryAssignmentService();
     private final UserRepository userRepository = new UserRepository();
     private final SystemDateTimeFormatter dateTimeFormatter = new SystemDateTimeFormatter();
     private final ObservableList<ReportTableRow> reportRows = FXCollections.observableArrayList();
@@ -128,6 +133,9 @@ public class ReportsController {
     private final ObservableList<Church> filteredChurches = FXCollections.observableArrayList();
     private final ObservableList<UserRepository.UserSummary> users = FXCollections.observableArrayList();
     private final List<ReportExclusion> exclusions = new ArrayList<>();
+    /** Except List entries added by the Category filter, so choosing another category or ALL can take them off. */
+    private final List<ReportExclusion> categoryExclusions = new ArrayList<>();
+    private String categoryExclusionKey;
     private ReportType currentReportType = ReportType.WEEKLY_CHURCH_COLLECTION;
 
     @FXML private StackPane reportContentHost;
@@ -330,6 +338,7 @@ public class ReportsController {
                 .ifPresent(ignored -> {
                     exclusions.clear();
                     exclusions.addAll(draft);
+                    categoryExclusions.retainAll(exclusions);
                     updateExceptSummary();
                     refreshReport(true);
                 });
@@ -361,6 +370,51 @@ public class ReportsController {
                 .filter(type -> type.getDisplayLabel().equals(part))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Category filter: puts every branch part (or whole branch) that is in another category during the report's
+     * accounting years on the Except List. Runs again only when the category or those years change, so entries
+     * the user removed stay removed; ALL takes the added entries off again.
+     */
+    private void syncCategoryExclusions() {
+        CollectionCategory category = categoryComboBox.getValue();
+        LocalDate dateFrom = dateFromPicker.getValue();
+        LocalDate dateTo = dateToPicker.getValue();
+        boolean selected = category != null && category.getId() != null && dateFrom != null && dateTo != null;
+        int fromYear = selected ? Math.min(dateFrom.getYear(), dateTo.getYear()) : 0;
+        int toYear = selected ? Math.max(dateFrom.getYear(), dateTo.getYear()) : 0;
+        String key = selected ? category.getId() + ":" + fromYear + "-" + toYear : null;
+        if (Objects.equals(key, categoryExclusionKey)) {
+            return;
+        }
+        exclusions.removeAll(categoryExclusions);
+        categoryExclusions.clear();
+        categoryExclusionKey = null;
+        if (selected) {
+            try {
+                Map<Long, Set<CollectionType>> inCategory =
+                        categoryAssignmentService.partsInCategory(category.getId(), fromYear, toYear);
+                for (Church church : churches) {
+                    Set<CollectionType> kept = inCategory.getOrDefault(church.getId(), Set.of());
+                    List<ReportExclusion> candidates = kept.isEmpty()
+                            ? List.of(new ReportExclusion(church.getId(), churchText(church), null))
+                            : Arrays.stream(CollectionType.values())
+                                    .filter(type -> !kept.contains(type))
+                                    .map(type -> new ReportExclusion(church.getId(), churchText(church), type))
+                                    .toList();
+                    for (ReportExclusion candidate : candidates) {
+                        if (addExclusion(exclusions, candidate).isEmpty()) {
+                            categoryExclusions.add(candidate);
+                        }
+                    }
+                }
+                categoryExclusionKey = key;
+            } catch (CategoryAssignmentService.CategoryAssignmentException exception) {
+                showError("Reports", exception.getMessage());
+            }
+        }
+        updateExceptSummary();
     }
 
     private void updateExceptSummary() {
@@ -427,6 +481,9 @@ public class ReportsController {
         weekStartDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> updateWeekStartLabel());
         regionComboBox.valueProperty().addListener((obs, oldValue, newValue) -> updateChurchFilter());
         tableSearchField.textProperty().addListener((obs, oldValue, newValue) -> applyTableSearch());
+        categoryComboBox.valueProperty().addListener((obs, oldValue, newValue) -> syncCategoryExclusions());
+        dateFromPicker.valueProperty().addListener((obs, oldValue, newValue) -> syncCategoryExclusions());
+        dateToPicker.valueProperty().addListener((obs, oldValue, newValue) -> syncCategoryExclusions());
         updateWeekStartLabel();
     }
 
@@ -695,7 +752,6 @@ public class ReportsController {
         CollectionCategory category = categoryComboBox.getValue();
         boolean categoryFilter = EXCLUSION_REPORT_TYPES.contains(criteria.getReportType())
                 && category != null && category.getId() != null;
-        criteria.setCategoryId(categoryFilter ? category.getId() : null);
         criteria.setCategoryLabel(categoryFilter ? category.displayText() : null);
         return criteria;
     }

@@ -64,6 +64,32 @@ public class CategoryAssignmentRepository {
         }
     }
 
+    /** Every branch's assignments up to and including {@code year}, oldest year first. */
+    public List<CategoryAssignment> findAllUpToYear(int year, Connection connection) {
+        String sql = """
+                SELECT church_id, collection_type, category_id, accounting_year
+                FROM church_category_assignments
+                WHERE accounting_year <= ?
+                ORDER BY accounting_year
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, year);
+            List<CategoryAssignment> assignments = new ArrayList<>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    assignments.add(new CategoryAssignment(
+                            resultSet.getLong("church_id"),
+                            CollectionType.valueOf(resultSet.getString("collection_type")),
+                            resultSet.getLong("category_id"),
+                            resultSet.getInt("accounting_year")));
+                }
+            }
+            return assignments;
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load category assignments.", exception);
+        }
+    }
+
     public List<Integer> findYears(long churchId, Connection connection) {
         String sql = """
                 SELECT DISTINCT accounting_year

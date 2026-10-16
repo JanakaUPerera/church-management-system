@@ -19,34 +19,38 @@ class ReportRepositoryTest {
     private final ReportRepository repository = new ReportRepository(dataSource);
 
     @Test
-    void receiptCollectionReportFiltersByCategoryTogetherWithExceptList() {
+    void receiptCollectionReportAppliesTheExceptList() {
         ReportSearchCriteria criteria = receiptCollectionCriteria();
-        criteria.setCategoryId(5L);
-        criteria.setExclusions(List.of(new ReportExclusion(7L, "0007 Hanwella", CollectionType.TITHES)));
+        criteria.setExclusions(List.of(new ReportExclusion(7L, "0007 Hanwella", CollectionType.TITHES),
+                new ReportExclusion(8L, "0008 Kaduwela", null)));
 
         repository.getReceiptCollectionReport(criteria);
 
         String sql = dataSource.lastSql();
-        assertTrue(sql.contains("AND ri.category_id = ?"));
         assertTrue(sql.contains("AND NOT (r.church_id = ? AND ri.collection_type = ?)"));
-        assertTrue(dataSource.lastValues().contains(5L));
+        assertTrue(dataSource.lastValues().contains(7L));
+        assertTrue(dataSource.lastValues().contains(8L));
     }
 
     @Test
-    void summaryTotalsUseTheCategoryFilter() {
+    void summaryTotalsApplyTheExceptList() {
         ReportSearchCriteria criteria = receiptCollectionCriteria();
-        criteria.setCategoryId(5L);
+        criteria.setExclusions(List.of(new ReportExclusion(7L, "0007 Hanwella", CollectionType.TITHES)));
 
         // RecordingDataSource returns no rows and queryOne() calls orElseThrow(); only the SQL matters here.
         assertThrows(NoSuchElementException.class, () -> repository.getSummaryTotals(criteria));
 
-        assertTrue(dataSource.lastSql().contains("AND ri.category_id = ?"));
-        assertTrue(dataSource.lastValues().contains(5L));
+        assertTrue(dataSource.lastSql().contains("AND NOT (r.church_id = ? AND ri.collection_type = ?)"));
+        assertTrue(dataSource.lastValues().contains(7L));
     }
 
     @Test
-    void noCategorySelectedAddsNoFilter() {
-        repository.getReceiptCollectionReport(receiptCollectionCriteria());
+    void categoryIsAppliedOnlyThroughTheExceptList() {
+        // The Category filter fills the Except List, so a part the user takes off the list shows again.
+        ReportSearchCriteria criteria = receiptCollectionCriteria();
+        criteria.setCategoryLabel("E - Category E");
+
+        repository.getReceiptCollectionReport(criteria);
 
         assertFalse(dataSource.lastSql().contains("ri.category_id"));
     }

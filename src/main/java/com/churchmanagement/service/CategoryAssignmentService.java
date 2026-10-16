@@ -16,9 +16,12 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -79,6 +82,35 @@ public class CategoryAssignmentService {
             return List.copyOf(years);
         } catch (SQLException | DatabaseException exception) {
             throw new CategoryAssignmentException("Unable to load category years right now.", exception);
+        }
+    }
+
+    /**
+     * The branch parts that use {@code categoryId} in any accounting year from {@code fromYear} to {@code toYear},
+     * keyed by church id. A year without its own assignments uses the most recent earlier year, as receipts do.
+     */
+    public Map<Long, Set<CollectionType>> partsInCategory(long categoryId, int fromYear, int toYear) {
+        try (Connection connection = dataSource.getConnection()) {
+            // Rows come oldest first, so each put leaves the latest assignment up to that year.
+            Map<Long, Map<CollectionType, Long>> effective = new HashMap<>();
+            Map<Long, Set<CollectionType>> parts = new HashMap<>();
+            List<CategoryAssignment> rows = assignmentRepository.findAllUpToYear(toYear, connection);
+            int index = 0;
+            for (int year = fromYear; year <= toYear; year++) {
+                while (index < rows.size() && rows.get(index).accountingYear() <= year) {
+                    CategoryAssignment row = rows.get(index++);
+                    effective.computeIfAbsent(row.churchId(), id -> new EnumMap<>(CollectionType.class))
+                            .put(row.collectionType(), row.categoryId());
+                }
+                effective.forEach((churchId, categories) -> categories.forEach((type, assigned) -> {
+                    if (assigned == categoryId) {
+                        parts.computeIfAbsent(churchId, id -> EnumSet.noneOf(CollectionType.class)).add(type);
+                    }
+                }));
+            }
+            return parts;
+        } catch (SQLException | DatabaseException exception) {
+            throw new CategoryAssignmentException("Unable to load category assignments right now.", exception);
         }
     }
 
