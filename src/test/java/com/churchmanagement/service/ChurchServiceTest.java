@@ -247,6 +247,36 @@ class ChurchServiceTest {
     }
 
     @Test
+    void rejectDuplicateNameIgnoringCase() {
+        churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
+
+        ChurchService.ChurchException exception = assertThrows(
+                ChurchService.ChurchException.class,
+                () -> churchService.create("CH002", " main church ", 1L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
+        );
+
+        assertEquals("A church with this name already exists.", exception.getMessage());
+    }
+
+    @Test
+    void rejectUpdateToAnotherChurchName() {
+        churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
+        Church other = churchService.create("CH002", "Branch Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
+
+        ChurchService.ChurchException exception = assertThrows(
+                ChurchService.ChurchException.class,
+                () -> churchService.update(other.getId(), "CH002", "MAIN CHURCH", 1L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L)
+        );
+
+        assertEquals("A church with this name already exists.", exception.getMessage());
+    }
+
+    @Test
     void updateChurch() {
         Church church = churchService.create("CH001", "Main Church", 1L, Church.Status.ACTIVE,
                 null, null, null, VALID_SMS_MOBILE, 1L);
@@ -377,6 +407,17 @@ class ChurchServiceTest {
         public boolean existsByChurchCodeAndIdNot(String churchCode, long id) {
             return churches.stream()
                     .anyMatch(church -> church.getChurchCode().equals(churchCode) && church.getId() != id);
+        }
+
+        @Override
+        public boolean existsByChurchName(String churchName) {
+            return churches.stream().anyMatch(church -> church.getChurchName().equalsIgnoreCase(churchName));
+        }
+
+        @Override
+        public boolean existsByChurchNameAndIdNot(String churchName, long id) {
+            return churches.stream()
+                    .anyMatch(church -> church.getChurchName().equalsIgnoreCase(churchName) && church.getId() != id);
         }
 
         @Override

@@ -152,6 +152,9 @@ public class ChurchService {
             if (churchRepository.existsByChurchCode(church.getChurchCode())) {
                 throw new ChurchException("A church with this code already exists.");
             }
+            if (churchRepository.existsByChurchName(church.getChurchName())) {
+                throw new ChurchException("A church with this name already exists.");
+            }
 
             church.setCreatedAt(LocalDateTime.now(clock));
             connection = dataSource.getConnection();
@@ -220,6 +223,9 @@ public class ChurchService {
             ensureActiveRegion(church.getRegionId());
             if (churchRepository.existsByChurchCodeAndIdNot(church.getChurchCode(), id)) {
                 throw new ChurchException("A church with this code already exists.");
+            }
+            if (churchRepository.existsByChurchNameAndIdNot(church.getChurchName(), id)) {
+                throw new ChurchException("A church with this name already exists.");
             }
 
             church.setUpdatedAt(LocalDateTime.now(clock));

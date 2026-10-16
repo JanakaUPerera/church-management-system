@@ -104,6 +104,35 @@ public class ChurchRepository {
         }
     }
 
+    public boolean existsByChurchName(String churchName) {
+        String sql = "SELECT 1 FROM churches WHERE LOWER(TRIM(church_name)) = LOWER(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, churchName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to check church name.", exception);
+        }
+    }
+
+    public boolean existsByChurchNameAndIdNot(String churchName, long id) {
+        String sql = "SELECT 1 FROM churches WHERE LOWER(TRIM(church_name)) = LOWER(?) AND id <> ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, churchName);
+            statement.setLong(2, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to check church name.", exception);
+        }
+    }
+
     public Church save(Church church) {
         try (Connection connection = dataSource.getConnection()) {
             return save(church, connection);
