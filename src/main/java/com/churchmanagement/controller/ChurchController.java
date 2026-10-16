@@ -8,7 +8,9 @@ import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import com.churchmanagement.service.CategoryAssignmentService;
 import com.churchmanagement.service.ChurchService;
+import com.churchmanagement.service.CollectionCategoryService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
@@ -31,6 +33,8 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
@@ -38,6 +42,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +50,8 @@ import java.util.Locale;
 
 public class ChurchController {
     private final ChurchService churchService = new ChurchService();
+    private final CollectionCategoryService categoryService = new CollectionCategoryService();
+    private final CategoryAssignmentService categoryAssignmentService = new CategoryAssignmentService();
     private final ObservableList<ChurchDto> allChurches = FXCollections.observableArrayList();
     private final ObservableList<ChurchDto> churches = FXCollections.observableArrayList();
     private final ObservableList<Region> activeRegions = FXCollections.observableArrayList();
@@ -351,7 +358,23 @@ public class ChurchController {
 
         ButtonType saveButtonType = new ButtonType(editing ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-        dialog.getDialogPane().setContent(churchDialogContent(church));
+        GridPane detailsGrid = churchDialogContent(church);
+        ChurchCategoryPane categoryPane;
+        try {
+            categoryPane = new ChurchCategoryPane(categoryService, categoryAssignmentService,
+                    editing ? church.getId() : null, LocalDate.now().getYear());
+        } catch (RuntimeException exception) {
+            showFriendlyError("Unable to load categories right now. Please try again later.");
+            return;
+        }
+        Tab detailsTab = new Tab("Details", detailsGrid);
+        Tab categoriesTab = new Tab("Categories", categoryPane);
+        detailsTab.setClosable(false);
+        categoriesTab.setClosable(false);
+        TabPane tabPane = new TabPane(detailsTab, categoriesTab);
+        // Keep the existing getContent().getUserData() lookup of the detail fields working.
+        tabPane.setUserData(detailsGrid.getUserData());
+        dialog.getDialogPane().setContent(tabPane);
         dialog.getDialogPane().setPrefWidth(620);
 
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
@@ -372,6 +395,11 @@ public class ChurchController {
                             fields.authorizedPersonPositionOtherField().getText(),
                             fields.smsMobileNumberField().getText(), fields.receiptLanguageComboBox().getValue(),
                             currentUser.getUserId());
+                    if (categoryPane.hasEditableChanges()) {
+                        categoryAssignmentService.saveAssignments(church.getId(), fields.churchCodeField().getText(),
+                                categoryPane.selectedYear(), categoryPane.selectedCategoryIds(),
+                                currentUser.getUserId());
+                    }
                 } else {
                     churchService.create(fields.churchCodeField().getText(), fields.churchNameField().getText(),
                             regionId, fields.statusComboBox().getValue(),
@@ -379,7 +407,7 @@ public class ChurchController {
                             fields.authorizedPersonPositionComboBox().getValue(),
                             fields.authorizedPersonPositionOtherField().getText(),
                             fields.smsMobileNumberField().getText(), fields.receiptLanguageComboBox().getValue(),
-                            currentUser.getUserId());
+                            categoryPane.selectedCategoryIds(), currentUser.getUserId());
                 }
                     },
                     () -> {
