@@ -19,6 +19,7 @@ public class ActivityLogService {
     public static final String LOGOUT = "LOGOUT";
     public static final String NAVIGATE_REGIONS = "NAVIGATE_REGIONS";
     public static final String NAVIGATE_CHURCHES = "NAVIGATE_CHURCHES";
+    public static final String NAVIGATE_CATEGORIES = "NAVIGATE_CATEGORIES";
     public static final String NAVIGATE_RECEIPTS = "NAVIGATE_RECEIPTS";
     public static final String NAVIGATE_REPORTS = "NAVIGATE_REPORTS";
     public static final String NAVIGATE_USERS = "NAVIGATE_USERS";
@@ -29,6 +30,13 @@ public class ActivityLogService {
     public static final String REGION_UPDATED = "REGION_UPDATED";
     public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
     public static final String REGION_DEACTIVATED = "REGION_DEACTIVATED";
+    public static final String CATEGORY_CREATED = "CATEGORY_CREATED";
+    public static final String CATEGORY_UPDATED = "CATEGORY_UPDATED";
+    public static final String CATEGORY_ACTIVATED = "CATEGORY_ACTIVATED";
+    public static final String CATEGORY_DEACTIVATED = "CATEGORY_DEACTIVATED";
+    public static final String CATEGORY_DELETED = "CATEGORY_DELETED";
+    public static final String CATEGORY_ASSIGNMENTS_UPDATED = "CATEGORY_ASSIGNMENTS_UPDATED";
+    public static final String CATEGORY_ASSIGNMENTS_CARRIED_FORWARD = "CATEGORY_ASSIGNMENTS_CARRIED_FORWARD";
     public static final String CHURCH_CREATED = "CHURCH_CREATED";
     public static final String CHURCH_UPDATED = "CHURCH_UPDATED";
     public static final String CHURCH_ACTIVATED = "CHURCH_ACTIVATED";
@@ -169,6 +177,21 @@ public class ActivityLogService {
 
     public void logChurchAction(long userId, String action, String churchCode) {
         log(userId, action, "Church code: " + churchCode);
+    }
+
+    public void logCategoryAction(long userId, String action, String categoryCode) {
+        log(userId, action, "Category code: " + categoryCode);
+    }
+
+    public void logCategoryAssignmentsUpdated(long userId, String churchCode, int year, String oldValue,
+                                              String newValue) {
+        log(userId, CATEGORY_ASSIGNMENTS_UPDATED, "Church", churchCode, oldValue, newValue,
+                "Collection categories for " + year + ", church code: " + churchCode);
+    }
+
+    public void logCategoryAssignmentsCarriedForward(long userId, String churchCode, int fromYear, int toYear) {
+        log(userId, CATEGORY_ASSIGNMENTS_CARRIED_FORWARD,
+                fromYear + " collection categories carried forward to " + toYear + ", church code: " + churchCode);
     }
 
     public void logChurchUpdated(long userId, Church oldChurch, Church newChurch) {
