@@ -3,21 +3,26 @@ package com.churchmanagement.service;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.RegionRepository;
+import com.churchmanagement.testsupport.RecordingDataSource;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,11 +32,14 @@ class ChurchServiceTest {
     private final FakeChurchRepository churchRepository = new FakeChurchRepository();
     private final FakeRegionRepository regionRepository = new FakeRegionRepository();
     private final FakeActivityLogService activityLogService = new FakeActivityLogService();
+    private final FakeCategoryAssignmentService categoryAssignmentService = new FakeCategoryAssignmentService();
     private final ChurchService churchService = new ChurchService(
             churchRepository,
             regionRepository,
             activityLogService,
-            Clock.fixed(Instant.parse("2026-05-27T12:00:00Z"), ZoneId.of("UTC"))
+            Clock.fixed(Instant.parse("2026-05-27T12:00:00Z"), ZoneId.of("UTC")),
+            categoryAssignmentService,
+            new RecordingDataSource()
     );
 
     @Test
@@ -305,6 +313,38 @@ class ChurchServiceTest {
         assertEquals("10000", churchService.suggestNextCode());
     }
 
+    @Test
+    void createChurchAssignsDefaultCategoriesForCurrentYear() {
+        Church church = churchService.create("0120", "New Church", 1L, Church.Status.ACTIVE,
+                null, null, null, VALID_SMS_MOBILE, 1L);
+
+        assertEquals(church.getId(), categoryAssignmentService.churchId);
+        assertEquals(2026, categoryAssignmentService.year);
+        assertNull(categoryAssignmentService.categoryIds);
+    }
+
+    @Test
+    void createChurchPassesChosenCategories() {
+        Map<CollectionType, Long> chosen = Map.of(
+                CollectionType.TITHES, 1L, CollectionType.OFFERTORY, 5L, CollectionType.OTHER_DONATIONS, 1L);
+
+        churchService.create("0120", "New Church", 1L, Church.Status.ACTIVE, null, null, null,
+                VALID_SMS_MOBILE, ReceiptLanguage.ENGLISH, chosen, 1L);
+
+        assertEquals(chosen, categoryAssignmentService.categoryIds);
+    }
+
+    @Test
+    void createChurchFailsWhenCategoriesCannotBeAssigned() {
+        categoryAssignmentService.failWith = "Default category A is not available. Choose the branch's categories.";
+
+        ChurchService.ChurchException exception = assertThrows(ChurchService.ChurchException.class,
+                () -> churchService.create("0120", "New Church", 1L, Church.Status.ACTIVE,
+                        null, null, null, VALID_SMS_MOBILE, 1L));
+
+        assertEquals("Default category A is not available. Choose the branch's categories.", exception.getMessage());
+    }
+
     private void createChurchWithCode(String churchCode) {
         churchService.create(churchCode, "Church " + churchCode, 1L, Church.Status.ACTIVE,
                 null, null, null, VALID_SMS_MOBILE, 1L);
@@ -337,6 +377,11 @@ class ChurchServiceTest {
         public boolean existsByChurchCodeAndIdNot(String churchCode, long id) {
             return churches.stream()
                     .anyMatch(church -> church.getChurchCode().equals(churchCode) && church.getId() != id);
+        }
+
+        @Override
+        public Church save(Church church, Connection connection) {
+            return save(church);
         }
 
         @Override
@@ -388,6 +433,28 @@ class ChurchServiceTest {
         @Override
         public List<Region> findActiveRegions() {
             return regions.stream().filter(region -> region.getStatus() == Region.Status.ACTIVE).toList();
+        }
+    }
+
+    private static class FakeCategoryAssignmentService extends CategoryAssignmentService {
+        private Long churchId;
+        private Integer year;
+        private Map<CollectionType, Long> categoryIds;
+        private String failWith;
+
+        private FakeCategoryAssignmentService() {
+            super(null, null, null, null, null);
+        }
+
+        @Override
+        public void assignInitial(long churchId, int year, Map<CollectionType, Long> categoryIds,
+                                  Connection connection) {
+            if (failWith != null) {
+                throw new CategoryAssignmentException(failWith);
+            }
+            this.churchId = churchId;
+            this.year = year;
+            this.categoryIds = categoryIds;
         }
     }
 

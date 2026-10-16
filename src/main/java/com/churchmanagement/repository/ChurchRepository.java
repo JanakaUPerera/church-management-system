@@ -105,6 +105,14 @@ public class ChurchRepository {
     }
 
     public Church save(Church church) {
+        try (Connection connection = dataSource.getConnection()) {
+            return save(church, connection);
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to save church.", exception);
+        }
+    }
+
+    public Church save(Church church, Connection connection) {
         String sql = """
                 INSERT INTO churches (
                     church_code, church_name, region_id, status, authorized_person_name,
@@ -114,8 +122,7 @@ public class ChurchRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, church.getChurchCode());
             statement.setString(2, church.getChurchName());
             statement.setLong(3, church.getRegionId());

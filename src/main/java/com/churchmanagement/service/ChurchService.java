@@ -1,8 +1,10 @@
 package com.churchmanagement.service;
 
+import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.Region;
 import com.churchmanagement.enums.AuthorizedPersonPosition;
+import com.churchmanagement.enums.CollectionType;
 import com.churchmanagement.enums.ReceiptLanguage;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.repository.ChurchRepository;
@@ -10,27 +12,38 @@ import com.churchmanagement.repository.RegionRepository;
 import com.churchmanagement.util.NextCodeGenerator;
 import com.churchmanagement.validation.ChurchValidator;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ChurchService {
     private final ChurchRepository churchRepository;
     private final RegionRepository regionRepository;
     private final ActivityLogService activityLogService;
     private final Clock clock;
+    private final CategoryAssignmentService categoryAssignmentService;
+    private final DataSource dataSource;
 
     public ChurchService() {
-        this(new ChurchRepository(), new RegionRepository(), new ActivityLogService(), Clock.systemDefaultZone());
+        this(new ChurchRepository(), new RegionRepository(), new ActivityLogService(), Clock.systemDefaultZone(),
+                new CategoryAssignmentService(), DatabaseConfig.getDataSource());
     }
 
     public ChurchService(ChurchRepository churchRepository, RegionRepository regionRepository,
-                         ActivityLogService activityLogService, Clock clock) {
+                         ActivityLogService activityLogService, Clock clock,
+                         CategoryAssignmentService categoryAssignmentService, DataSource dataSource) {
         this.churchRepository = churchRepository;
         this.regionRepository = regionRepository;
         this.activityLogService = activityLogService;
         this.clock = clock;
+        this.categoryAssignmentService = categoryAssignmentService;
+        this.dataSource = dataSource;
     }
 
     public List<Church> findAll() {
@@ -116,10 +129,24 @@ public class ChurchService {
                          String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
                          String authorizedPersonPositionOther, String smsMobileNumber,
                          ReceiptLanguage receiptLanguage, long userId) {
+        return create(churchCode, churchName, regionId, status, authorizedPersonName, authorizedPersonPosition,
+                authorizedPersonPositionOther, smsMobileNumber, receiptLanguage, null, userId);
+    }
+
+    /**
+     * Creates the church and its current-year collection categories in one transaction.
+     * {@code categoryIds == null} assigns the default category (A) to every collection type.
+     */
+    public Church create(String churchCode, String churchName, Long regionId, Church.Status status,
+                         String authorizedPersonName, AuthorizedPersonPosition authorizedPersonPosition,
+                         String authorizedPersonPositionOther, String smsMobileNumber,
+                         ReceiptLanguage receiptLanguage, Map<CollectionType, Long> categoryIds, long userId) {
         Church church = normalize(churchCode, churchName, regionId, status, authorizedPersonName,
                 authorizedPersonPosition, authorizedPersonPositionOther, smsMobileNumber, receiptLanguage);
         validate(church);
 
+        Connection connection = null;
+        boolean previousAutoCommit = true;
         try {
             ensureActiveRegion(church.getRegionId());
             if (churchRepository.existsByChurchCode(church.getChurchCode())) {
@@ -127,13 +154,49 @@ public class ChurchService {
             }
 
             church.setCreatedAt(LocalDateTime.now(clock));
-            Church savedChurch = churchRepository.save(church);
+            connection = dataSource.getConnection();
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            Church savedChurch = churchRepository.save(church, connection);
+            categoryAssignmentService.assignInitial(savedChurch.getId(), LocalDate.now(clock).getYear(),
+                    categoryIds, connection);
+            connection.commit();
             activityLogService.logChurchAction(userId, ActivityLogService.CHURCH_CREATED, savedChurch.getChurchCode());
             return savedChurch;
         } catch (ChurchException exception) {
+            rollback(connection);
             throw exception;
-        } catch (DatabaseException exception) {
+        } catch (CategoryAssignmentService.CategoryAssignmentException exception) {
+            rollback(connection);
+            throw new ChurchException(exception.getMessage(), exception);
+        } catch (SQLException | DatabaseException exception) {
+            rollback(connection);
             throw new ChurchException("Unable to save church right now. Please try again later.", exception);
+        } finally {
+            close(connection, previousAutoCommit);
+        }
+    }
+
+    private void rollback(Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.rollback();
+        } catch (SQLException ignored) {
+            // The original failure is more useful to the caller.
+        }
+    }
+
+    private void close(Connection connection, boolean previousAutoCommit) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.setAutoCommit(previousAutoCommit);
+            connection.close();
+        } catch (SQLException ignored) {
+            // Nothing useful to do while closing.
         }
     }
 
