@@ -1,8 +1,10 @@
 package com.churchmanagement.repository;
 
+import com.churchmanagement.dto.OfficialSmsRecipient;
 import com.churchmanagement.dto.SmsLogSearchCriteria;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.enums.SmsType;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -19,6 +21,58 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SmsLogRepositoryTest {
+    @Test
+    void searchBySmsType() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+        SmsLogSearchCriteria criteria = new SmsLogSearchCriteria();
+        criteria.setSmsType(SmsType.OFFICIAL_MESSAGE);
+
+        repository.searchSmsLogs(criteria);
+
+        assertTrue(dataSource.sql.contains("AND sl.sms_type = ?"));
+        assertEquals(SmsType.OFFICIAL_MESSAGE.name(), dataSource.valueAt(1));
+    }
+
+    @Test
+    void enqueueResendCopiesTypeAndBatch() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        repository.enqueueResend(null, 10L, "+94771234567", "Notice", 100L, 7L, "Phone was off", 1,
+                LocalDateTime.of(2026, 10, 20, 9, 0), SmsType.OFFICIAL_MESSAGE, "batch-1");
+
+        assertTrue(dataSource.sql.contains("sms_type"));
+        assertEquals(SmsType.OFFICIAL_MESSAGE.name(), dataSource.valueAt(14));
+        assertEquals("batch-1", dataSource.valueAt(15));
+    }
+
+    @Test
+    void enqueueOfficialBatchInsertsOneQueuedRowPerRecipientInOneTransaction() {
+        com.churchmanagement.testsupport.RecordingDataSource dataSource =
+                new com.churchmanagement.testsupport.RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+        List<OfficialSmsRecipient> recipients = List.of(
+                new OfficialSmsRecipient(1L, "0001", "Katunayake", "R001", "+94771234567",
+                        OfficialSmsRecipient.Status.OK),
+                new OfficialSmsRecipient(2L, "0002", "Seeduwa", "R001", "+94771234568",
+                        OfficialSmsRecipient.Status.OK));
+
+        repository.enqueueOfficialBatch("batch-1", "Notice", recipients, 7L, LocalDateTime.of(2026, 10, 20, 9, 0));
+
+        assertEquals(1, dataSource.sqls().size());
+        assertTrue(dataSource.lastSql().contains("sms_type"));
+        assertTrue(dataSource.committed());
+        List<Object> values = dataSource.lastValues();
+        assertEquals(SmsType.OFFICIAL_MESSAGE.name(), values.get(1));
+        assertEquals("batch-1", values.get(2));
+        assertEquals(2L, values.get(3));
+        assertEquals("+94771234568", values.get(4));
+        assertEquals("Notice", values.get(5));
+        assertEquals(SmsSendStatus.QUEUED.name(), values.get(6));
+        assertEquals(7L, values.get(9));
+    }
+
     @Test
     void saveSentWithModemReference() {
         RecordingDataSource dataSource = new RecordingDataSource();
@@ -108,7 +162,7 @@ class SmsLogRepositoryTest {
         SmsLogRepository repository = new SmsLogRepository(dataSource);
 
         repository.enqueueResend(1L, 2L, "+94771234567", "Hello", 100L, 7L, "Asked by church office", 2,
-                LocalDateTime.of(2026, 6, 6, 10, 0));
+                LocalDateTime.of(2026, 6, 6, 10, 0), SmsType.RECEIPT, null);
 
         assertEquals(2, dataSource.valueAt(8));
         assertEquals(7L, dataSource.valueAt(9));

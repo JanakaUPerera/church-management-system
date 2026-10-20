@@ -75,7 +75,7 @@ public class SmsResendService {
 
         smsLogRepository.enqueueResend(original.getReceiptId(), original.getChurchId(), resendMobileNumber,
                 original.getMessage(), original.getId(), currentUser.getUserId(), resendReason, priorAttemptCount,
-                LocalDateTime.now(clock));
+                LocalDateTime.now(clock), original.getSmsType(), original.getBatchUuid());
     }
 
     private int configuredMaxAttempts() {

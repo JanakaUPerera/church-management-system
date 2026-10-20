@@ -1,5 +1,7 @@
 package com.churchmanagement.dto;
 
+import com.churchmanagement.enums.SmsType;
+
 import java.time.LocalDateTime;
 
 public class SmsLogDto {
@@ -27,6 +29,8 @@ public class SmsLogDto {
     private LocalDateTime createdAt;
     private Long resendOfSmsLogId;
     private Long queuedByUserId;
+    private SmsType smsType = SmsType.RECEIPT;
+    private String batchUuid;
     private String resendOfSmsLogUuid;
     private String resentByUserFullName;
     private String resendReason;
@@ -225,6 +229,22 @@ public class SmsLogDto {
 
     public void setQueuedByUserId(Long queuedByUserId) {
         this.queuedByUserId = queuedByUserId;
+    }
+
+    public SmsType getSmsType() {
+        return smsType;
+    }
+
+    public void setSmsType(SmsType smsType) {
+        this.smsType = smsType == null ? SmsType.RECEIPT : smsType;
+    }
+
+    public String getBatchUuid() {
+        return batchUuid;
+    }
+
+    public void setBatchUuid(String batchUuid) {
+        this.batchUuid = batchUuid;
     }
 
     public String getResendOfSmsLogUuid() {

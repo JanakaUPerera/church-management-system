@@ -1,10 +1,12 @@
 package com.churchmanagement.repository;
 
 import com.churchmanagement.config.DatabaseConfig;
+import com.churchmanagement.dto.OfficialSmsRecipient;
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsLogSearchCriteria;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.enums.SmsType;
 import com.churchmanagement.exception.DatabaseException;
 
 import javax.sql.DataSource;
@@ -177,14 +179,14 @@ public class SmsLogRepository {
 
     public void enqueueResend(Long receiptId, Long churchId, String mobileNumber, String message,
                               long originalSmsLogId, long resentByUserId, String resendReason,
-                              int priorAttemptCount, LocalDateTime queuedAt) {
+                              int priorAttemptCount, LocalDateTime queuedAt, SmsType smsType, String batchUuid) {
         String sql = """
                 INSERT INTO sms_logs (
                     sms_log_uuid, receipt_id, church_id, mobile_number, message, status, delivery_status,
                     attempt_count, queued_by_user_id, created_at, resend_of_sms_log_id, resent_by_user_id,
-                    resend_reason
+                    resend_reason, sms_type, batch_uuid
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = dataSource.getConnection();
@@ -202,9 +204,52 @@ public class SmsLogRepository {
             statement.setLong(11, originalSmsLogId);
             statement.setLong(12, resentByUserId);
             setNullableString(statement, 13, truncate(resendReason, 255));
+            statement.setString(14, (smsType == null ? SmsType.RECEIPT : smsType).name());
+            setNullableString(statement, 15, batchUuid);
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Unable to queue SMS resend.", exception);
+        }
+    }
+
+    /** Queues one official message row per recipient, all or nothing. */
+    public void enqueueOfficialBatch(String batchUuid, String message, List<OfficialSmsRecipient> recipients,
+                                     long queuedByUserId, LocalDateTime queuedAt) {
+        String sql = """
+                INSERT INTO sms_logs (
+                    sms_log_uuid, sms_type, batch_uuid, church_id, mobile_number, message, status, delivery_status,
+                    attempt_count, queued_by_user_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection connection = dataSource.getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (OfficialSmsRecipient recipient : recipients) {
+                    statement.setString(1, UUID.randomUUID().toString());
+                    statement.setString(2, SmsType.OFFICIAL_MESSAGE.name());
+                    statement.setString(3, batchUuid);
+                    statement.setLong(4, recipient.churchId());
+                    statement.setString(5, recipient.mobileNumber());
+                    statement.setString(6, message);
+                    statement.setString(7, SmsSendStatus.QUEUED.name());
+                    statement.setString(8, SmsDeliveryStatus.UNKNOWN.name());
+                    statement.setInt(9, 0);
+                    statement.setLong(10, queuedByUserId);
+                    statement.setTimestamp(11, Timestamp.valueOf(queuedAt));
+                    statement.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to queue official SMS messages.", exception);
         }
     }
 
@@ -358,6 +403,10 @@ public class SmsLogRepository {
             sql.append("AND sl.delivery_status = ? ");
             parameters.add(safeCriteria.getDeliveryStatus().name());
         }
+        if (safeCriteria.getSmsType() != null) {
+            sql.append("AND sl.sms_type = ? ");
+            parameters.add(safeCriteria.getSmsType().name());
+        }
         if (safeCriteria.getMobileNumber() != null && !safeCriteria.getMobileNumber().isBlank()) {
             sql.append("AND sl.mobile_number LIKE ? ");
             parameters.add("%" + safeCriteria.getMobileNumber().strip() + "%");
@@ -414,7 +463,7 @@ public class SmsLogRepository {
 
     private String baseSelect() {
         return """
-                SELECT sl.id, sl.sms_log_uuid, sl.receipt_id, sl.church_id, r.receipt_no,
+                SELECT sl.id, sl.sms_log_uuid, sl.sms_type, sl.batch_uuid, sl.receipt_id, sl.church_id, r.receipt_no,
                        c.church_code, c.church_name,
                        sl.mobile_number, sl.message, sl.provider, sl.modem_message_reference, sl.modem_raw_response,
                        sl.status, sl.delivery_status, sl.delivery_report_raw, sl.error_message, sl.error_code,
@@ -437,6 +486,8 @@ public class SmsLogRepository {
                 SmsLogDto log = new SmsLogDto();
                 log.setId(resultSet.getLong("id"));
                 log.setSmsLogUuid(resultSet.getString("sms_log_uuid"));
+                log.setSmsType(SmsType.fromDatabase(resultSet.getString("sms_type")));
+                log.setBatchUuid(resultSet.getString("batch_uuid"));
                 log.setReceiptId(nullableLong(resultSet, "receipt_id"));
                 log.setChurchId(nullableLong(resultSet, "church_id"));
                 log.setReceiptNo(resultSet.getString("receipt_no"));
