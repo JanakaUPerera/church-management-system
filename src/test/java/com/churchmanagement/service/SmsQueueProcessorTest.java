@@ -4,6 +4,7 @@ import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.enums.SmsType;
 import com.churchmanagement.repository.SmsLogRepository;
 import org.junit.jupiter.api.Test;
 
@@ -168,6 +169,43 @@ class SmsQueueProcessorTest {
         assertEquals(ActivityLogService.SMS_SENT_ACCEPTED_BY_MODEM, activityLogService.action);
     }
 
+    @Test
+    void officialRowLogsOfficialSent() {
+        FakeSmsLogRepository repository = new FakeSmsLogRepository();
+        repository.rows.add(officialRow(1L));
+        FakeActivityLogService activityLogService = new FakeActivityLogService();
+        SmsQueueProcessor processor = new SmsQueueProcessor(repository, new FakeSmsServiceFactory(true),
+                activityLogService, new FakeSystemConfigurationCache(Map.of("sms.retry.max.attempts", "3")),
+                () -> true, fixedClock());
+
+        processor.processTick();
+
+        assertEquals(ActivityLogService.OFFICIAL_SMS_SENT, activityLogService.action);
+    }
+
+    @Test
+    void officialRowLogsOfficialFailed() {
+        FakeSmsLogRepository repository = new FakeSmsLogRepository();
+        repository.rows.add(officialRow(1L));
+        FakeActivityLogService activityLogService = new FakeActivityLogService();
+        SmsQueueProcessor processor = new SmsQueueProcessor(repository, new FakeSmsServiceFactory(false),
+                activityLogService, new FakeSystemConfigurationCache(Map.of("sms.retry.max.attempts", "3")),
+                () -> true, fixedClock());
+
+        processor.processTick();
+
+        assertEquals(ActivityLogService.OFFICIAL_SMS_FAILED, activityLogService.action);
+    }
+
+    private SmsLogDto officialRow(long id) {
+        SmsLogDto row = queuedRow(id, LocalDateTime.of(2026, 6, 6, 10, 0));
+        row.setReceiptId(null);
+        row.setSmsType(SmsType.OFFICIAL_MESSAGE);
+        row.setBatchUuid("batch-1");
+        row.setQueuedByUserId(7L);
+        return row;
+    }
+
     private SmsQueueProcessor processor(FakeSmsLogRepository repository, FakeSmsServiceFactory factory,
                                         BooleanSupplier isPrimaryMachine) {
         return new SmsQueueProcessor(repository, factory, new FakeActivityLogService(),
@@ -330,6 +368,18 @@ class SmsQueueProcessorTest {
         public void logSmsResendFailed(Long userId, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
                                        Long churchId, String mobileNumber) {
             action = SMS_RESENT_FAILED;
+        }
+
+        @Override
+        public void logOfficialSmsSent(Long userId, String batchUuid, Long churchId, String mobileNumber,
+                                       String modemReference) {
+            action = OFFICIAL_SMS_SENT;
+        }
+
+        @Override
+        public void logOfficialSmsFailed(Long userId, String batchUuid, Long churchId, String mobileNumber,
+                                         String reason) {
+            action = OFFICIAL_SMS_FAILED;
         }
     }
 
