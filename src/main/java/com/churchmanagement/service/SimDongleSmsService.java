@@ -7,6 +7,7 @@ import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.util.SmsModemResponseParser;
+import com.churchmanagement.util.SriLankanMobileNumber;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -131,24 +132,11 @@ public class SimDongleSmsService implements SmsService {
     }
 
     String normalizeSriLankanMobileNumber(String mobileNumber) {
-        if (mobileNumber == null || mobileNumber.isBlank()) {
-            return null;
-        }
-        String number = mobileNumber.strip().replace(" ", "").replace("-", "");
-        if (number.startsWith("+94") && number.length() == 12) {
-            return number;
-        }
-        if (number.startsWith("94") && number.length() == 11) {
-            return "+" + number;
-        }
-        if (number.startsWith("0") && number.length() == 10) {
-            return "+94" + number.substring(1);
-        }
-        return number;
+        return SriLankanMobileNumber.normalize(mobileNumber);
     }
 
     boolean isValidSriLankanMobileNumber(String mobileNumber) {
-        return mobileNumber != null && mobileNumber.matches("\\+947\\d{8}");
+        return SriLankanMobileNumber.isValid(mobileNumber);
     }
 
     private String sendCommand(SerialPortService.SerialConnection connection, String command, int timeoutMillis)
