@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.TilePane?>
+
+<TilePane fx:id="tilePane" hgap="16" vgap="16" xmlns="http://javafx.com/javafx/21"
+          xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.churchmanagement.controller.HomeController"/>

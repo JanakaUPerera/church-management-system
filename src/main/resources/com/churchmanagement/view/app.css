@@ -1114,6 +1114,43 @@
     -fx-text-fill: #451a03;
 }
 
+/* ── Module navigation: sidebar header and breadcrumb ── */
+.nav-sidebar-header {
+    -fx-padding: 0 0 8 0;
+    -fx-border-color: transparent transparent rgba(253, 230, 138, 0.35) transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.nav-module-button {
+    -fx-font-weight: bold;
+}
+
+.nav-section-label {
+    -fx-text-fill: #fcd34d;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 14 2 14;
+}
+
+.breadcrumb-link {
+    -fx-background-color: transparent;
+    -fx-text-fill: #92400e;
+    -fx-font-size: 18px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-underline: true;
+}
+
+.breadcrumb-link:focused {
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 0 0 2 0;
+}
+
+.breadcrumb-separator {
+    -fx-text-fill: #b45309;
+    -fx-font-size: 18px;
+}
+
 .module-page {
     -fx-background-color: white;
     -fx-background-radius: 8;
@@ -2802,6 +2839,22 @@
     -fx-text-fill: #f9fafb;
 }
 
+.theme-dark .nav-sidebar-header {
+    -fx-border-color: transparent transparent #4b5563 transparent;
+}
+
+.theme-dark .nav-section-label {
+    -fx-text-fill: #d1d5db;
+}
+
+.theme-dark .breadcrumb-link {
+    -fx-text-fill: #fbbf24;
+}
+
+.theme-dark .breadcrumb-separator {
+    -fx-text-fill: #9ca3af;
+}
+
 /* Buttons that must stay transparent in dark theme */
 .theme-dark .header-profile-button {
     -fx-background-color: transparent;
@@ -3595,6 +3648,22 @@
 
 .theme-orchid .active-menu-button .menu-icon {
     -fx-icon-color: #3d0e3f;
+}
+
+.theme-orchid .nav-sidebar-header {
+    -fx-border-color: transparent transparent rgba(243, 205, 244, 0.35) transparent;
+}
+
+.theme-orchid .nav-section-label {
+    -fx-text-fill: #f3cdf4;
+}
+
+.theme-orchid .breadcrumb-link {
+    -fx-text-fill: #8c23a0;
+}
+
+.theme-orchid .breadcrumb-separator {
+    -fx-text-fill: #bb29c1;
 }
 
 /* ── Login screen ── */

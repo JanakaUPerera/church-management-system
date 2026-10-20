@@ -54,21 +54,8 @@
                 <Insets bottom="16" left="14" right="14" top="16"/>
             </padding>
             <Button fx:id="sidebarToggleButton" maxWidth="Infinity" onAction="#toggleSidebar" styleClass="sidebar-toggle-button"/>
-            <Button fx:id="dashboardButton" maxWidth="Infinity" onAction="#showDashboard" styleClass="menu-button" text="Dashboard"/>
-            <Button fx:id="regionsButton" maxWidth="Infinity" onAction="#showRegions" styleClass="menu-button" text="Regions"/>
-            <Button fx:id="churchesButton" maxWidth="Infinity" onAction="#showChurches" styleClass="menu-button" text="Churches"/>
-            <Button fx:id="categoriesButton" maxWidth="Infinity" onAction="#showCategories" styleClass="menu-button" text="Categories"/>
-            <Button fx:id="weeklyReceiptsButton" maxWidth="Infinity" onAction="#showWeeklyReceipts" styleClass="menu-button" text="Receipt"/>
-            <Button fx:id="receiptHistoryButton" maxWidth="Infinity" onAction="#showReceiptHistory" styleClass="menu-button" text="Receipt History"/>
-            <Button fx:id="submissionStatusButton" maxWidth="Infinity" onAction="#showSubmissionStatus" styleClass="menu-button" text="Submission Status"/>
-            <Button fx:id="reportsButton" maxWidth="Infinity" onAction="#showReports" styleClass="menu-button" text="Reports"/>
-            <Button fx:id="usersButton" maxWidth="Infinity" onAction="#showUsers" styleClass="menu-button" text="Users"/>
-            <Button fx:id="rolesButton" maxWidth="Infinity" onAction="#showRoles" styleClass="menu-button" text="Roles &amp; Permissions"/>
-            <Button fx:id="backupButton" maxWidth="Infinity" onAction="#showBackup" styleClass="menu-button" text="Backup &amp; Restore"/>
-            <Button fx:id="activityLogsButton" maxWidth="Infinity" onAction="#showActivityLogs" styleClass="menu-button" text="Activity Logs"/>
-            <Button fx:id="smsLogsButton" maxWidth="Infinity" onAction="#showSmsLogs" styleClass="menu-button" text="SMS Logs"/>
-            <Button fx:id="sendMessageButton" maxWidth="Infinity" onAction="#showSendMessage" styleClass="menu-button" text="Send Message"/>
-            <Button fx:id="settingsButton" maxWidth="Infinity" onAction="#showSettings" styleClass="menu-button" text="Settings"/>
+            <VBox fx:id="sidebarHeaderBox" spacing="4" styleClass="nav-sidebar-header"/>
+            <VBox fx:id="sidebarItemsBox" spacing="4"/>
         </VBox>
     </left>
 
@@ -77,7 +64,7 @@
             <padding>
                 <Insets bottom="22" left="24" right="24" top="22"/>
             </padding>
-            <Label fx:id="pageTitleLabel" styleClass="page-title"/>
+            <HBox fx:id="breadcrumbBar" alignment="CENTER_LEFT" spacing="8" styleClass="breadcrumb-bar"/>
             <StackPane fx:id="contentPane" VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>

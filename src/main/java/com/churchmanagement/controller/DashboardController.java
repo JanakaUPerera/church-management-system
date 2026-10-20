@@ -4,6 +4,11 @@ import com.churchmanagement.config.AppConfig;
 import com.churchmanagement.config.DatabaseConfig;
 import com.churchmanagement.config.PrimaryMachine;
 import com.churchmanagement.dto.SmsSettings;
+import com.churchmanagement.navigation.NavItem;
+import com.churchmanagement.navigation.NavModule;
+import com.churchmanagement.navigation.NavigationAccess;
+import com.churchmanagement.navigation.NavigationRegistry;
+import com.churchmanagement.navigation.UnsavedChangesAware;
 import com.churchmanagement.repository.SmsSettingsRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
@@ -20,17 +25,24 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Side;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -48,6 +60,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Locale;
 import java.util.List;
 import java.util.Optional;
@@ -63,14 +78,25 @@ public class DashboardController {
     private final AtCommandService atCommandService = new AtCommandService(new SerialPortService());
     private AuthenticatedUser currentUser;
     private PermissionGuard permissionGuard;
-    private List<MenuDefinition> menuDefinitions;
     private boolean sidebarCollapsed;
     private double windowDragOffsetX;
     private double windowDragOffsetY;
     private ScheduledExecutorService databaseStatusMonitor;
     private ScheduledExecutorService modemStatusMonitor;
     private Timeline footerClock;
+    private NavigationAccess navigationAccess;
+    private NavModule currentModule;
+    private NavItem currentItem;
+    private String standaloneTitle;
+    private boolean onHome;
+    private Object currentContentController;
+    private final Map<String, String> lastItemByModule = new HashMap<>();
 
+    private static final String HOME_VIEW = "/com/churchmanagement/view/home-view.fxml";
+    private static final String MY_PROFILE_VIEW = "/com/churchmanagement/view/user-profile-view.fxml";
+    private static final KeyCode[] SHORTCUT_DIGITS = {
+            KeyCode.DIGIT1, KeyCode.DIGIT2, KeyCode.DIGIT3, KeyCode.DIGIT4, KeyCode.DIGIT5, KeyCode.DIGIT6,
+            KeyCode.DIGIT7};
     private static final double SIDEBAR_EXPANDED_WIDTH = 235;
     private static final double SIDEBAR_COLLAPSED_WIDTH = 72;
     private static final double MENU_ICON_SIZE = 22;
@@ -102,9 +128,6 @@ public class DashboardController {
     private Label profileAvatarLabel;
 
     @FXML
-    private Label pageTitleLabel;
-
-    @FXML
     private Label statusLabel;
 
     @FXML
@@ -129,6 +152,15 @@ public class DashboardController {
     private VBox sidebar;
 
     @FXML
+    private VBox sidebarHeaderBox;
+
+    @FXML
+    private VBox sidebarItemsBox;
+
+    @FXML
+    private HBox breadcrumbBar;
+
+    @FXML
     private HBox appHeader;
 
     @FXML
@@ -145,51 +177,6 @@ public class DashboardController {
 
     @FXML
     private Button maximizeWindowButton;
-
-    @FXML
-    private Button dashboardButton;
-
-    @FXML
-    private Button regionsButton;
-
-    @FXML
-    private Button churchesButton;
-
-    @FXML
-    private Button categoriesButton;
-
-    @FXML
-    private Button weeklyReceiptsButton;
-
-    @FXML
-    private Button receiptHistoryButton;
-
-    @FXML
-    private Button submissionStatusButton;
-
-    @FXML
-    private Button reportsButton;
-
-    @FXML
-    private Button usersButton;
-
-    @FXML
-    private Button rolesButton;
-
-    @FXML
-    private Button backupButton;
-
-    @FXML
-    private Button activityLogsButton;
-
-    @FXML
-    private Button smsLogsButton;
-
-    @FXML
-    private Button sendMessageButton;
-
-    @FXML
-    private Button settingsButton;
 
     @FXML
     private void initialize() {
@@ -220,12 +207,15 @@ public class DashboardController {
         startDatabaseStatusMonitor();
         startModemStatusMonitor();
 
-        menuDefinitions = createMenuDefinitions();
-        applyMenuIcons();
+        navigationAccess = new NavigationAccess(currentUser, PrimaryMachine.isPrimary());
         configureSidebarToggle();
-        applyMenuVisibility();
         SmsQueueProcessor.getInstance().start();
-        loadMenu(menuDefinitions.getFirst());
+        Platform.runLater(this::installShortcuts);
+        NavigationAccess.Landing landing = navigationAccess.landing(currentUser.getLandingScreen());
+        if (landing.item() != null && openItem(landing.item()) && landing.fellBack()) {
+            setStatus("Your saved start screen is no longer available — opened " + landing.item().title() + ".",
+                    "status-warning");
+        }
     }
 
     private void configureBrandLogo() {
@@ -243,6 +233,9 @@ public class DashboardController {
 
     @FXML
     private void handleLogout() throws IOException {
+        if (!confirmLeave()) {
+            return;
+        }
         stopStatusMonitors();
         AuthContext.getCurrentUser()
                 .ifPresent(user -> activityLogService.logLogout(user.getUserId(), user.getUsername()));
@@ -473,84 +466,18 @@ public class DashboardController {
     }
 
     @FXML
-    private void showDashboard() {
-        loadMenu(findMenu(dashboardButton));
-    }
-
-    @FXML
-    private void showRegions() {
-        loadMenu(findMenu(regionsButton));
-    }
-
-    @FXML
-    private void showChurches() {
-        loadMenu(findMenu(churchesButton));
-    }
-
-    @FXML
-    private void showCategories() {
-        loadMenu(findMenu(categoriesButton));
-    }
-
-    @FXML
-    private void showWeeklyReceipts() {
-        loadMenu(findMenu(weeklyReceiptsButton));
-    }
-
-    @FXML
-    private void showReceiptHistory() {
-        loadMenu(findMenu(receiptHistoryButton));
-    }
-
-    @FXML
-    private void showSubmissionStatus() {
-        loadMenu(findMenu(submissionStatusButton));
-    }
-
-    @FXML
-    private void showReports() {
-        loadMenu(findMenu(reportsButton));
-    }
-
-    @FXML
-    private void showUsers() {
-        loadMenu(findMenu(usersButton));
-    }
-
-    @FXML
-    private void showRoles() {
-        loadMenu(findMenu(rolesButton));
-    }
-
-    @FXML
-    private void showBackup() {
-        loadMenu(findMenu(backupButton));
-    }
-
-    @FXML
-    private void showActivityLogs() {
-        loadMenu(findMenu(activityLogsButton));
-    }
-
-    @FXML
-    private void showSmsLogs() {
-        loadMenu(findMenu(smsLogsButton));
-    }
-
-    @FXML
-    private void showSendMessage() {
-        loadMenu(findMenu(sendMessageButton));
-    }
-
-    @FXML
-    private void showSettings() {
-        loadMenu(findMenu(settingsButton));
-    }
-
-    @FXML
     private void showMyProfile() {
-        loadMenu(new MenuDefinition("My Profile", "/com/churchmanagement/view/user-profile-view.fxml",
-                myProfileButton, null));
+        if (!confirmLeave()) {
+            return;
+        }
+        if (loadContent(MY_PROFILE_VIEW, "My Profile")) {
+            currentItem = null;
+            onHome = false;
+            standaloneTitle = "My Profile";
+            renderSidebar();
+            renderBreadcrumb();
+            myProfileButton.getStyleClass().add("active-menu-button");
+        }
     }
 
     @FXML
@@ -559,89 +486,17 @@ public class DashboardController {
         sidebar.setMinWidth(sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH);
         sidebar.setPrefWidth(sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH);
 
-        for (MenuDefinition menuDefinition : menuDefinitions) {
-            Button button = menuDefinition.button();
-            button.setText(sidebarCollapsed ? "" : menuDefinition.title());
-            button.setContentDisplay(sidebarCollapsed ? ContentDisplay.GRAPHIC_ONLY : ContentDisplay.LEFT);
-            button.setGraphicTextGap(sidebarCollapsed ? 0 : 10);
+        if (navigationAccess != null) {
+            renderSidebar();
         }
 
         sidebarToggleButton.setGraphic(createMenuIcon(sidebarCollapsed ? "fas-angle-double-right" : "fas-angle-double-left"));
         sidebarToggleButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
     }
 
-    private List<MenuDefinition> createMenuDefinitions() {
-        return List.of(
-                new MenuDefinition("Dashboard", "/com/churchmanagement/view/dashboard-home-view.fxml",
-                        dashboardButton, null),
-                new MenuDefinition("Regions", "/com/churchmanagement/view/region-view.fxml",
-                        regionsButton, ActivityLogService.NAVIGATE_REGIONS, "region.menu.view"),
-                new MenuDefinition("Churches", "/com/churchmanagement/view/church-view.fxml",
-                        churchesButton, ActivityLogService.NAVIGATE_CHURCHES, "church.menu.view"),
-                new MenuDefinition("Categories", "/com/churchmanagement/view/category-view.fxml",
-                        categoriesButton, ActivityLogService.NAVIGATE_CATEGORIES, "category.menu.view"),
-                new MenuDefinition("Receipt", "/com/churchmanagement/view/receipt-entry-view.fxml",
-                        weeklyReceiptsButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.entry.menu.view"),
-                new MenuDefinition("Receipt History", "/com/churchmanagement/view/receipt-history-view.fxml",
-                        receiptHistoryButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.menu.view"),
-                new MenuDefinition("Submission Status", "/com/churchmanagement/view/submission-status-view.fxml",
-                        submissionStatusButton, ActivityLogService.NAVIGATE_RECEIPTS, "receipt.menu.view"),
-                new MenuDefinition("Reports", "/com/churchmanagement/view/reports-view.fxml",
-                        reportsButton, ActivityLogService.NAVIGATE_REPORTS, "report.menu.view"),
-                new MenuDefinition("Users", "/com/churchmanagement/view/user-management-view.fxml",
-                        usersButton, ActivityLogService.NAVIGATE_USERS, "user.menu.view"),
-                new MenuDefinition("Roles & Permissions", "/com/churchmanagement/view/role-permission-view.fxml",
-                        rolesButton, ActivityLogService.NAVIGATE_USERS, "role.menu.view"),
-                new MenuDefinition("Backup & Restore", "/com/churchmanagement/view/backup-restore-view.fxml",
-                        backupButton, ActivityLogService.NAVIGATE_BACKUP_RESTORE, "backup.menu.view"),
-                new MenuDefinition("Activity Logs", "/com/churchmanagement/view/activity-log-view.fxml",
-                        activityLogsButton, ActivityLogService.NAVIGATE_ACTIVITY_LOGS, "activity.menu.view"),
-                new MenuDefinition("SMS Logs", "/com/churchmanagement/view/sms-log-view.fxml",
-                        smsLogsButton, ActivityLogService.NAVIGATE_SMS_LOGS, "sms.menu.view"),
-                new MenuDefinition("Send Message", "/com/churchmanagement/view/send-message-view.fxml",
-                        sendMessageButton, ActivityLogService.NAVIGATE_SEND_MESSAGE, "sms.official.menu.view"),
-                new MenuDefinition("Settings", "/com/churchmanagement/view/settings-view.fxml",
-                        settingsButton, null, "settings.menu.view")
-        );
-    }
-
-    private void applyMenuVisibility() {
-        boolean primaryMachine = PrimaryMachine.isPrimary();
-        for (MenuDefinition menuDefinition : menuDefinitions) {
-            boolean visible = permissionGuard.canAny((String[]) menuDefinition.permissionCodes())
-                    && (menuDefinition.button() != backupButton || primaryMachine);
-            menuDefinition.button().setVisible(visible);
-            menuDefinition.button().setManaged(visible);
-        }
-    }
-
-    private void applyMenuIcons() {
-        setMenuIcon(dashboardButton, "fas-home");
-        setMenuIcon(regionsButton, "fas-map");
-        setMenuIcon(churchesButton, "fas-church");
-        setMenuIcon(categoriesButton, "fas-tags");
-        setMenuIcon(weeklyReceiptsButton, "fas-receipt");
-        setMenuIcon(receiptHistoryButton, "fas-history");
-        setMenuIcon(submissionStatusButton, "fas-tasks");
-        setMenuIcon(reportsButton, "fas-chart-bar");
-        setMenuIcon(usersButton, "fas-users");
-        setMenuIcon(rolesButton, "fas-user-lock");
-        setMenuIcon(backupButton, "fas-database");
-        setMenuIcon(activityLogsButton, "fas-list-alt");
-        setMenuIcon(smsLogsButton, "fas-sms");
-        setMenuIcon(sendMessageButton, "fas-paper-plane");
-        setMenuIcon(settingsButton, "fas-cog");
-    }
-
     private void configureSidebarToggle() {
         sidebarToggleButton.setGraphic(createMenuIcon("fas-angle-double-left"));
         sidebarToggleButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-    }
-
-    private void setMenuIcon(Button button, String iconLiteral) {
-        button.setGraphic(createMenuIcon(iconLiteral));
-        button.setContentDisplay(ContentDisplay.LEFT);
-        button.setGraphicTextGap(10);
     }
 
     private Node createMenuIcon(String iconLiteral) {
@@ -656,55 +511,237 @@ public class DashboardController {
         return iconBox;
     }
 
-    private MenuDefinition findMenu(Button button) {
-        return menuDefinitions.stream()
-                .filter(menuDefinition -> menuDefinition.button() == button)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown menu item."));
-    }
-
-    private void loadMenu(MenuDefinition menuDefinition) {
-        if (currentUser != null && currentUser.isForcePasswordChange()) {
-            showError("Password change required", "You must change your password before accessing modules.");
+    private void openHome() {
+        if (!navigationAccess.showHomeAndSwitcher() || !confirmLeave()) {
             return;
         }
-
-        if (!permissionGuard.canAny((String[]) menuDefinition.permissionCodes())) {
-            showError("Access denied", "You do not have permission to open " + menuDefinition.title() + ".");
-            return;
-        }
-
-        if (menuDefinition.button() == backupButton && !PrimaryMachine.isPrimary()) {
-            showError("Access denied", "Backup & Restore is only available on the server machine.");
-            return;
-        }
-
         try {
-            Parent view = FXMLLoader.load(getClass().getResource(menuDefinition.viewPath()));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(HOME_VIEW));
+            Parent view = loader.load();
+            HomeController homeController = loader.getController();
+            homeController.configure(navigationAccess, module -> openModule(module, true), currentUser);
             contentPane.getChildren().setAll(view);
-            pageTitleLabel.setText(menuDefinition.title());
+            currentContentController = homeController;
+            currentModule = null;
+            currentItem = null;
+            standaloneTitle = null;
+            onHome = true;
+            myProfileButton.getStyleClass().remove("active-menu-button");
+            renderSidebar();
+            renderBreadcrumb();
             setStatus("Ready", "status-ready");
-            highlightMenu(menuDefinition.button());
-            logNavigation(menuDefinition);
         } catch (IOException | RuntimeException exception) {
-            setStatus("Could not load " + menuDefinition.title() + ".", "status-error");
+            setStatus("Could not load Home.", "status-error");
             showError("Unable to load page", "Please try again or contact your administrator.");
         }
     }
 
-    private void highlightMenu(Button selectedButton) {
-        for (MenuDefinition menuDefinition : menuDefinitions) {
-            menuDefinition.button().getStyleClass().remove("active-menu-button");
+    private void openModule(NavModule module, boolean logModule) {
+        List<NavItem> items = navigationAccess.visibleItems(module);
+        if (items.isEmpty()) {
+            return;
         }
-        myProfileButton.getStyleClass().remove("active-menu-button");
-        if (selectedButton != null) {
-            selectedButton.getStyleClass().add("active-menu-button");
+        String rememberedId = lastItemByModule.get(module.id());
+        NavItem target = items.stream()
+                .filter(item -> item.id().equals(rememberedId))
+                .findFirst()
+                .orElse(items.getFirst());
+        if (openItem(target) && logModule) {
+            activityLogService.logNavigation(currentUser.getUserId(), ActivityLogService.NAVIGATE_MODULE,
+                    module.title());
         }
     }
 
-    private void logNavigation(MenuDefinition menuDefinition) {
-        if (menuDefinition.activityAction() != null) {
-            activityLogService.logNavigation(currentUser.getUserId(), menuDefinition.activityAction(), menuDefinition.title());
+    private boolean openItem(NavItem item) {
+        if (currentUser != null && currentUser.isForcePasswordChange()) {
+            showError("Password change required", "You must change your password before accessing modules.");
+            return false;
+        }
+        if (!navigationAccess.canOpen(item)) {
+            if (NavigationRegistry.BACKUP_ITEM_ID.equals(item.id()) && !PrimaryMachine.isPrimary()) {
+                showError("Access denied", "Backup & Restore is only available on the server machine.");
+            } else {
+                showError("Access denied", "You do not have permission to open " + item.title() + ".");
+            }
+            return false;
+        }
+        if (item == currentItem && !onHome && standaloneTitle == null) {
+            return true; // already showing it; reloading would drop the screen's input
+        }
+        if (!confirmLeave()) {
+            return false;
+        }
+        if (!loadContent(item.viewPath(), item.title(), item)) {
+            return false;
+        }
+        currentItem = item;
+        currentModule = navigationAccess.moduleOf(item).orElse(null);
+        standaloneTitle = null;
+        onHome = false;
+        if (currentModule != null) {
+            lastItemByModule.put(currentModule.id(), item.id());
+        }
+        myProfileButton.getStyleClass().remove("active-menu-button");
+        renderSidebar();
+        renderBreadcrumb();
+        if (item.activityAction() != null) {
+            activityLogService.logNavigation(currentUser.getUserId(), item.activityAction(), item.title());
+        }
+        return true;
+    }
+
+    private boolean loadContent(String viewPath, String title) {
+        return loadContent(viewPath, title, null);
+    }
+
+    private boolean loadContent(String viewPath, String title, NavItem item) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(viewPath));
+            Parent view = loader.load();
+            Object controller = loader.getController();
+            if (item != null && item.reportGroup() != null && controller instanceof ReportsController reports) {
+                reports.setReportGroup(item.reportGroup());
+            }
+            contentPane.getChildren().setAll(view);
+            currentContentController = controller;
+            setStatus("Ready", "status-ready");
+            return true;
+        } catch (IOException | RuntimeException exception) {
+            setStatus("Could not load " + title + ".", "status-error");
+            showError("Unable to load page", "Please try again or contact your administrator.");
+            return false;
+        }
+    }
+
+    private boolean confirmLeave() {
+        if (currentContentController instanceof UnsavedChangesAware screen && screen.hasUnsavedChanges()) {
+            Alert alert = DialogStyler.apply(new Alert(Alert.AlertType.CONFIRMATION));
+            alert.setTitle("Unsaved changes");
+            alert.setHeaderText("Unsaved changes");
+            alert.setContentText("You have unsaved changes. Leave this screen?");
+            return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+        }
+        return true;
+    }
+
+    private void renderSidebar() {
+        sidebarHeaderBox.getChildren().clear();
+        sidebarItemsBox.getChildren().clear();
+        boolean showHome = navigationAccess.showHomeAndSwitcher();
+        if (showHome) {
+            Button homeButton = sidebarButton("Home", "fas-th-large", "Home (Ctrl+H)");
+            homeButton.setOnAction(event -> openHome());
+            if (onHome) {
+                homeButton.getStyleClass().add("active-menu-button");
+            }
+            sidebarHeaderBox.getChildren().add(homeButton);
+        }
+        if (currentModule == null) {
+            return;
+        }
+
+        Button moduleButton = sidebarButton(currentModule.title(), currentModule.icon(),
+                showHome ? "Switch module" : currentModule.title());
+        moduleButton.getStyleClass().add("nav-module-button");
+        if (showHome) {
+            ContextMenu switcher = moduleSwitcher();
+            moduleButton.setOnAction(event -> switcher.show(moduleButton, Side.RIGHT, 0, 0));
+        }
+        sidebarHeaderBox.getChildren().add(moduleButton);
+
+        boolean sections = navigationAccess.useSections(currentModule) && !sidebarCollapsed;
+        String lastSection = null;
+        for (NavItem item : navigationAccess.visibleItems(currentModule)) {
+            if (sections && item.section() != null && !item.section().equals(lastSection)) {
+                Label sectionLabel = new Label(item.section());
+                sectionLabel.getStyleClass().add("nav-section-label");
+                sidebarItemsBox.getChildren().add(sectionLabel);
+                lastSection = item.section();
+            }
+            Button button = sidebarButton(item.title(), item.icon(), item.description());
+            button.setOnAction(event -> openItem(item));
+            if (item == currentItem) {
+                button.getStyleClass().add("active-menu-button");
+            }
+            sidebarItemsBox.getChildren().add(button);
+        }
+    }
+
+    private ContextMenu moduleSwitcher() {
+        ContextMenu menu = new ContextMenu();
+        for (NavModule module : navigationAccess.visibleModules()) {
+            MenuItem menuItem = new MenuItem(module.title() + "   (Ctrl+" + module.shortcutNumber() + ")",
+                    new FontIcon(module.icon()));
+            menuItem.setOnAction(event -> openModule(module, true));
+            menu.getItems().add(menuItem);
+        }
+        return menu;
+    }
+
+    private Button sidebarButton(String title, String icon, String tooltip) {
+        Button button = new Button(sidebarCollapsed ? "" : title);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.getStyleClass().add("menu-button");
+        button.setGraphic(createMenuIcon(icon));
+        button.setContentDisplay(sidebarCollapsed ? ContentDisplay.GRAPHIC_ONLY : ContentDisplay.LEFT);
+        button.setGraphicTextGap(sidebarCollapsed ? 0 : 10);
+        button.setTooltip(new Tooltip(sidebarCollapsed ? title : tooltip));
+        button.setAccessibleText(title);
+        return button;
+    }
+
+    private void renderBreadcrumb() {
+        List<Node> parts = new ArrayList<>();
+        boolean showHome = navigationAccess.showHomeAndSwitcher();
+        if (onHome) {
+            parts.add(breadcrumbCurrent("Home"));
+        } else {
+            if (showHome) {
+                parts.add(breadcrumbLink("Home", this::openHome));
+            }
+            if (standaloneTitle != null) {
+                parts.add(breadcrumbCurrent(standaloneTitle));
+            } else if (currentModule != null && currentItem != null) {
+                NavModule module = currentModule;
+                parts.add(breadcrumbLink(module.title(), () -> openModule(module, false)));
+                parts.add(breadcrumbCurrent(currentItem.title()));
+            }
+        }
+        breadcrumbBar.getChildren().clear();
+        for (int index = 0; index < parts.size(); index++) {
+            if (index > 0) {
+                Label separator = new Label("›");
+                separator.getStyleClass().add("breadcrumb-separator");
+                breadcrumbBar.getChildren().add(separator);
+            }
+            breadcrumbBar.getChildren().add(parts.get(index));
+        }
+    }
+
+    private Button breadcrumbLink(String text, Runnable action) {
+        Button link = new Button(text);
+        link.getStyleClass().add("breadcrumb-link");
+        link.setOnAction(event -> action.run());
+        return link;
+    }
+
+    private Label breadcrumbCurrent(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("page-title");
+        return label;
+    }
+
+    private void installShortcuts() {
+        Scene scene = contentPane.getScene();
+        if (scene == null) {
+            return;
+        }
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.H, KeyCombination.SHORTCUT_DOWN), this::openHome);
+        for (int number = 1; number <= SHORTCUT_DIGITS.length; number++) {
+            int shortcut = number;
+            scene.getAccelerators().put(new KeyCodeCombination(SHORTCUT_DIGITS[number - 1],
+                            KeyCombination.SHORTCUT_DOWN),
+                    () -> navigationAccess.moduleForShortcut(shortcut).ifPresent(module -> openModule(module, true)));
         }
     }
 
@@ -744,12 +781,12 @@ public class DashboardController {
         }
 
         ReceiptEntryController.prepareCorrection(cancelledReceiptId);
-        activeController.loadMenu(activeController.findMenu(activeController.weeklyReceiptsButton));
+        NavigationRegistry.findItem(NavigationRegistry.RECEIPT_ITEM_ID).ifPresent(activeController::openItem);
     }
 
     public static void openSendMessage() {
         if (activeController != null) {
-            activeController.loadMenu(activeController.findMenu(activeController.sendMessageButton));
+            NavigationRegistry.findItem(NavigationRegistry.SEND_MESSAGE_ITEM_ID).ifPresent(activeController::openItem);
         }
     }
 
@@ -820,10 +857,6 @@ public class DashboardController {
         String first = parts[0].substring(0, 1);
         String second = parts.length > 1 ? parts[1].substring(0, 1) : "";
         return (first + second).toUpperCase();
-    }
-
-    private record MenuDefinition(String title, String viewPath, Button button, String activityAction,
-                                  String... permissionCodes) {
     }
 
     private enum ModemStatus {
