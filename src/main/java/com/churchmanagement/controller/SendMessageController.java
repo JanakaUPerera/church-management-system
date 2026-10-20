@@ -2,6 +2,7 @@ package com.churchmanagement.controller;
 
 import com.churchmanagement.dto.OfficialSmsRecipient;
 import com.churchmanagement.dto.OfficialSmsResult;
+import com.churchmanagement.navigation.UnsavedChangesAware;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.OfficialSmsService;
@@ -32,7 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-public class SendMessageController {
+public class SendMessageController implements UnsavedChangesAware {
     private static final String ALL_REGIONS = "All regions";
     private static final String ERROR_STYLE = "error-label";
     private static final String WARNING_STYLE = "warning-label";
@@ -75,6 +76,11 @@ public class SendMessageController {
         showFooterPreview();
         loadRecipients();
         refreshMessageState();
+    }
+
+    @Override
+    public boolean hasUnsavedChanges() {
+        return messageTextArea.getText() != null && !messageTextArea.getText().isBlank();
     }
 
     @FXML

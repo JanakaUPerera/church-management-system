@@ -19,6 +19,7 @@ import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DatePickerUtil;
 import com.churchmanagement.util.DialogStyler;
+import com.churchmanagement.navigation.UnsavedChangesAware;
 import com.churchmanagement.util.ProcessingDialog;
 import com.churchmanagement.util.SystemDateTimeFormatter;
 import com.churchmanagement.util.WeekUtil;
@@ -56,7 +57,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-public class ReceiptEntryController {
+public class ReceiptEntryController implements UnsavedChangesAware {
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("^\\d+(\\.\\d{1,2})?$");
     private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#,##0.00");
 
@@ -158,6 +159,20 @@ public class ReceiptEntryController {
     @FXML
     private void handleClear() {
         clearForm();
+    }
+
+    /** True while a receipt is being entered. The form is cleared after every save and by Clear. */
+    @Override
+    public boolean hasUnsavedChanges() {
+        return churchComboBox.getValue() != null
+                || hasText(submittedByNameField)
+                || hasText(offertoryAmountField)
+                || hasText(tithesAmountField)
+                || hasText(otherDonationsAmountField);
+    }
+
+    private static boolean hasText(TextField field) {
+        return field.getText() != null && !field.getText().isBlank();
     }
 
     private void configureControls() {
