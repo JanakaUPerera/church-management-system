@@ -282,7 +282,9 @@ class SmsQueueProcessorTest {
         }
 
         private FakeSmsServiceFactory(boolean succeed, String failureMessage) {
-            super(null);
+            // Every dependency is unused (createRoutingSmsService is overridden); passing the cache
+            // explicitly keeps SystemConfigurationCache.getInstance() from opening a database pool.
+            super(null, null, null, null);
             this.succeed = succeed;
             this.failureMessage = failureMessage;
         }
