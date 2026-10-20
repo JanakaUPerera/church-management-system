@@ -6,6 +6,7 @@ import com.churchmanagement.dto.SmsResendRequest;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.enums.SmsType;
 import com.churchmanagement.exception.DatabaseException;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.PermissionGuard;
@@ -67,11 +68,13 @@ public class SmsLogController {
     @FXML private ComboBox<Church> churchComboBox;
     @FXML private ComboBox<String> statusComboBox;
     @FXML private ComboBox<String> deliveryStatusComboBox;
+    @FXML private ComboBox<String> smsTypeComboBox;
     @FXML private TextField searchField;
     @FXML private Button searchButton;
     @FXML private Button refreshButton;
     @FXML private TableView<SmsLogDto> smsLogTable;
     @FXML private TableColumn<SmsLogDto, String> dateTimeColumn;
+    @FXML private TableColumn<SmsLogDto, String> smsTypeColumn;
     @FXML private TableColumn<SmsLogDto, String> receiptNoColumn;
     @FXML private TableColumn<SmsLogDto, String> churchCodeColumn;
     @FXML private TableColumn<SmsLogDto, String> mobileNumberColumn;
@@ -112,6 +115,7 @@ public class SmsLogController {
         churchComboBox.getSelectionModel().clearSelection();
         statusComboBox.setValue(STATUS_ALL);
         deliveryStatusComboBox.setValue(STATUS_ALL);
+        smsTypeComboBox.setValue(STATUS_ALL);
         searchField.clear();
         loadLatestLogs();
     }
@@ -132,11 +136,16 @@ public class SmsLogController {
         statusComboBox.setValue(STATUS_ALL);
         deliveryStatusComboBox.setItems(FXCollections.observableArrayList(enumOptions(SmsDeliveryStatus.values())));
         deliveryStatusComboBox.setValue(STATUS_ALL);
+        smsTypeComboBox.setItems(FXCollections.observableArrayList(STATUS_ALL, SmsType.RECEIPT.label(),
+                SmsType.OFFICIAL_MESSAGE.label()));
+        smsTypeComboBox.setValue(STATUS_ALL);
     }
 
     private void configureTable() {
         TablePaginationUtil.configure(smsLogTable, smsLogs, smsLogPagination, smsLogItemsPerPageComboBox,
                 smsLogPaginationSummaryLabel, "SMS logs");
+        smsTypeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+                cellData.getValue().getSmsType().label()));
         dateTimeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
                 formatDateTime(cellData.getValue().getCreatedAt())));
         receiptNoColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
@@ -214,6 +223,11 @@ public class SmsLogController {
         if (deliveryStatusComboBox.getValue() != null && !STATUS_ALL.equals(deliveryStatusComboBox.getValue())) {
             criteria.setDeliveryStatus(SmsDeliveryStatus.valueOf(deliveryStatusComboBox.getValue()));
         }
+        if (SmsType.RECEIPT.label().equals(smsTypeComboBox.getValue())) {
+            criteria.setSmsType(SmsType.RECEIPT);
+        } else if (SmsType.OFFICIAL_MESSAGE.label().equals(smsTypeComboBox.getValue())) {
+            criteria.setSmsType(SmsType.OFFICIAL_MESSAGE);
+        }
         criteria.setSearchText(searchField.getText());
         criteria.setLimit(limit);
         return criteria;
@@ -275,6 +289,8 @@ public class SmsLogController {
                 : nullToDash(log.getResendOfSmsLogUuid()));
         addDetailRow(grid, 13, "Resent By", nullToDash(log.getResentByUserFullName()));
         addDetailRow(grid, 14, "Resend Reason", nullToDash(log.getResendReason()));
+        addDetailRow(grid, 15, "SMS Type", log.getSmsType().label());
+        addDetailRow(grid, 16, "Batch", nullToDash(log.getBatchUuid()));
         return grid;
     }
 

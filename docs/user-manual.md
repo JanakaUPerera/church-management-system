@@ -971,6 +971,7 @@ Monitor SMS notification delivery and resend failed messages.
 | **Church** | Specific church or ALL |
 | **Send Status** | Filter by send status |
 | **Delivery Status** | Filter by delivery status |
+| **Type** | *Receipt* (receipt notifications) or *Official* (messages from Send Message) |
 | **Search Box** | Free text search |
 
 ### 14.4 Resending Failed SMS
@@ -995,6 +996,20 @@ Monitor SMS notification delivery and resend failed messages.
 |--------|-------------------|
 | View SMS logs | `sms.menu.view` |
 | Resend SMS | `sms.resend` |
+| Open Send Message | `sms.official.menu.view` |
+| Send official messages | `sms.official.send` |
+
+### 14.7 Sending Official Messages
+
+Use **Send Message** (sidebar, under SMS Logs) to send an official notice to branches.
+
+1. **Choose branches.** Pick a region (or *All regions*) and optionally search by code or name. Tick branches one by one, or click **Select all shown** to tick every branch the list shows. Ticks are kept when you change the region, so you can combine regions. **Clear** removes all ticks.
+2. Branches marked *No mobile number* or *Invalid number* cannot be ticked. Fix the number on the branch first (Churches → Edit → SMS Mobile Number).
+3. **Type the message** in English. The counter shows the length and how many SMS parts it uses (1 part up to 160 characters; longer messages use up to 3 parts / 459 characters). The footer from Settings is added automatically and is counted. Sinhala, Tamil and emoji cannot be sent — the counter names the first character that is not allowed.
+4. The line below shows the **total SMS** that will be sent (branches × parts). Each part is charged as one SMS.
+5. Click **Send** and confirm. The messages are queued and sent by the server machine one after another. Track them in **SMS Logs** — set **Type** to *Official*.
+
+**Note:** if a long message fails part-way and is resent, the branch may receive the first part(s) twice.
 
 ---
 
@@ -1046,6 +1061,7 @@ Configure SMS notification:
 | **Max Retry Attempts** | Number of retry attempts (if retry enabled) |
 | **COM Port** | Serial port for the SMS modem |
 | **Baud Rate** | Communication speed (typically 9600 or 115200) |
+| **Official message footer** | Text added on its own line to every official message (e.g. `- Head Office`). Up to 100 English characters; leave blank for none. It counts toward the message length. |
 
 **Testing the Modem:**
 1. Select the COM port.
@@ -1057,6 +1073,8 @@ Configure SMS notification:
 2. Enter a **test message**.
 3. Click **Send Test SMS**.
 4. Check the result message.
+
+**Open Send Message** opens the Send Message screen (see 14.7).
 
 Click **Save** after making changes.
 

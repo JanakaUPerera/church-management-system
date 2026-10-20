@@ -3,6 +3,7 @@ package com.churchmanagement.service;
 import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsResendRequest;
 import com.churchmanagement.entity.Church;
+import com.churchmanagement.enums.SmsType;
 import com.churchmanagement.repository.ChurchRepository;
 import com.churchmanagement.repository.SmsLogRepository;
 import com.churchmanagement.security.AuthContext;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SmsResendServiceTest {
@@ -45,6 +47,21 @@ class SmsResendServiceTest {
     @AfterEach
     void tearDown() {
         AuthContext.clear();
+    }
+
+    @Test
+    void resendOfOfficialMessageKeepsTypeAndBatchWithoutReceipt() {
+        smsLogRepository.original.setReceiptId(null);
+        smsLogRepository.original.setSmsType(SmsType.OFFICIAL_MESSAGE);
+        smsLogRepository.original.setBatchUuid("batch-1");
+
+        smsResendService.resendSms(validRequest());
+
+        assertEquals(1, smsLogRepository.enqueueCount);
+        assertNull(smsLogRepository.receiptId);
+        assertEquals(10L, smsLogRepository.churchId);
+        assertEquals(SmsType.OFFICIAL_MESSAGE, smsLogRepository.smsType);
+        assertEquals("batch-1", smsLogRepository.batchUuid);
     }
 
     @Test
@@ -201,6 +218,8 @@ class SmsResendServiceTest {
         private String resendReason;
         private int priorAttemptCount;
         private boolean hasResend;
+        private SmsType smsType;
+        private String batchUuid;
 
         private FakeSmsLogRepository() {
             super((DataSource) null);
@@ -219,8 +238,11 @@ class SmsResendServiceTest {
         @Override
         public void enqueueResend(Long receiptId, Long churchId, String mobileNumber, String message,
                                   long originalSmsLogId, long resentByUserId, String resendReason,
-                                  int priorAttemptCount, LocalDateTime queuedAt) {
+                                  int priorAttemptCount, LocalDateTime queuedAt, SmsType smsType,
+                                  String batchUuid) {
             enqueueCount++;
+            this.smsType = smsType;
+            this.batchUuid = batchUuid;
             this.receiptId = receiptId;
             this.churchId = churchId;
             this.mobileNumber = mobileNumber;

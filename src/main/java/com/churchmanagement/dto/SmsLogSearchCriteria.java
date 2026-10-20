@@ -2,6 +2,7 @@ package com.churchmanagement.dto;
 
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.enums.SmsType;
 import com.churchmanagement.repository.SmsLogRepository;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ public class SmsLogSearchCriteria {
     private String mobileNumber;
     private String receiptNo;
     private String searchText;
+    private SmsType smsType;
     private Integer limit;
 
     public LocalDate getDateFrom() {
@@ -107,6 +109,14 @@ public class SmsLogSearchCriteria {
 
     public void setSearchText(String searchText) {
         this.searchText = searchText;
+    }
+
+    public SmsType getSmsType() {
+        return smsType;
+    }
+
+    public void setSmsType(SmsType smsType) {
+        this.smsType = smsType;
     }
 
     public Integer getLimit() {

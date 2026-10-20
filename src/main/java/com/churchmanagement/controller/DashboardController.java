@@ -186,6 +186,9 @@ public class DashboardController {
     private Button smsLogsButton;
 
     @FXML
+    private Button sendMessageButton;
+
+    @FXML
     private Button settingsButton;
 
     @FXML
@@ -535,6 +538,11 @@ public class DashboardController {
     }
 
     @FXML
+    private void showSendMessage() {
+        loadMenu(findMenu(sendMessageButton));
+    }
+
+    @FXML
     private void showSettings() {
         loadMenu(findMenu(settingsButton));
     }
@@ -590,6 +598,8 @@ public class DashboardController {
                         activityLogsButton, ActivityLogService.NAVIGATE_ACTIVITY_LOGS, "activity.menu.view"),
                 new MenuDefinition("SMS Logs", "/com/churchmanagement/view/sms-log-view.fxml",
                         smsLogsButton, ActivityLogService.NAVIGATE_SMS_LOGS, "sms.menu.view"),
+                new MenuDefinition("Send Message", "/com/churchmanagement/view/send-message-view.fxml",
+                        sendMessageButton, ActivityLogService.NAVIGATE_SEND_MESSAGE, "sms.official.menu.view"),
                 new MenuDefinition("Settings", "/com/churchmanagement/view/settings-view.fxml",
                         settingsButton, null, "settings.menu.view")
         );
@@ -619,6 +629,7 @@ public class DashboardController {
         setMenuIcon(backupButton, "fas-database");
         setMenuIcon(activityLogsButton, "fas-list-alt");
         setMenuIcon(smsLogsButton, "fas-sms");
+        setMenuIcon(sendMessageButton, "fas-paper-plane");
         setMenuIcon(settingsButton, "fas-cog");
     }
 
@@ -734,6 +745,12 @@ public class DashboardController {
 
         ReceiptEntryController.prepareCorrection(cancelledReceiptId);
         activeController.loadMenu(activeController.findMenu(activeController.weeklyReceiptsButton));
+    }
+
+    public static void openSendMessage() {
+        if (activeController != null) {
+            activeController.loadMenu(activeController.findMenu(activeController.sendMessageButton));
+        }
     }
 
     public static void refreshActiveHeader() {

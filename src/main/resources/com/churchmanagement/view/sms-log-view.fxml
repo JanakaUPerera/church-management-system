@@ -44,6 +44,8 @@
         <ComboBox fx:id="statusComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
         <Label text="Delivery Status" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
         <ComboBox fx:id="deliveryStatusComboBox" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+        <Label text="Type" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
+        <ComboBox fx:id="smsTypeComboBox" maxWidth="Infinity" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
 
     </GridPane>
 
@@ -56,6 +58,7 @@
     <TableView fx:id="smsLogTable" VBox.vgrow="ALWAYS">
         <columns>
             <TableColumn fx:id="dateTimeColumn" prefWidth="145" text="Date/Time"/>
+            <TableColumn fx:id="smsTypeColumn" prefWidth="90" text="Type"/>
             <TableColumn fx:id="receiptNoColumn" prefWidth="125" text="Receipt No"/>
             <TableColumn fx:id="churchCodeColumn" prefWidth="105" text="Church Code"/>
             <TableColumn fx:id="mobileNumberColumn" prefWidth="135" text="Mobile Number"/>

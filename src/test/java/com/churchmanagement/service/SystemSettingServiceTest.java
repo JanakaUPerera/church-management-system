@@ -31,7 +31,7 @@ class SystemSettingServiceTest {
 
         List<SystemSettingDto> settings = service.loadSettings();
 
-        assertEquals(19, settings.size());
+        assertEquals(20, settings.size());
         assertEquals("organization.name", settings.getFirst().getSettingKey());
     }
 
@@ -56,6 +56,30 @@ class SystemSettingServiceTest {
     void rejectsInvalidRetryAttempts() {
         assertInvalid("sms.retry.max.attempts", "11",
                 "SMS retry max attempts must be between 0 and 10.");
+    }
+
+    @Test
+    void rejectsOfficialFooterOver100Characters() {
+        assertInvalid("sms.official.footer", "a".repeat(101),
+                "Official message footer cannot exceed 100 characters.");
+    }
+
+    @Test
+    void rejectsOfficialFooterWithNonGsmCharacters() {
+        assertInvalid("sms.official.footer", "අ",
+                "Official message footer can only contain English (GSM) characters.");
+    }
+
+    @Test
+    void acceptsBlankOfficialFooter() {
+        AuthContext.setCurrentUser(settingsAdmin());
+        TestSystemConfigurationCache cache = new TestSystemConfigurationCache();
+        SystemSettingService service = serviceWithDefaults(cache);
+
+        service.updateSettings(List.of(new UpdateSystemSettingRequest("sms.official.footer", "")));
+
+        assertEquals("", cache.repository.getValue("sms.official.footer"));
+        AuthContext.clear();
     }
 
     @Test
@@ -205,6 +229,7 @@ class SystemSettingServiceTest {
             add(setting("sms.gateway.type", "SIM_DONGLE", "ENUM", "SMS"));
             add(setting("sms.retry.enabled", "true", "BOOLEAN", "SMS"));
             add(setting("sms.retry.max.attempts", "3", "INTEGER", "SMS"));
+            add(setting("sms.official.footer", "", "STRING", "SMS"));
             add(setting("backup.auto.enabled", "false", "BOOLEAN", "BACKUP"));
             add(setting("backup.retention.days", "30", "INTEGER", "BACKUP"));
             add(setting("system.date.format", "yyyy-MM-dd", "STRING", "SYSTEM"));

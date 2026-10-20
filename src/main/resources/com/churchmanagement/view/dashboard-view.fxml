@@ -67,6 +67,7 @@
             <Button fx:id="backupButton" maxWidth="Infinity" onAction="#showBackup" styleClass="menu-button" text="Backup &amp; Restore"/>
             <Button fx:id="activityLogsButton" maxWidth="Infinity" onAction="#showActivityLogs" styleClass="menu-button" text="Activity Logs"/>
             <Button fx:id="smsLogsButton" maxWidth="Infinity" onAction="#showSmsLogs" styleClass="menu-button" text="SMS Logs"/>
+            <Button fx:id="sendMessageButton" maxWidth="Infinity" onAction="#showSendMessage" styleClass="menu-button" text="Send Message"/>
             <Button fx:id="settingsButton" maxWidth="Infinity" onAction="#showSettings" styleClass="menu-button" text="Settings"/>
         </VBox>
     </left>

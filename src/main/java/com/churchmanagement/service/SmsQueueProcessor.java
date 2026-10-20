@@ -5,6 +5,7 @@ import com.churchmanagement.dto.SmsLogDto;
 import com.churchmanagement.dto.SmsResult;
 import com.churchmanagement.enums.SmsDeliveryStatus;
 import com.churchmanagement.enums.SmsSendStatus;
+import com.churchmanagement.enums.SmsType;
 import com.churchmanagement.repository.SmsLogRepository;
 
 import java.time.Clock;
@@ -178,6 +179,16 @@ public class SmsQueueProcessor {
             } else {
                 activityLogService.logSmsResendFailed(userId, row.getResendOfSmsLogId(), row.getId(),
                         row.getReceiptId(), row.getChurchId(), row.getMobileNumber());
+            }
+            return;
+        }
+        if (row.getSmsType() == SmsType.OFFICIAL_MESSAGE) {
+            if (success) {
+                activityLogService.logOfficialSmsSent(userId, row.getBatchUuid(), row.getChurchId(),
+                        row.getMobileNumber(), modemMessageReference);
+            } else {
+                activityLogService.logOfficialSmsFailed(userId, row.getBatchUuid(), row.getChurchId(),
+                        row.getMobileNumber(), errorMessage);
             }
             return;
         }
