@@ -765,6 +765,104 @@
 }
 
 /* ═══════════════════════════════════════════════
+   TREE TABLE (Chart of Accounts) — mirrors .table-view
+   ═══════════════════════════════════════════════ */
+
+.tree-table-view {
+    -fx-background-color: white;
+    -fx-border-color: #fde68a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-table-cell-border-color: #fef3c7;
+}
+
+.tree-table-view:focused {
+    -fx-border-color: #f59e0b;
+}
+
+.tree-table-view .column-header-background,
+.tree-table-view .filler,
+.tree-table-view .corner {
+    -fx-background-color: #78350f;
+}
+
+.tree-table-view .column-header-background {
+    -fx-background-radius: 5 5 0 0;
+}
+
+.tree-table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent #92400e transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-size: 42px;
+}
+
+.tree-table-view .column-header:last-visible {
+    -fx-border-color: transparent;
+}
+
+.tree-table-view .column-header .label {
+    -fx-text-fill: #fef3c7;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 0 8;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.tree-table-view .column-header .arrow {
+    -fx-background-color: #fde68a;
+}
+
+.tree-table-view .tree-table-row-cell {
+    -fx-background-color: white;
+    -fx-cell-size: 40px;
+}
+
+.tree-table-view .tree-table-row-cell:odd {
+    -fx-background-color: #fffbeb;
+}
+
+.tree-table-view .tree-table-row-cell:hover {
+    -fx-background-color: #fef3c7;
+}
+
+.tree-table-view .tree-table-row-cell:selected {
+    -fx-background-color: #fde68a;
+}
+
+.tree-table-view .tree-table-row-cell:selected:hover {
+    -fx-background-color: #fcd34d;
+}
+
+.tree-table-view .tree-table-cell {
+    -fx-text-fill: #451a03;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 4 8;
+    -fx-border-color: transparent;
+}
+
+.tree-table-view .tree-table-row-cell:selected .tree-table-cell {
+    -fx-text-fill: #451a03;
+}
+
+/* Inactive accounts (row style class muted-label) */
+.tree-table-view .tree-table-row-cell.muted-label .tree-table-cell {
+    -fx-text-fill: #a8a29e;
+    -fx-font-style: italic;
+}
+
+/* Expand / collapse arrow */
+.tree-table-view .tree-disclosure-node .arrow {
+    -fx-background-color: #92400e;
+}
+
+.tree-table-view .placeholder .label {
+    -fx-text-fill: #92400e;
+    -fx-font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════
    SCROLL BAR
    ═══════════════════════════════════════════════ */
 
@@ -2979,6 +3077,54 @@
     -fx-background-color: #374151;
 }
 
+/* ── Tree table (Chart of Accounts) ── */
+.theme-dark .tree-table-view {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #4b5563;
+    -fx-table-cell-border-color: #374151;
+}
+
+.theme-dark .tree-table-view .column-header-background,
+.theme-dark .tree-table-view .filler,
+.theme-dark .tree-table-view .corner {
+    -fx-background-color: #0f172a;
+}
+
+.theme-dark .tree-table-view .column-header {
+    -fx-border-color: transparent #374151 transparent transparent;
+}
+
+.theme-dark .tree-table-view .column-header .label {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell {
+    -fx-background-color: #1f2937;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell:odd {
+    -fx-background-color: #172033;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell:hover,
+.theme-dark .tree-table-view .tree-table-row-cell:selected,
+.theme-dark .tree-table-view .tree-table-row-cell:selected:hover {
+    -fx-background-color: #374151;
+}
+
+.theme-dark .tree-table-view .tree-table-cell,
+.theme-dark .tree-table-view .tree-table-row-cell:selected .tree-table-cell {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell.muted-label .tree-table-cell {
+    -fx-text-fill: #6b7280;
+}
+
+.theme-dark .tree-table-view .tree-disclosure-node .arrow {
+    -fx-background-color: #fbbf24;
+}
+
 .theme-dark .module-page,
 .theme-dark .backup-restore-card,
 .theme-dark .placeholder-page,
@@ -3976,6 +4122,64 @@
 .theme-orchid .table-view .table-row-cell:selected,
 .theme-orchid .combo-box-popup .list-view .list-cell:hover {
     -fx-background-color: #fbeefb;
+}
+
+/* ── Tree table (Chart of Accounts) ── */
+.theme-orchid .tree-table-view {
+    -fx-background-color: white;
+    -fx-border-color: #f3cdf4;
+    -fx-table-cell-border-color: #fbeefb;
+}
+
+.theme-orchid .tree-table-view .column-header-background,
+.theme-orchid .tree-table-view .filler,
+.theme-orchid .tree-table-view .corner {
+    -fx-background-color: #3d0e3f;
+}
+
+.theme-orchid .tree-table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent #6e1871 transparent transparent;
+}
+
+.theme-orchid .tree-table-view .column-header .label {
+    -fx-text-fill: #fbeefb;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.theme-orchid .tree-table-view .column-header .arrow {
+    -fx-background-color: #e8a3eb;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell {
+    -fx-background-color: white;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell:odd {
+    -fx-background-color: #fdf5fe;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell:hover,
+.theme-orchid .tree-table-view .tree-table-row-cell:selected {
+    -fx-background-color: #fbeefb;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell:selected:hover {
+    -fx-background-color: #f3cdf4;
+}
+
+.theme-orchid .tree-table-view .tree-table-cell,
+.theme-orchid .tree-table-view .tree-table-row-cell:selected .tree-table-cell {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell.muted-label .tree-table-cell {
+    -fx-text-fill: #b58bb7;
+}
+
+.theme-orchid .tree-table-view .tree-disclosure-node .arrow {
+    -fx-background-color: #8c23a0;
 }
 
 /* ── Table action buttons ── */
