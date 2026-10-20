@@ -116,6 +116,7 @@
                     <Button fx:id="detectComPortsButton" onAction="#detectComPorts" text="Detect COM Ports"/>
                     <Button fx:id="testModemButton" onAction="#testModem" text="Test Modem"/>
                     <Button fx:id="saveSmsSettingsButton" onAction="#saveSmsSettings" styleClass="primary-button" text="Save SMS"/>
+                    <Button fx:id="openSendMessageButton" onAction="#openSendMessage" text="Open Send Message"/>
                 </HBox>
                 <TextArea fx:id="modemResponseTextArea" editable="false" prefRowCount="6" promptText="AT command response"
                           styleClass="settings-output-area"

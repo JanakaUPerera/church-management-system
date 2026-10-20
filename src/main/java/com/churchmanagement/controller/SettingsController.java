@@ -119,6 +119,7 @@ public class SettingsController {
     @FXML private ComboBox<Integer> baudRateComboBox;
     @FXML private TextArea modemResponseTextArea;
     @FXML private Button saveSmsSettingsButton;
+    @FXML private Button openSendMessageButton;
     @FXML private Button detectComPortsButton;
     @FXML private Button testModemButton;
     @FXML private TextField testSmsMobileNumberField;
@@ -140,6 +141,9 @@ public class SettingsController {
         currentUser = AuthContext.getCurrentUser()
                 .orElseThrow(() -> new IllegalStateException("Please sign in to manage settings."));
         new PermissionGuard(currentUser).require("settings.menu.view");
+        boolean canOpenSendMessage = new PermissionGuard(currentUser).can("sms.official.menu.view");
+        openSendMessageButton.setVisible(canOpenSendMessage);
+        openSendMessageButton.setManaged(canOpenSendMessage);
 
         receiptLanguageComboBox.getItems().setAll("ENGLISH", "SINHALA", "TAMIL");
         weekIdentifierDayComboBox.getItems().setAll(
@@ -326,6 +330,11 @@ public class SettingsController {
         if (selected != null) {
             receiptPdfExportFolderField.setText(selected.getAbsolutePath());
         }
+    }
+
+    @FXML
+    private void openSendMessage() {
+        DashboardController.openSendMessage();
     }
 
     @FXML
