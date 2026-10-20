@@ -105,6 +105,12 @@
 
                     <Label text="Baud rate" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
                     <ComboBox fx:id="baudRateComboBox" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                    <Label text="Official message footer" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                    <TextField fx:id="officialSmsFooterField" prefWidth="360" promptText="e.g. - Head Office"
+                               GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+                    <Label styleClass="muted-label" text="Added to every official message and counted in its length."
+                           wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
                 </GridPane>
                 <HBox spacing="10" styleClass="settings-action-bar">
                     <Button fx:id="detectComPortsButton" onAction="#detectComPorts" text="Detect COM Ports"/>

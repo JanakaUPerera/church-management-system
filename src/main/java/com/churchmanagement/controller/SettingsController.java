@@ -16,6 +16,7 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.AtCommandService;
+import com.churchmanagement.service.OfficialSmsService;
 import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.service.SmsServiceFactory;
 import com.churchmanagement.service.SystemSettingService;
@@ -112,6 +113,7 @@ public class SettingsController {
     @FXML private ComboBox<SmsSettings.GatewayType> gatewayTypeComboBox;
     @FXML private CheckBox smsRetryEnabledCheckBox;
     @FXML private TextField smsRetryMaxAttemptsField;
+    @FXML private TextField officialSmsFooterField;
     @FXML private Label smsRetryMaxAttemptsErrorLabel;
     @FXML private ComboBox<ComPortDto> comPortComboBox;
     @FXML private ComboBox<Integer> baudRateComboBox;
@@ -195,7 +197,8 @@ public class SettingsController {
                             request("sms.enabled", String.valueOf(smsEnabledCheckBox.isSelected())),
                             request("sms.gateway.type", gatewayTypeComboBox.getValue().name()),
                             request("sms.retry.enabled", String.valueOf(smsRetryEnabledCheckBox.isSelected())),
-                            request("sms.retry.max.attempts", smsRetryMaxAttemptsField.getText())
+                            request("sms.retry.max.attempts", smsRetryMaxAttemptsField.getText()),
+                            request(OfficialSmsService.FOOTER_SETTING_KEY, officialSmsFooterField.getText())
                     ));
                     SmsSettings settings = smsSettingsRepository.saveSettings(
                             smsEnabledCheckBox.isSelected(),
@@ -464,6 +467,7 @@ public class SettingsController {
         gatewayTypeComboBox.setValue(parseGatewayType(values.get("sms.gateway.type")));
         smsRetryEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.retry.enabled")));
         smsRetryMaxAttemptsField.setText(values.get("sms.retry.max.attempts"));
+        officialSmsFooterField.setText(defaultValue(values.get(OfficialSmsService.FOOTER_SETTING_KEY), ""));
         dateFormatField.setText(values.get("system.date.format"));
         timeFormatField.setText(values.get("system.time.format"));
         loadReportExportFolderField();

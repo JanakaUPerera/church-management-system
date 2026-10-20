@@ -7,6 +7,7 @@ import com.churchmanagement.repository.SystemSettingRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import com.churchmanagement.util.SmsLengthCalculator;
 import com.churchmanagement.util.WeekUtil;
 
 import java.util.List;
@@ -98,6 +99,7 @@ public class SystemSettingService {
                     "Receipt sequence padding must be between 4 and 10.");
             case "sms.retry.max.attempts" -> requireIntegerBetween(normalized, 0, 10,
                     "SMS retry max attempts must be between 0 and 10.");
+            case "sms.official.footer" -> requireOfficialFooter(normalized);
             case "backup.retention.days" -> requireIntegerBetween(normalized, 1, 365,
                     "Backup retention days must be between 1 and 365.");
             case "reports.pdf.charts.enabled" -> requireBoolean(normalized,
@@ -143,6 +145,18 @@ public class SystemSettingService {
 
     private String normalizeValue(String value) {
         return value == null ? null : value.strip();
+    }
+
+    private void requireOfficialFooter(String value) {
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+        if (value.length() > 100) {
+            throw new SystemSettingException("Official message footer cannot exceed 100 characters.");
+        }
+        if (!SmsLengthCalculator.isGsm7(value)) {
+            throw new SystemSettingException("Official message footer can only contain English (GSM) characters.");
+        }
     }
 
     private void requireText(String value, String message) {
