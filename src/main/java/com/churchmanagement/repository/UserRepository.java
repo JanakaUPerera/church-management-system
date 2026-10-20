@@ -27,7 +27,7 @@ public class UserRepository {
 
     public Optional<UserCredentials> findByUsername(String username) {
         String sql = """
-                SELECT u.id, u.username, u.password_hash, u.full_name, u.active, u.profile_picture_path,
+                SELECT u.id, u.username, u.password_hash, u.full_name, u.active, u.profile_picture_path, u.landing_screen,
                        COALESCE(u.force_password_change, FALSE) AS force_password_change,
                        r.id AS role_id, r.name AS role_name
                 FROM users u
@@ -53,7 +53,8 @@ public class UserRepository {
                         resultSet.getString("role_name"),
                         resultSet.getBoolean("active"),
                         resultSet.getBoolean("force_password_change"),
-                        resultSet.getString("profile_picture_path")
+                        resultSet.getString("profile_picture_path"),
+                        resultSet.getString("landing_screen")
                 ));
             }
         } catch (SQLException exception) {
@@ -71,6 +72,33 @@ public class UserRepository {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Unable to update user login timestamp.", exception);
+        }
+    }
+
+    public void updateLandingScreen(long userId, String itemId) {
+        String sql = "UPDATE users SET landing_screen = ? WHERE id = ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, itemId);
+            statement.setLong(2, userId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to save the start screen.", exception);
+        }
+    }
+
+    public Optional<String> findLandingScreen(long userId) {
+        String sql = "SELECT landing_screen FROM users WHERE id = ?";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.ofNullable(resultSet.getString("landing_screen")) : Optional.empty();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load the start screen.", exception);
         }
     }
 
@@ -144,7 +172,8 @@ public class UserRepository {
             String roleName,
             boolean active,
             boolean forcePasswordChange,
-            String profilePicturePath
+            String profilePicturePath,
+            String landingScreen
     ) {
     }
 

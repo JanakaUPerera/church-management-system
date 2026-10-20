@@ -16,6 +16,7 @@ public class AuthenticatedUser {
     private final Set<String> permissionSet;
     private final boolean forcePasswordChange;
     private final String profilePicturePath;
+    private final String landingScreen;
 
     public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
                              List<String> permissions) {
@@ -29,6 +30,13 @@ public class AuthenticatedUser {
 
     public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
                              List<String> permissions, boolean forcePasswordChange, String profilePicturePath) {
+        this(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange, profilePicturePath,
+                null);
+    }
+
+    public AuthenticatedUser(long userId, String username, String fullName, long roleId, String roleName,
+                             List<String> permissions, boolean forcePasswordChange, String profilePicturePath,
+                             String landingScreen) {
         this.userId = userId;
         this.username = username;
         this.fullName = fullName;
@@ -38,6 +46,7 @@ public class AuthenticatedUser {
         this.permissionSet = new HashSet<>(this.permissions);
         this.forcePasswordChange = forcePasswordChange;
         this.profilePicturePath = profilePicturePath;
+        this.landingScreen = landingScreen;
     }
 
     public long getUserId() {
@@ -70,7 +79,7 @@ public class AuthenticatedUser {
 
     public AuthenticatedUser withForcePasswordChange(boolean forcePasswordChange) {
         return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange,
-                profilePicturePath);
+                profilePicturePath, landingScreen);
     }
 
     public String getProfilePicturePath() {
@@ -79,7 +88,16 @@ public class AuthenticatedUser {
 
     public AuthenticatedUser withProfile(String fullName, String profilePicturePath) {
         return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange,
-                profilePicturePath);
+                profilePicturePath, landingScreen);
+    }
+
+    public String getLandingScreen() {
+        return landingScreen;
+    }
+
+    public AuthenticatedUser withLandingScreen(String landingScreen) {
+        return new AuthenticatedUser(userId, username, fullName, roleId, roleName, permissions, forcePasswordChange,
+                profilePicturePath, landingScreen);
     }
 
     public boolean hasPermission(String permissionCode) {

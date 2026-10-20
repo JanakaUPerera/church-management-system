@@ -30,6 +30,15 @@ class AuthServiceTest {
     );
 
     @Test
+    void loginCarriesLandingScreen() {
+        userRepository.landingScreen = "collections.receipt";
+
+        AuthenticatedUser user = authService.login("admin", "admin123");
+
+        assertEquals("collections.receipt", user.getLandingScreen());
+    }
+
+    @Test
     void successfulLoginReturnsAuthenticatedUser() {
         AuthenticatedUser user = authService.login("admin", "admin123");
 
@@ -92,6 +101,7 @@ class AuthServiceTest {
     private static class FakeUserRepository extends UserRepository {
         private boolean active = true;
         private boolean forcePasswordChange;
+        private String landingScreen;
         private boolean lastLoginUpdated;
         private long lastLoginUserId;
 
@@ -114,7 +124,8 @@ class AuthServiceTest {
                     "Admin",
                     active,
                     forcePasswordChange,
-                    null
+                    null,
+                    landingScreen
             ));
         }
 
