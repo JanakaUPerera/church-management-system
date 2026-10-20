@@ -57,13 +57,90 @@ class SimDongleSmsServiceTest {
     }
 
     @Test
-    void rejectMessageOver160Characters() {
+    void rejectGsmMessageOver459Characters() {
         SmsResult result = service(settings(true, "COM3", 9600), new FakeSerialPortService()).sendSms("0771234567",
-                "x".repeat(161));
+                "x".repeat(460));
+
+        assertFalse(result.isSuccess());
+        assertEquals("SMS message is too long. Maximum allowed length is 459 characters.", result.getMessage());
+    }
+
+    @Test
+    void rejectNonGsmMessageOver160Characters() {
+        SmsResult result = service(settings(true, "COM3", 9600), new FakeSerialPortService()).sendSms("0771234567",
+                "අ".repeat(161));
 
         assertFalse(result.isSuccess());
         assertEquals("SMS message is too long. Maximum allowed length is 160 characters for text mode.",
                 result.getMessage());
+    }
+
+    @Test
+    void routesOnlyLongOrNonAsciiGsmMessagesToPduMode() {
+        assertFalse(SimDongleSmsService.requiresPduMode("Hello"));
+        assertFalse(SimDongleSmsService.requiresPduMode("a".repeat(160)));
+        assertTrue(SimDongleSmsService.requiresPduMode("a".repeat(161)));
+        assertTrue(SimDongleSmsService.requiresPduMode("Price £5"));
+        assertFalse(SimDongleSmsService.requiresPduMode("අ"));
+        assertFalse(SimDongleSmsService.requiresPduMode("a`b"));
+    }
+
+    @Test
+    void sends160CharacterAsciiMessageInTextModeUnchanged() {
+        FakeSerialPortService serialPortService = new FakeSerialPortService(
+                "\r\nOK\r\n", "\r\nOK\r\n", "\r\nOK\r\n", "\r\nOK\r\n", "\r\nOK\r\n", "\r\n> ",
+                "\r\n+CMGS: 23\r\nOK\r\n");
+        String message = "a".repeat(160);
+
+        SmsResult result = service(settings(true, "COM3", 9600), serialPortService).sendSms("0771234567", message);
+
+        assertTrue(result.isSuccess());
+        assertEquals("AT\rAT+CMGF=1\rAT+CSCS=\"GSM\"\rAT+CSMP=49,167,0,0\rAT+CNMI=2,1,0,1,0\rAT+CMGS=\"+94771234567\"\r"
+                + message + "\u001A", serialPortService.connection.outputText());
+    }
+
+    @Test
+    void sendsLongMessageAsPduParts() {
+        FakeSerialPortService serialPortService = new FakeSerialPortService(
+                "\r\nOK\r\n",                 // AT
+                "\r\nOK\r\n",                 // AT+CMGF=0
+                "\r\nOK\r\n",                 // AT+CNMI
+                "\r\n> ",                     // AT+CMGS=154
+                "\r\n+CMGS: 45\r\nOK\r\n",    // part 1
+                "\r\n> ",                     // AT+CMGS=28
+                "\r\n+CMGS: 46\r\nOK\r\n",    // part 2
+                "\r\nOK\r\n");                // AT+CMGF=1
+
+        SmsResult result = service(settings(true, "COM3", 9600), serialPortService).sendSms("0771234567",
+                "a".repeat(161));
+
+        assertTrue(result.isSuccess());
+        assertEquals("45,46", result.getModemMessageReference());
+        assertEquals(SmsDeliveryStatus.UNKNOWN, result.getDeliveryStatus());
+        String output = serialPortService.connection.outputText();
+        assertTrue(output.startsWith("AT\rAT+CMGF=0\rAT+CNMI=2,1,0,1,0\rAT+CMGS=154\r00"), output);
+        assertTrue(output.contains("\u001AAT+CMGS=28\r00"), output);
+        assertTrue(output.contains("050003000201"), output);
+        assertTrue(output.contains("050003000202"), output);
+        assertTrue(output.endsWith("\u001AAT+CMGF=1\r"), output);
+        assertTrue(serialPortService.connection.closed);
+    }
+
+    @Test
+    void failedPartStopsLaterPartsAndRestoresTextMode() {
+        FakeSerialPortService serialPortService = new FakeSerialPortService(
+                "\r\nOK\r\n", "\r\nOK\r\n", "\r\nOK\r\n",
+                "\r\n> ", "\r\n+CMGS: 45\r\nOK\r\n",
+                "\r\n> ", "\r\n+CMS ERROR: 500\r\n",
+                "\r\nOK\r\n");
+
+        SmsResult result = service(settings(true, "COM3", 9600), serialPortService).sendSms("0771234567",
+                "a".repeat(307));
+
+        assertFalse(result.isSuccess());
+        String output = serialPortService.connection.outputText();
+        assertEquals(2, output.split("AT\\+CMGS=", -1).length - 1, output);
+        assertTrue(output.endsWith("\u001AAT+CMGF=1\r"), output);
     }
 
     @Test
