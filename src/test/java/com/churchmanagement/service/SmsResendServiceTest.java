@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SmsResendServiceTest {
@@ -46,6 +47,21 @@ class SmsResendServiceTest {
     @AfterEach
     void tearDown() {
         AuthContext.clear();
+    }
+
+    @Test
+    void resendOfOfficialMessageKeepsTypeAndBatchWithoutReceipt() {
+        smsLogRepository.original.setReceiptId(null);
+        smsLogRepository.original.setSmsType(SmsType.OFFICIAL_MESSAGE);
+        smsLogRepository.original.setBatchUuid("batch-1");
+
+        smsResendService.resendSms(validRequest());
+
+        assertEquals(1, smsLogRepository.enqueueCount);
+        assertNull(smsLogRepository.receiptId);
+        assertEquals(10L, smsLogRepository.churchId);
+        assertEquals(SmsType.OFFICIAL_MESSAGE, smsLogRepository.smsType);
+        assertEquals("batch-1", smsLogRepository.batchUuid);
     }
 
     @Test
