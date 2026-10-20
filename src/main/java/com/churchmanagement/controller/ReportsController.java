@@ -6,6 +6,7 @@ import com.churchmanagement.dto.report.ReportResult;
 import com.churchmanagement.dto.report.ReportSearchCriteria;
 import com.churchmanagement.dto.report.ReportSummaryTotals;
 import com.churchmanagement.dto.report.ReportTableRow;
+import com.churchmanagement.dto.report.ReportGroup;
 import com.churchmanagement.dto.report.ReportType;
 import com.churchmanagement.entity.Church;
 import com.churchmanagement.entity.CollectionCategory;
@@ -137,6 +138,7 @@ public class ReportsController {
     private final List<ReportExclusion> categoryExclusions = new ArrayList<>();
     private String categoryExclusionKey;
     private ReportType currentReportType = ReportType.WEEKLY_CHURCH_COLLECTION;
+    private ReportGroup reportGroup;
 
     @FXML private StackPane reportContentHost;
     @FXML private TilePane reportCardPane;
@@ -199,6 +201,13 @@ public class ReportsController {
         loadLookupData();
         buildReportCards();
         selectReportType(currentReportType, false);
+    }
+
+    /** Limits the screen to one module's reports. Called by the frame right after loading. */
+    public void setReportGroup(ReportGroup group) {
+        reportGroup = group;
+        buildReportCards();
+        ReportType.inGroup(group).stream().findFirst().ifPresent(type -> selectReportType(type, false));
     }
 
     @FXML
@@ -495,7 +504,7 @@ public class ReportsController {
 
     private void buildReportCards() {
         reportCardPane.getChildren().clear();
-        for (ReportType reportType : ReportType.values()) {
+        for (ReportType reportType : ReportType.inGroup(reportGroup)) {
             reportCardPane.getChildren().add(reportCard(reportType));
         }
     }

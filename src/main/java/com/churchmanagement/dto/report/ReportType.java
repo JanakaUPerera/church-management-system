@@ -1,5 +1,8 @@
 package com.churchmanagement.dto.report;
 
+import java.util.Arrays;
+import java.util.List;
+
 public enum ReportType {
     RECEIPT_COLLECTION("Receipt Collection Report"),
     WEEKLY_CHURCH_COLLECTION("Weekly Church-wise Collection Report"),
@@ -26,6 +29,20 @@ public enum ReportType {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public ReportGroup group() {
+        return switch (this) {
+            case SMS_DELIVERY -> ReportGroup.MESSAGING;
+            case USER_ACTIVITY, BACKUP_RESTORE_HISTORY -> ReportGroup.ADMINISTRATION;
+            default -> ReportGroup.COLLECTIONS;
+        };
+    }
+
+    public static List<ReportType> inGroup(ReportGroup group) {
+        return Arrays.stream(values())
+                .filter(type -> group == null || type.group() == group)
+                .toList();
     }
 
     @Override
