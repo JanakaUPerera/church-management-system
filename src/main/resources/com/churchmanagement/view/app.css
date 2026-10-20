@@ -1132,8 +1132,18 @@
     -fx-padding: 10 14 2 14;
 }
 
-.breadcrumb-link {
+.button.breadcrumb-link,
+.button.breadcrumb-link:hover,
+.button.breadcrumb-link:pressed,
+.button.breadcrumb-link:focused {
+    /* A plain text link: no button fill or border in any state or theme. */
     -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-effect: null;
     -fx-text-fill: #92400e;
     -fx-font-size: 18px;
     -fx-padding: 0;
@@ -1141,9 +1151,12 @@
     -fx-underline: true;
 }
 
-.breadcrumb-link:focused {
-    -fx-border-color: #f59e0b;
-    -fx-border-width: 0 0 2 0;
+.button.breadcrumb-link:hover {
+    -fx-text-fill: #451a03;
+}
+
+.button.breadcrumb-link:focused {
+    -fx-border-color: transparent transparent #f59e0b transparent;
 }
 
 .breadcrumb-separator {
@@ -2902,8 +2915,21 @@
     -fx-text-fill: #d1d5db;
 }
 
-.theme-dark .breadcrumb-link {
+.theme-dark .button.breadcrumb-link,
+.theme-dark .button.breadcrumb-link:hover,
+.theme-dark .button.breadcrumb-link:pressed,
+.theme-dark .button.breadcrumb-link:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
     -fx-text-fill: #fbbf24;
+}
+
+.theme-dark .button.breadcrumb-link:hover {
+    -fx-text-fill: #fde68a;
+}
+
+.theme-dark .button.breadcrumb-link:focused {
+    -fx-border-color: transparent transparent #f59e0b transparent;
 }
 
 .theme-dark .breadcrumb-separator {
@@ -3738,8 +3764,21 @@
     -fx-text-fill: #f3cdf4;
 }
 
-.theme-orchid .breadcrumb-link {
+.theme-orchid .button.breadcrumb-link,
+.theme-orchid .button.breadcrumb-link:hover,
+.theme-orchid .button.breadcrumb-link:pressed,
+.theme-orchid .button.breadcrumb-link:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
     -fx-text-fill: #8c23a0;
+}
+
+.theme-orchid .button.breadcrumb-link:hover {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .button.breadcrumb-link:focused {
+    -fx-border-color: transparent transparent #bb29c1 transparent;
 }
 
 .theme-orchid .breadcrumb-separator {
