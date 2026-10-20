@@ -2053,6 +2053,61 @@
     -fx-font-weight: normal;
 }
 
+/* ── Home tiles ── */
+.nav-tile {
+    -fx-pref-width: 220;
+    -fx-pref-height: 140;
+    -fx-min-height: 140;
+}
+
+.nav-tile:focused {
+    -fx-border-color: #b45309;
+    -fx-border-width: 2.4;
+}
+
+.nav-tile-info-button {
+    -fx-background-color: transparent;
+    -fx-padding: 4;
+    -fx-min-width: 30;
+    -fx-min-height: 30;
+    -fx-cursor: hand;
+}
+
+.nav-tile-info-button .ikonli-font-icon {
+    -fx-icon-color: #b45309;
+    -fx-icon-size: 16px;
+}
+
+.nav-tile-info-button:focused {
+    -fx-border-color: #b45309;
+    -fx-border-radius: 999;
+}
+
+.nav-tile-badge {
+    -fx-background-color: #fef3c7;
+    -fx-background-radius: 999;
+    -fx-text-fill: #78350f;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 10;
+}
+
+.nav-popover {
+    -fx-cursor: default;
+    -fx-min-height: 0;
+}
+
+.nav-popover-item-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #451a03;
+}
+
+.nav-popover-section {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #92400e;
+}
+
 .report-dialog-content {
     -fx-background-color: #fffbeb;
     -fx-padding: 14 16 16 16;
@@ -3039,6 +3094,31 @@
     -fx-text-fill: #fef3c7;
 }
 
+.theme-dark .nav-tile:focused {
+    -fx-border-color: #fbbf24;
+}
+
+.theme-dark .nav-tile-info-button .ikonli-font-icon {
+    -fx-icon-color: #fbbf24;
+}
+
+.theme-dark .nav-tile-info-button:focused {
+    -fx-border-color: #fbbf24;
+}
+
+.theme-dark .nav-tile-badge {
+    -fx-background-color: #374151;
+    -fx-text-fill: #fde68a;
+}
+
+.theme-dark .nav-popover-item-title {
+    -fx-text-fill: #f9fafb;
+}
+
+.theme-dark .nav-popover-section {
+    -fx-text-fill: #d1d5db;
+}
+
 .theme-dark .text-field,
 .theme-dark .password-field,
 .theme-dark .text-area,
@@ -4019,6 +4099,31 @@
 
 .theme-orchid .report-card-action {
     -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .nav-tile:focused {
+    -fx-border-color: #8c23a0;
+}
+
+.theme-orchid .nav-tile-info-button .ikonli-font-icon {
+    -fx-icon-color: #8c23a0;
+}
+
+.theme-orchid .nav-tile-info-button:focused {
+    -fx-border-color: #8c23a0;
+}
+
+.theme-orchid .nav-tile-badge {
+    -fx-background-color: #fbeefb;
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .nav-popover-item-title {
+    -fx-text-fill: #3d0e3f;
+}
+
+.theme-orchid .nav-popover-section {
+    -fx-text-fill: #6e1871;
 }
 
 /* ── Text inputs ── */
