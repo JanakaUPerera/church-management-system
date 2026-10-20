@@ -40,6 +40,7 @@ public class RolePermissionController {
             "Churches",
             "Receipts",
             "Reports",
+            "Finance",
             "User Management",
             "Roles & Permissions",
             "Backup",

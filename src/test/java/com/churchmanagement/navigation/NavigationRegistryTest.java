@@ -18,9 +18,9 @@ class NavigationRegistryTest {
 
     @Test
     void modulesInTileOrderWithFixedShortcuts() {
-        assertEquals(List.of("dashboard", "collections", "branches", "messaging", "administration"),
+        assertEquals(List.of("dashboard", "collections", "branches", "messaging", "finance", "administration"),
                 NavigationRegistry.modules().stream().map(NavModule::id).toList());
-        assertEquals(List.of(1, 2, 3, 4, 7),
+        assertEquals(List.of(1, 2, 3, 4, 5, 7),
                 NavigationRegistry.modules().stream().map(NavModule::shortcutNumber).toList());
     }
 
@@ -31,7 +31,7 @@ class NavigationRegistryTest {
             assertTrue(ids.add(item.id()), "duplicate id " + item.id());
             assertEquals(item, NavigationRegistry.findItem(item.id()).orElseThrow());
         }
-        assertEquals(17, ids.size());
+        assertEquals(21, ids.size());
         assertTrue(NavigationRegistry.findItem("no.such.item").isEmpty());
         assertTrue(NavigationRegistry.findItem(null).isEmpty());
     }
@@ -56,6 +56,13 @@ class NavigationRegistryTest {
         assertTrue(NavigationRegistry.findItem(NavigationRegistry.BACKUP_ITEM_ID).isPresent());
         assertTrue(NavigationRegistry.findItem(NavigationRegistry.RECEIPT_ITEM_ID).isPresent());
         assertTrue(NavigationRegistry.findItem(NavigationRegistry.SEND_MESSAGE_ITEM_ID).isPresent());
+    }
+
+    @Test
+    void financeScreensNeedFinanceMenuPermission() {
+        for (String id : List.of("finance.journal", "finance.accounts", "finance.opening-balances", "finance.ledger")) {
+            assertEquals(List.of("finance.menu.view"), NavigationRegistry.findItem(id).orElseThrow().permissionCodes());
+        }
     }
 
     @Test
