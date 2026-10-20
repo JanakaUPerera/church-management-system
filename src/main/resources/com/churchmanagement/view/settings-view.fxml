@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Tab?>
@@ -131,6 +132,32 @@
                               GridPane.columnIndex="1" GridPane.rowIndex="1"/>
                 </GridPane>
                 <Button fx:id="sendTestSmsButton" onAction="#testSms" styleClass="primary-button" text="Send Test SMS"/>
+            </VBox>
+                </content>
+            </ScrollPane>
+        </Tab>
+        <Tab closable="false" text="Finance">
+            <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane">
+                <content>
+            <VBox spacing="14" styleClass="settings-page">
+                <padding>
+                    <Insets bottom="8" left="2" right="2" top="12"/>
+                </padding>
+                <GridPane hgap="14" vgap="10" styleClass="settings-form-card">
+                    <Label text="Go-live date" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <DatePicker fx:id="financeGoLiveDatePicker" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                    <Label fx:id="financeGoLiveNoteLabel" styleClass="muted-label" wrapText="true"
+                           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                    <Label text="Approval" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <CheckBox fx:id="financeApprovalCheckBox" text="Require approval before posting"
+                              GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                    <Label styleClass="muted-label" wrapText="true"
+                           text="When ticked, an entry is posted by an approver who did not prepare it."
+                           GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                </GridPane>
+                <HBox spacing="10" styleClass="settings-action-bar">
+                    <Button fx:id="saveFinanceSettingsButton" onAction="#saveFinanceSettings" styleClass="primary-button" text="Save Finance"/>
+                </HBox>
             </VBox>
                 </content>
             </ScrollPane>

@@ -16,6 +16,8 @@ import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.service.ActivityLogService;
 import com.churchmanagement.service.AtCommandService;
+import com.churchmanagement.service.FinanceSettings;
+import com.churchmanagement.service.FinanceSettingsService;
 import com.churchmanagement.service.OfficialSmsService;
 import com.churchmanagement.service.SerialPortService;
 import com.churchmanagement.service.SmsServiceFactory;
@@ -30,6 +32,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
@@ -41,6 +44,7 @@ import javafx.util.StringConverter;
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,6 +116,11 @@ public class SettingsController {
     @FXML private CheckBox smsEnabledCheckBox;
     @FXML private ComboBox<SmsSettings.GatewayType> gatewayTypeComboBox;
     @FXML private CheckBox smsRetryEnabledCheckBox;
+    @FXML private DatePicker financeGoLiveDatePicker;
+    @FXML private Label financeGoLiveNoteLabel;
+    @FXML private CheckBox financeApprovalCheckBox;
+    @FXML private Button saveFinanceSettingsButton;
+    private final FinanceSettingsService financeSettingsService = new FinanceSettingsService();
     @FXML private TextField smsRetryMaxAttemptsField;
     @FXML private TextField officialSmsFooterField;
     @FXML private Label smsRetryMaxAttemptsErrorLabel;
@@ -477,6 +486,9 @@ public class SettingsController {
         smsRetryEnabledCheckBox.setSelected(Boolean.parseBoolean(values.get("sms.retry.enabled")));
         smsRetryMaxAttemptsField.setText(values.get("sms.retry.max.attempts"));
         officialSmsFooterField.setText(defaultValue(values.get(OfficialSmsService.FOOTER_SETTING_KEY), ""));
+        financeGoLiveDatePicker.setValue(parseDate(values.get(FinanceSettings.GO_LIVE_DATE_KEY)));
+        financeApprovalCheckBox.setSelected(Boolean.parseBoolean(values.get(FinanceSettings.APPROVAL_REQUIRED_KEY)));
+        refreshFinanceLock();
         dateFormatField.setText(values.get("system.date.format"));
         timeFormatField.setText(values.get("system.time.format"));
         loadReportExportFolderField();
@@ -643,6 +655,40 @@ public class SettingsController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    @FXML
+    private void saveFinanceSettings() {
+        LocalDate goLive = financeGoLiveDatePicker.getValue();
+        boolean approval = financeApprovalCheckBox.isSelected();
+        ProcessingDialog.run("Save Settings", "Saving finance settings...",
+                () -> financeSettingsService.update(goLive, approval),
+                () -> {
+                    refreshFinanceLock();
+                    showInfo("Settings updated", "Finance settings updated successfully.");
+                },
+                throwable -> showValidationError(processingMessage(throwable)));
+    }
+
+    private void refreshFinanceLock() {
+        boolean locked;
+        try {
+            locked = financeSettingsService.goLiveLocked();
+        } catch (RuntimeException exception) {
+            locked = false;
+        }
+        financeGoLiveDatePicker.setDisable(locked);
+        financeGoLiveNoteLabel.setText(locked
+                ? "Locked: entries have been posted."
+                : "The books accept entries from this date. It locks after the first entry is posted.");
+    }
+
+    private static LocalDate parseDate(String value) {
+        try {
+            return value == null || value.isBlank() ? FinanceSettings.DEFAULT_GO_LIVE_DATE : LocalDate.parse(value.strip());
+        } catch (java.time.format.DateTimeParseException exception) {
+            return FinanceSettings.DEFAULT_GO_LIVE_DATE;
+        }
     }
 
     private String processingMessage(Throwable throwable) {
