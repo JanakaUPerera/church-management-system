@@ -33,6 +33,11 @@ public class DashboardRepository {
         this.dataSource = dataSource;
     }
 
+    /** Branches with no active receipt in the given week, all regions (drives the Collections tile badge). */
+    public long countPendingChurchesForWeek(LocalDate weekStartDate, LocalDate weekEndDate) {
+        return countPendingChurches(weekStartDate, weekEndDate, null);
+    }
+
     public WeeklyDashboardDto getWeeklySummary(LocalDate weekStartDate, LocalDate weekEndDate, Long regionId) {
         WeeklyDashboardDto summary = new WeeklyDashboardDto();
         summary.setWeekStartDate(weekStartDate);

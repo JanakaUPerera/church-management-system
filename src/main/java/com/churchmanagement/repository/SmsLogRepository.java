@@ -339,6 +339,28 @@ public class SmsLogRepository {
         }
     }
 
+    /** FAILED messages since the given time that have not been resent (drives the Messaging tile badge). */
+    public long countRecentFailed(LocalDateTime since) {
+        String sql = """
+                SELECT COUNT(*) AS failed_count
+                FROM sms_logs sl
+                WHERE sl.status = ?
+                  AND sl.created_at >= ?
+                  AND NOT EXISTS (SELECT 1 FROM sms_logs newer WHERE newer.resend_of_sms_log_id = sl.id)
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, SmsSendStatus.FAILED.name());
+            statement.setTimestamp(2, Timestamp.valueOf(since));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getLong("failed_count") : 0L;
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to count failed SMS.", exception);
+        }
+    }
+
     public Optional<SmsLogDto> findByUuid(String smsLogUuid) {
         if (smsLogUuid == null || smsLogUuid.isBlank()) {
             return Optional.empty();

@@ -22,6 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SmsLogRepositoryTest {
     @Test
+    void countRecentFailedExcludesResentRows() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        SmsLogRepository repository = new SmsLogRepository(dataSource);
+
+        long count = repository.countRecentFailed(LocalDateTime.of(2026, 10, 13, 9, 0));
+
+        assertEquals(0L, count);
+        assertTrue(dataSource.sql.contains("resend_of_sms_log_id = sl.id"));
+        assertEquals(SmsSendStatus.FAILED.name(), dataSource.valueAt(1));
+    }
+
+    @Test
     void searchBySmsType() {
         RecordingDataSource dataSource = new RecordingDataSource();
         SmsLogRepository repository = new SmsLogRepository(dataSource);
