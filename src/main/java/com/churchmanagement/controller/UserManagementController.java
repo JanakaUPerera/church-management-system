@@ -5,10 +5,12 @@ import com.churchmanagement.dto.ResetPasswordRequest;
 import com.churchmanagement.dto.UpdateUserRequest;
 import com.churchmanagement.dto.UserDto;
 import com.churchmanagement.entity.User;
+import com.churchmanagement.navigation.LandingOption;
 import com.churchmanagement.repository.UserManagementRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import com.churchmanagement.service.LandingScreenService;
 import com.churchmanagement.service.UserManagementService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
@@ -43,10 +45,12 @@ import javafx.scene.layout.Priority;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 public class UserManagementController {
     private final UserManagementService userManagementService = new UserManagementService();
+    private final LandingScreenService landingScreenService = new LandingScreenService();
     private final ObservableList<UserDto> allUsers = FXCollections.observableArrayList();
     private final ObservableList<UserDto> users = FXCollections.observableArrayList();
     private final ObservableList<UserManagementRepository.RoleOption> roles = FXCollections.observableArrayList();
@@ -272,6 +276,8 @@ public class UserManagementController {
                                     fields.usernameField().getText(), fields.fullNameField().getText(), roleId,
                                     fields.statusComboBox().getValue(),
                                     fields.forcePasswordChangeCheckBox().isSelected()));
+                            LandingOption landing = fields.landingScreenComboBox().getValue();
+                            landingScreenService.saveForUser(user.getId(), landing == null ? null : landing.itemId());
                         } else {
                             userManagementService.create(new CreateUserRequest(
                                     fields.usernameField().getText(), fields.fullNameField().getText(), roleId,
@@ -324,6 +330,28 @@ public class UserManagementController {
             forcePasswordChangeCheckBox.setSelected(true);
         }
 
+        ComboBox<LandingOption> landingScreenComboBox = null;
+        if (editing) {
+            ComboBox<LandingOption> combo = new ComboBox<>();
+            combo.setMaxWidth(Double.MAX_VALUE);
+            String saved = landingScreenService.findForUser(user.getId()).orElse(null);
+            Runnable refreshOptions = () -> {
+                UserManagementRepository.RoleOption role = roleComboBox.getValue();
+                List<LandingOption> options = role == null
+                        ? List.of(LandingOption.DEFAULT)
+                        : landingScreenService.optionsForRole(role.id(), role.name());
+                String keep = combo.getValue() == null ? saved : combo.getValue().itemId();
+                combo.getItems().setAll(options);
+                combo.setValue(options.stream()
+                        .filter(option -> Objects.equals(option.itemId(), keep))
+                        .findFirst()
+                        .orElse(LandingOption.DEFAULT));
+            };
+            refreshOptions.run();
+            roleComboBox.valueProperty().addListener((observable, oldValue, newValue) -> refreshOptions.run());
+            landingScreenComboBox = combo;
+        }
+
         GridPane grid = dialogGrid();
         grid.add(DialogStyler.fieldLabel("Username"), 0, 0);
         grid.add(usernameField, 1, 0);
@@ -339,10 +367,12 @@ public class UserManagementController {
             grid.add(forcePasswordChangeCheckBox, 1, 5);
         } else {
             grid.add(forcePasswordChangeCheckBox, 1, 4);
+            grid.add(DialogStyler.fieldLabel("Open after login"), 0, 5);
+            grid.add(landingScreenComboBox, 1, 5);
         }
 
         grid.setUserData(new UserDialogFields(usernameField, fullNameField, roleComboBox, statusComboBox,
-                temporaryPasswordField, forcePasswordChangeCheckBox));
+                temporaryPasswordField, forcePasswordChangeCheckBox, landingScreenComboBox));
         return grid;
     }
 
@@ -411,7 +441,8 @@ public class UserManagementController {
                                     ComboBox<UserManagementRepository.RoleOption> roleComboBox,
                                     ComboBox<User.Status> statusComboBox,
                                     PasswordField temporaryPasswordField,
-                                    CheckBox forcePasswordChangeCheckBox) {
+                                    CheckBox forcePasswordChangeCheckBox,
+                                    ComboBox<LandingOption> landingScreenComboBox) {
     }
 
     private record ResetPasswordDialogFields(PasswordField temporaryPasswordField,

@@ -3,12 +3,16 @@ package com.churchmanagement.controller;
 import com.churchmanagement.dto.ChangeOwnPasswordRequest;
 import com.churchmanagement.dto.UpdateUserProfileRequest;
 import com.churchmanagement.dto.UserProfileDto;
+import com.churchmanagement.navigation.LandingOption;
+import com.churchmanagement.security.AuthContext;
+import com.churchmanagement.service.LandingScreenService;
 import com.churchmanagement.service.UserProfileService;
 import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -22,9 +26,12 @@ import javafx.stage.Window;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
 
 public class UserProfileController {
     private final UserProfileService userProfileService = new UserProfileService();
+    private final LandingScreenService landingScreenService = new LandingScreenService();
 
     private Path selectedProfilePicture;
     private UserProfileDto profile;
@@ -39,6 +46,7 @@ public class UserProfileController {
     @FXML private TextField fullNameField;
     @FXML private TextField emailField;
     @FXML private TextField mobileNumberField;
+    @FXML private ComboBox<LandingOption> landingScreenComboBox;
     @FXML private Button saveProfileButton;
     @FXML private PasswordField currentPasswordField;
     @FXML private PasswordField newPasswordField;
@@ -74,10 +82,12 @@ public class UserProfileController {
                     fullNameField.getText(), emailField.getText(), mobileNumberField.getText(),
                     selectedProfilePicture));
             selectedProfilePicture = null;
+            LandingOption landing = landingScreenComboBox.getValue();
+            landingScreenService.saveOwn(landing == null ? null : landing.itemId());
             populateProfile(profile);
             DashboardController.refreshActiveHeader();
             showInfo("Profile updated successfully.");
-        } catch (UserProfileService.UserProfileException exception) {
+        } catch (UserProfileService.UserProfileException | LandingScreenService.LandingScreenException exception) {
             showError(exception.getMessage());
         }
     }
@@ -113,10 +123,22 @@ public class UserProfileController {
         try {
             profile = userProfileService.loadOwnProfile();
             populateProfile(profile);
+            populateLandingScreen();
         } catch (UserProfileService.UserProfileException exception) {
             showError(exception.getMessage());
             setFormDisabled(true);
         }
+    }
+
+    private void populateLandingScreen() {
+        AuthContext.getCurrentUser().ifPresent(user -> {
+            List<LandingOption> options = landingScreenService.optionsFor(user);
+            landingScreenComboBox.getItems().setAll(options);
+            landingScreenComboBox.setValue(options.stream()
+                    .filter(option -> Objects.equals(option.itemId(), user.getLandingScreen()))
+                    .findFirst()
+                    .orElse(LandingOption.DEFAULT));
+        });
     }
 
     private void populateProfile(UserProfileDto profile) {
@@ -162,6 +184,7 @@ public class UserProfileController {
         fullNameField.setDisable(disabled);
         emailField.setDisable(disabled);
         mobileNumberField.setDisable(disabled);
+        landingScreenComboBox.setDisable(disabled);
         saveProfileButton.setDisable(disabled);
         currentPasswordField.setDisable(disabled);
         newPasswordField.setDisable(disabled);
