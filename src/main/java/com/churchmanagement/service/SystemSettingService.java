@@ -10,6 +10,8 @@ import com.churchmanagement.security.PermissionGuard;
 import com.churchmanagement.util.SmsLengthCalculator;
 import com.churchmanagement.util.WeekUtil;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -100,6 +102,10 @@ public class SystemSettingService {
             case "sms.retry.max.attempts" -> requireIntegerBetween(normalized, 0, 10,
                     "SMS retry max attempts must be between 0 and 10.");
             case "sms.official.footer" -> requireOfficialFooter(normalized);
+            case "finance.go_live_date" -> requireIsoDate(normalized,
+                    "Finance go-live date must be a date like 2027-01-01.");
+            case "finance.approval.required" -> requireBoolean(normalized,
+                    "Finance approval setting must be true or false.");
             case "backup.retention.days" -> requireIntegerBetween(normalized, 1, 365,
                     "Backup retention days must be between 1 and 365.");
             case "reports.pdf.charts.enabled" -> requireBoolean(normalized,
@@ -145,6 +151,14 @@ public class SystemSettingService {
 
     private String normalizeValue(String value) {
         return value == null ? null : value.strip();
+    }
+
+    private void requireIsoDate(String value, String message) {
+        try {
+            LocalDate.parse(value == null ? "" : value);
+        } catch (DateTimeParseException exception) {
+            throw new SystemSettingException(message);
+        }
     }
 
     private void requireOfficialFooter(String value) {

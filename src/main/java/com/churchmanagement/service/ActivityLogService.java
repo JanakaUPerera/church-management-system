@@ -28,6 +28,17 @@ public class ActivityLogService {
     public static final String NAVIGATE_SMS_LOGS = "NAVIGATE_SMS_LOGS";
     public static final String NAVIGATE_SEND_MESSAGE = "NAVIGATE_SEND_MESSAGE";
     public static final String NAVIGATE_MODULE = "NAVIGATE_MODULE";
+    public static final String NAVIGATE_FINANCE = "NAVIGATE_FINANCE";
+    public static final String ACCOUNT_CREATED = "ACCOUNT_CREATED";
+    public static final String ACCOUNT_UPDATED = "ACCOUNT_UPDATED";
+    public static final String ACCOUNT_ACTIVATED = "ACCOUNT_ACTIVATED";
+    public static final String ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED";
+    public static final String ACCOUNT_DELETED = "ACCOUNT_DELETED";
+    public static final String JOURNAL_DRAFT_SAVED = "JOURNAL_DRAFT_SAVED";
+    public static final String JOURNAL_DRAFT_DELETED = "JOURNAL_DRAFT_DELETED";
+    public static final String JOURNAL_POSTED = "JOURNAL_POSTED";
+    public static final String JOURNAL_REVERSED = "JOURNAL_REVERSED";
+    public static final String FINANCE_SETTINGS_UPDATED = "FINANCE_SETTINGS_UPDATED";
     public static final String REGION_CREATED = "REGION_CREATED";
     public static final String REGION_UPDATED = "REGION_UPDATED";
     public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
@@ -391,6 +402,10 @@ public class ActivityLogService {
 
     public void logSmsResendBlockedPermission(Long userId, Long originalSmsLogId) {
         log(userId, SMS_RESEND_BLOCKED_PERMISSION, "original_sms_log_id: " + nullToBlank(originalSmsLogId));
+    }
+
+    public void logFinance(Long userId, String action, String recordId, String details) {
+        log(userId, action, "FINANCE", recordId, details);
     }
 
     public void logOfficialSmsQueued(Long userId, String batchUuid, int queuedCount, int skippedCount,

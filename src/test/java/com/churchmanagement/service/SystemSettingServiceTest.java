@@ -31,7 +31,7 @@ class SystemSettingServiceTest {
 
         List<SystemSettingDto> settings = service.loadSettings();
 
-        assertEquals(20, settings.size());
+        assertEquals(22, settings.size());
         assertEquals("organization.name", settings.getFirst().getSettingKey());
     }
 
@@ -80,6 +80,16 @@ class SystemSettingServiceTest {
 
         assertEquals("", cache.repository.getValue("sms.official.footer"));
         AuthContext.clear();
+    }
+
+    @Test
+    void rejectsInvalidFinanceGoLiveDate() {
+        assertInvalid("finance.go_live_date", "01/01/2027", "Finance go-live date must be a date like 2027-01-01.");
+    }
+
+    @Test
+    void rejectsInvalidFinanceApprovalFlag() {
+        assertInvalid("finance.approval.required", "yes", "Finance approval setting must be true or false.");
     }
 
     @Test
@@ -236,6 +246,8 @@ class SystemSettingServiceTest {
             add(setting("reports.pdf.charts.enabled", "true", "BOOLEAN", "SYSTEM"));
             add(setting("system.time.format", "HH:mm:ss", "STRING", "SYSTEM"));
             add(setting("system.theme", "ORCHID", "ENUM", "SYSTEM"));
+            add(setting("finance.go_live_date", "2027-01-01", "DATE", "FINANCE"));
+            add(setting("finance.approval.required", "false", "BOOLEAN", "FINANCE"));
         }
 
         @Override
