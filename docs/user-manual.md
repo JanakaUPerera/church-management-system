@@ -159,16 +159,27 @@ The dashboard is your main workspace with these elements:
 - Window controls (minimize, maximize, close)
 
 **Sidebar (Left Panel):**
-- Navigation menu with icons and labels
-- Menu items are shown/hidden based on your permissions
+- **Home** (top) returns to the module tiles
+- The current module's name — click it to switch to another module
+- Only the current module's screens, shown/hidden based on your permissions
 
 **Footer (Bottom Bar):**
 - Current time and date
 - Application version number
 
-### 3.4 Navigation
+### 3.4 Getting Around
 
-Click any item in the sidebar to navigate to that module. The sidebar can be collapsed by clicking the hamburger menu icon (☰) in the top-left corner.
+The system is organised into **modules**: Dashboard, Collections, Branches, Messaging and Administration.
+
+- **Home** shows one tile per module you can use. Each tile has a short description and may show a badge — for example *12 pending* on Collections (branches that have not submitted this week) or *3 failed* on Messaging (SMS that failed in the last 7 days). Click a tile, or select it with **Tab** and press **Enter**, to open the module.
+- The **(i)** button on a tile lists the module's screens with a one-line explanation of each, without opening it. Press **Esc** to close the list, or **Open module** to go in.
+- Inside a module the sidebar shows only that module's screens. Click the module name at the top of the sidebar to jump straight to another module.
+- The title line shows where you are, e.g. **Home › Collections › Receipt History**. Click any part to go back to it.
+- Re-opening a module returns to the screen you last used in it.
+- **Keyboard shortcuts:** **Ctrl+H** Home · **Ctrl+1** Dashboard · **Ctrl+2** Collections · **Ctrl+3** Branches · **Ctrl+4** Messaging · **Ctrl+7** Administration.
+- **Start screen:** after login you go straight to your own start screen. Choose it in **My Profile → Open after login** (an administrator can also set it in **Users**). If you lose access to that screen, the system opens Dashboard and tells you in the status bar.
+- If you leave **Receipt** or **Send Message** with unsaved input, the system asks before discarding it.
+- The sidebar can be collapsed with the **«** button; hover over an icon to see its name.
 
 ### 3.5 Window Controls
 
@@ -184,7 +195,7 @@ Regions are geographic areas that group your churches (e.g., "Western Province" 
 
 ### 4.1 Viewing Regions
 
-1. Click **Regions** in the sidebar.
+1. Open **Branches › Regions**.
 2. The regions table displays all regions with:
    - **Code** — Short identifier (e.g., `REG001`)
    - **Name** — Full region name
@@ -239,7 +250,7 @@ Churches are the individual congregations within your regions. Each church has a
 
 ### 5.1 Viewing Churches
 
-1. Click **Churches** in the sidebar.
+1. Open **Branches › Churches**.
 2. The table displays:
    - **Code** — Church identifier (e.g., `CH001`)
    - **Name** — Church name
@@ -305,7 +316,7 @@ This is where you create weekly collection receipts for each church.
 
 ### 6.1 Creating a New Receipt
 
-1. Click **Receipt Entry** in the sidebar.
+1. Open **Collections › Receipt**.
 2. Fill in the receipt form:
 
 **Basic Information:**
@@ -386,7 +397,7 @@ View, search, cancel, reprint, and re-create past receipts.
 
 ### 7.1 Viewing Receipt History
 
-1. Click **Receipt History** in the sidebar.
+1. Open **Collections › Receipt History**.
 2. The table displays all receipts with:
    - Receipt Number
    - Church name
@@ -495,7 +506,7 @@ Track weekly submission progress across all churches and regions.
 
 ### 8.1 Viewing Submission Status
 
-1. Click **Submission Status** in the sidebar.
+1. Open **Dashboard › Submission Status**.
 2. The screen shows:
    - **Week selector** — Navigate between weeks using arrows or date picker
    - **KPI Summary cards** — Key metrics at a glance
@@ -548,8 +559,8 @@ Generate, export, and print various reports for analysis and record-keeping.
 
 ### 9.1 Accessing Reports
 
-1. Click **Reports** in the sidebar.
-2. The **Report Cards View** displays 15 report types as clickable cards.
+1. Open **Collections › Collection Reports** (SMS Delivery is under **Messaging › SMS Reports**; User Activity and Backup & Restore History are under **Administration › Admin Reports**).
+2. The **Report Cards View** displays the 13 collection report types as clickable cards.
 
 ### 9.2 Report Types
 
@@ -649,7 +660,7 @@ Create, edit, and manage user accounts.
 
 ### 10.1 Viewing Users
 
-1. Click **User Management** in the sidebar.
+1. Open **Administration › Users**.
 2. The table displays:
    - Username
    - Full Name
@@ -727,7 +738,7 @@ Examples:
 
 ### 11.2 Viewing Roles
 
-1. Click **Roles & Permissions** in the sidebar.
+1. Open **Administration › Roles & Permissions**.
 2. The left panel shows all roles with their status.
 
 ### 11.3 Creating a New Role
@@ -789,7 +800,7 @@ Protect your data with regular backups and restore from backups when needed.
 
 ### 12.1 Creating a Manual Backup
 
-1. Click **Backup & Restore** in the sidebar.
+1. Open **Administration › Backup & Restore**.
 2. Select a **backup folder** using the browse button.
 3. Click **Backup Now**.
 4. Wait for the backup to complete.
@@ -885,7 +896,7 @@ View a complete audit trail of all actions performed in the system.
 
 ### 13.1 Viewing Activity Logs
 
-1. Click **Activity Logs** in the sidebar.
+1. Open **Administration › Activity Logs**.
 2. The table displays the most recent 100 entries with:
    - Date and Time
    - User who performed the action
@@ -931,7 +942,7 @@ Monitor SMS notification delivery and resend failed messages.
 
 ### 14.1 Viewing SMS Logs
 
-1. Click **SMS Logs** in the sidebar.
+1. Open **Messaging › SMS Logs**.
 2. The table displays:
    - Date and Time
    - Receipt Number
@@ -1001,7 +1012,7 @@ Monitor SMS notification delivery and resend failed messages.
 
 ### 14.7 Sending Official Messages
 
-Use **Send Message** (sidebar, under SMS Logs) to send an official notice to branches.
+Use **Send Message** (**Messaging › Send Message**) to send an official notice to branches.
 
 1. **Choose branches.** Pick a region (or *All regions*) and optionally search by code or name. Tick branches one by one, or click **Select all shown** to tick every branch the list shows. Ticks are kept when you change the region, so you can combine regions. **Clear** removes all ticks.
 2. Branches marked *No mobile number* or *Invalid number* cannot be ticked. Fix the number on the branch first (Churches → Edit → SMS Mobile Number).
@@ -1019,7 +1030,7 @@ Configure system-wide settings for your organization.
 
 ### 15.1 Accessing Settings
 
-1. Click **Settings** in the sidebar.
+1. Open **Administration › Settings**.
 2. The settings screen has four tabs: General, Receipt, SMS, and System.
 
 ### 15.2 General Settings
@@ -1108,7 +1119,7 @@ Manage your personal profile and change your password.
 
 ### 16.1 Viewing Your Profile
 
-1. Click **My Profile** in the sidebar.
+1. Click **My Profile** in the header.
 2. The screen shows your account information:
    - **Username** (read-only)
    - **Role** (read-only)
@@ -1117,6 +1128,7 @@ Manage your personal profile and change your password.
    - **Email** (editable)
    - **Mobile Number** (editable)
    - **Profile Picture** (uploadable)
+   - **Open after login** — the screen that opens when you sign in (see 3.4)
 
 ### 16.2 Updating Your Profile
 
