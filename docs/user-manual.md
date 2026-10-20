@@ -29,6 +29,7 @@
 16. [My Profile](#16-my-profile)
 17. [Troubleshooting](#17-troubleshooting)
 18. [Glossary](#18-glossary)
+19. [Finance](#19-finance)
 
 ---
 
@@ -1293,3 +1294,54 @@ For technical support or questions about the Church Management System, please co
 ---
 
 *Document Version: 1.1.0 — September 2026*
+
+---
+
+## 19. Finance
+
+The Finance module keeps the church's double-entry books. Open it from **Home › Finance** (Ctrl+5).
+
+### 19.1 Key ideas
+
+- Every financial event is a **journal entry**: debits must equal credits.
+- An entry is first a **draft** (can be edited or deleted). When it is **posted** it gets a number such as **JE-2027-00001** and can never be changed — mistakes are corrected with a **reversal**.
+- Income, expense and Accumulated Fund lines carry a **category** (A, B, C …) so each category's income and spending can be reported. Cash and bank lines do not.
+- The books start on the **go-live date** (1 January 2027). Entries cannot be dated earlier.
+
+### 19.2 Chart of Accounts
+
+**Finance › Chart of Accounts** shows all accounts grouped as Assets (1xxx), Liabilities (2xxx), Equity (3xxx), Income (4xxx) and Expenses (5xxx), with each account's balance.
+
+To add an account (needs *Manage accounts*): select the group (e.g. **1200 Bank Accounts**), click **Add account**, enter a 4-digit code inside the group's range shown in the dialog (e.g. 1201) and a name (e.g. *BOC Current Account*), then **Save**. Tick *This is a group* to create a new group (code ending in 00, directly under a main group).
+
+Accounts that have been used cannot change code or group and cannot be deleted — **Deactivate** them instead. Cash in Hand, Accumulated Fund, Tithes, Offerings and Other Donations are system accounts and stay active.
+
+### 19.3 General Journal
+
+**Finance › General Journal** lists entries by date, status and source. Click **New entry**, choose the date, type a narration and add lines: account, debit **or** credit, category (required for income, expense and Accumulated Fund lines), optional branch and memo. The bottom line shows the totals and warns *Out of balance by …* until debits equal credits.
+
+- **Save draft** keeps the entry for later.
+- **Post** records it permanently and gives it a number.
+- **Reverse…** (on a posted entry) asks for a reason and posts a new entry with debits and credits swapped.
+
+**Approval:** if *Require approval before posting* is ticked in **Settings › Finance**, the person who prepared an entry cannot post it; someone with *Approve finance entries* must post it.
+
+### 19.4 Opening Balances
+
+**Finance › Opening Balances** records the position on the go-live date: the balance of each asset and liability account (cash, bank, buildings, loans …) and the **Accumulated Fund for each category**. The totals must balance (Assets − Liabilities = Funds). **Save draft**, then **Post**. To correct posted opening balances, use **Reverse to correct** and enter them again.
+
+### 19.5 Account Ledger
+
+**Finance › Account Ledger** shows, for one account and date range, the opening balance, every posted line with a running balance, and the closing balance. Double-click a line to open its entry.
+
+### 19.6 Settings and permissions
+
+**Settings › Finance:** go-live date (locked after the first posting) and *Require approval before posting*.
+
+| Action | Permission |
+|--------|------------|
+| Open Finance and view | `finance.menu.view` |
+| Prepare entries and opening balances | `finance.entry` |
+| Post when approval is required; reverse | `finance.approve` |
+| Add, edit, deactivate accounts | `finance.accounts.manage` |
+| Close accounting years (later release) | `finance.year.close` |
