@@ -27,6 +27,7 @@ public class ActivityLogService {
     public static final String NAVIGATE_ACTIVITY_LOGS = "NAVIGATE_ACTIVITY_LOGS";
     public static final String NAVIGATE_SMS_LOGS = "NAVIGATE_SMS_LOGS";
     public static final String NAVIGATE_SEND_MESSAGE = "NAVIGATE_SEND_MESSAGE";
+    public static final String NAVIGATE_MODULE = "NAVIGATE_MODULE";
     public static final String REGION_CREATED = "REGION_CREATED";
     public static final String REGION_UPDATED = "REGION_UPDATED";
     public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
