@@ -23,6 +23,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
@@ -177,21 +178,42 @@ public class FinanceAccountsController {
         TextField codeField = new TextField(editing ? existing.code() : "");
         codeField.setPromptText("4 digits, e.g. 1201");
         TextField nameField = new TextField(editing ? existing.name() : "");
-        ComboBox<CashFlowClass> cashFlowCombo = new ComboBox<>();
-        cashFlowCombo.getItems().setAll(CashFlowClass.values());
-        cashFlowCombo.setPromptText("Same as group");
+        ComboBox<CashFlowOption> cashFlowCombo = new ComboBox<>();
         cashFlowCombo.setMaxWidth(Double.MAX_VALUE);
+        Label cashFlowHint = new Label("Used by the Cash Flow Statement to classify money moving through this account.");
+        cashFlowHint.getStyleClass().add("muted-label");
+        cashFlowHint.setWrapText(true);
+        cashFlowHint.setMaxWidth(380);
         TextField descriptionField = new TextField(editing && existing.description() != null ? existing.description() : "");
 
         if (editing) {
             groupCheckBox.setSelected(existing.group());
             groupCheckBox.setDisable(true);
-            cashFlowCombo.setValue(existing.cashFlowClass());
             if (existing.isTopGroup()) {
                 groupCombo.setDisable(true);
                 codeField.setDisable(true);
             }
         }
+
+        Runnable refreshCashFlow = () -> {
+            CashFlowOption current = cashFlowCombo.getValue();
+            Account group = groupCombo.getValue();
+            CashFlowClass inherited = group == null ? null : group.cashFlowClass();
+            List<CashFlowOption> options = new java.util.ArrayList<>();
+            options.add(new CashFlowOption(null, inherited == null
+                    ? "Same as group" : "Same as group (" + label(inherited.name()) + ")"));
+            for (CashFlowClass value : CashFlowClass.values()) {
+                options.add(new CashFlowOption(value, label(value.name())));
+            }
+            cashFlowCombo.getItems().setAll(options);
+            CashFlowClass wanted = current != null ? current.value()
+                    : editing && (inherited == null || existing.cashFlowClass() != inherited) ? existing.cashFlowClass()
+                    : null;
+            cashFlowCombo.setValue(options.stream().filter(option -> option.value() == wanted).findFirst()
+                    .orElse(options.getFirst()));
+        };
+        refreshCashFlow.run();
+        groupCombo.valueProperty().addListener((observable, oldValue, newValue) -> refreshCashFlow.run());
 
         GridPane grid = new GridPane();
         grid.setHgap(12);
@@ -206,8 +228,9 @@ public class FinanceAccountsController {
         grid.add(nameField, 1, 3);
         grid.add(DialogStyler.fieldLabel("Cash flow"), 0, 4);
         grid.add(cashFlowCombo, 1, 4);
-        grid.add(DialogStyler.fieldLabel("Description"), 0, 5);
-        grid.add(descriptionField, 1, 5);
+        grid.add(cashFlowHint, 1, 5);
+        grid.add(DialogStyler.fieldLabel("Description"), 0, 6);
+        grid.add(descriptionField, 1, 6);
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().setPrefWidth(560);
 
@@ -215,8 +238,13 @@ public class FinanceAccountsController {
         saveButton.addEventFilter(ActionEvent.ACTION, event -> {
             event.consume();
             Account group = groupCombo.getValue();
+            CashFlowOption cashFlow = cashFlowCombo.getValue();
+            // "Same as group" resolves to the group's class (a top group keeps its own class when edited).
+            CashFlowClass cashFlowClass = cashFlow != null && cashFlow.value() != null ? cashFlow.value()
+                    : group != null ? group.cashFlowClass()
+                    : editing ? existing.cashFlowClass() : null;
             AccountRequest request = new AccountRequest(codeField.getText(), nameField.getText(),
-                    group == null ? null : group.id(), groupCheckBox.isSelected(), cashFlowCombo.getValue(),
+                    group == null ? null : group.id(), groupCheckBox.isSelected(), cashFlowClass,
                     descriptionField.getText());
             try {
                 if (editing) {
@@ -286,6 +314,14 @@ public class FinanceAccountsController {
     private void run(String message, Runnable action) {
         ProcessingDialog.run("Chart of Accounts", message, action::run, this::handleRefresh,
                 throwable -> showError(throwable.getMessage()));
+    }
+
+    /** A cash-flow choice; a null value means "same as the group". */
+    private record CashFlowOption(CashFlowClass value, String text) {
+        @Override
+        public String toString() {
+            return text;
+        }
     }
 
     private static String label(String enumName) {
