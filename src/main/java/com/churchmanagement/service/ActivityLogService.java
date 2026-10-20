@@ -26,6 +26,7 @@ public class ActivityLogService {
     public static final String NAVIGATE_BACKUP_RESTORE = "NAVIGATE_BACKUP_RESTORE";
     public static final String NAVIGATE_ACTIVITY_LOGS = "NAVIGATE_ACTIVITY_LOGS";
     public static final String NAVIGATE_SMS_LOGS = "NAVIGATE_SMS_LOGS";
+    public static final String NAVIGATE_SEND_MESSAGE = "NAVIGATE_SEND_MESSAGE";
     public static final String REGION_CREATED = "REGION_CREATED";
     public static final String REGION_UPDATED = "REGION_UPDATED";
     public static final String REGION_ACTIVATED = "REGION_ACTIVATED";
@@ -71,6 +72,9 @@ public class ActivityLogService {
     public static final String SMS_RESENT_FAILED = "SMS_RESENT_FAILED";
     public static final String SMS_RESEND_BLOCKED_EXPIRED = "SMS_RESEND_BLOCKED_EXPIRED";
     public static final String SMS_RESEND_BLOCKED_PERMISSION = "SMS_RESEND_BLOCKED_PERMISSION";
+    public static final String OFFICIAL_SMS_QUEUED = "OFFICIAL_SMS_QUEUED";
+    public static final String OFFICIAL_SMS_SENT = "OFFICIAL_SMS_SENT";
+    public static final String OFFICIAL_SMS_FAILED = "OFFICIAL_SMS_FAILED";
     public static final String BACKUP_CREATED = "BACKUP_CREATED";
     public static final String BACKUP_FAILED = "BACKUP_FAILED";
     public static final String AUTO_BACKUP_CREATED = "AUTO_BACKUP_CREATED";
@@ -386,6 +390,35 @@ public class ActivityLogService {
 
     public void logSmsResendBlockedPermission(Long userId, Long originalSmsLogId) {
         log(userId, SMS_RESEND_BLOCKED_PERMISSION, "original_sms_log_id: " + nullToBlank(originalSmsLogId));
+    }
+
+    public void logOfficialSmsQueued(Long userId, String batchUuid, int queuedCount, int skippedCount,
+                                     int partCount, String message) {
+        String preview = message == null ? "" : message.substring(0, Math.min(100, message.length()));
+        log(userId, OFFICIAL_SMS_QUEUED, "SMS", batchUuid,
+                "batch_uuid: " + nullToBlank(batchUuid)
+                        + ", queued: " + queuedCount
+                        + ", skipped: " + skippedCount
+                        + ", parts: " + partCount
+                        + ", message: " + preview);
+    }
+
+    public void logOfficialSmsSent(Long userId, String batchUuid, Long churchId, String mobileNumber,
+                                   String modemReference) {
+        log(userId, OFFICIAL_SMS_SENT, "SMS", batchUuid,
+                "batch_uuid: " + nullToBlank(batchUuid)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
+                        + ", modem_reference: " + nullToBlank(modemReference));
+    }
+
+    public void logOfficialSmsFailed(Long userId, String batchUuid, Long churchId, String mobileNumber,
+                                     String reason) {
+        log(userId, OFFICIAL_SMS_FAILED, "SMS", batchUuid,
+                "batch_uuid: " + nullToBlank(batchUuid)
+                        + ", church_id: " + nullToBlank(churchId)
+                        + ", mobile_number: " + maskMobileNumber(mobileNumber)
+                        + ", reason: " + nullToBlank(reason));
     }
 
     private void logSmsResend(Long userId, String action, Long originalSmsLogId, Long newSmsLogId, Long receiptId,
