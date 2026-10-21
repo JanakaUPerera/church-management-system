@@ -167,6 +167,50 @@ class AccountServiceTest {
     }
 
     @Test
+    void suggestsNextCodeFollowingTheGroupsNumbering() {
+        Account assets = FinanceFakes.account(1L, "1000", "Assets", AccountType.ASSET, null, true);
+        Account bank = FinanceFakes.account(3L, "1200", "Bank Accounts", AccountType.ASSET, 1L, true);
+        Account fixed = FinanceFakes.account(6L, "1500", "Fixed Assets", AccountType.ASSET, 1L, true);
+        Account income = FinanceFakes.account(4L, "4000", "Income", AccountType.INCOME, null, true);
+        Account expenses = FinanceFakes.account(7L, "5000", "Expenses", AccountType.EXPENSE, null, true);
+        List<Account> chart = List.of(assets, bank, fixed,
+                FinanceFakes.account(2L, "1100", "Cash", AccountType.ASSET, 1L, false),
+                FinanceFakes.account(10L, "1510", "Land", AccountType.ASSET, 6L, false),
+                FinanceFakes.account(11L, "1520", "Vehicles", AccountType.ASSET, 6L, false),
+                income,
+                FinanceFakes.account(12L, "4100", "Tithes", AccountType.INCOME, 4L, false),
+                FinanceFakes.account(13L, "4900", "Other Income", AccountType.INCOME, 4L, false),
+                expenses,
+                FinanceFakes.account(14L, "5850", "Bank Charges", AccountType.EXPENSE, 7L, false),
+                FinanceFakes.account(15L, "5990", "Misc", AccountType.EXPENSE, 7L, false));
+
+        assertEquals("1600", AccountService.suggestCode(assets, false, chart));
+        assertEquals("1201", AccountService.suggestCode(bank, false, chart));
+        assertEquals("1530", AccountService.suggestCode(fixed, false, chart));
+        assertEquals("4910", AccountService.suggestCode(income, false, chart));
+        assertEquals("5991", AccountService.suggestCode(expenses, false, chart));
+        assertEquals("1600", AccountService.suggestCode(assets, true, chart));
+        assertEquals("4200", AccountService.suggestCode(income, true, chart));
+        assertEquals(null, AccountService.suggestCode(bank, true, chart));
+    }
+
+    @Test
+    void suggestedCodeSkipsCodesAlreadyUsedAnywhere() {
+        Account bank = FinanceFakes.account(3L, "1200", "Bank Accounts", AccountType.ASSET, 1L, true);
+        List<Account> chart = List.of(bank,
+                FinanceFakes.account(20L, "1201", "BOC", AccountType.ASSET, 3L, false),
+                FinanceFakes.account(21L, "1202", "Old", AccountType.ASSET, 99L, false));
+
+        assertEquals("1203", AccountService.suggestCode(bank, false, chart));
+    }
+
+    @Test
+    void serviceSuggestsFromTheStoredChart() {
+        assertEquals("1201", service.suggestNextCode(3L, false));
+        assertEquals("", service.suggestNextCode(2L, false));
+    }
+
+    @Test
     void postingAccountsExcludeGroupsAndInactive() {
         repository.updateStatus(5L, Account.Status.INACTIVE, null);
 

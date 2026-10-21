@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Chart of accounts maintenance. */
 public class AccountService {
@@ -186,6 +188,68 @@ public class AccountService {
         } catch (DatabaseException exception) {
             throw new FinanceException("Unable to delete the account right now.", exception);
         }
+    }
+
+    /** The next free code under a group, following its numbering; "" when none fits. */
+    public String suggestNextCode(long parentId, boolean group) {
+        try {
+            List<Account> chart = accountRepository.findAll();
+            String code = chart.stream()
+                    .filter(account -> account.id() == parentId && account.group())
+                    .findFirst()
+                    .map(parent -> suggestCode(parent, group, chart))
+                    .orElse(null);
+            return code == null ? "" : code;
+        } catch (DatabaseException exception) {
+            return "";
+        }
+    }
+
+    /**
+     * Next free code under {@code parent}. Accounts continue the spacing their siblings use
+     * (hundreds, tens or units), falling back to smaller steps and then to the first free code;
+     * a new group takes the next free hundred under a main group. Null when nothing fits.
+     */
+    static String suggestCode(Account parent, boolean group, List<Account> chart) {
+        Set<Integer> used = chart.stream().map(account -> Integer.parseInt(account.code())).collect(Collectors.toSet());
+        List<Integer> children = chart.stream()
+                .filter(account -> parent.id().equals(account.parentId()))
+                .map(account -> Integer.parseInt(account.code()))
+                .toList();
+        int base = Integer.parseInt(parent.code());
+        int high = parent.isTopGroup() ? base + 999 : base + 99;
+        int max = children.stream().max(Integer::compare).orElse(base);
+        if (group) {
+            if (!parent.isTopGroup()) {
+                return null;
+            }
+            Integer next = firstFree(used, (max / 100) * 100 + 100, high, 100);
+            return format(next != null ? next : firstFree(used, base + 100, high, 100));
+        }
+        int[] steps = children.isEmpty() ? new int[]{1}
+                : children.stream().allMatch(code -> code % 100 == 0) ? new int[]{100, 10, 1}
+                : children.stream().allMatch(code -> code % 10 == 0) ? new int[]{10, 1}
+                : new int[]{1};
+        for (int step : steps) {
+            Integer next = firstFree(used, (max / step) * step + step, high, step);
+            if (next != null) {
+                return format(next);
+            }
+        }
+        return format(firstFree(used, base + 1, high, 1));
+    }
+
+    private static Integer firstFree(Set<Integer> used, int from, int to, int step) {
+        for (int code = from; code <= to; code += step) {
+            if (!used.contains(code)) {
+                return code;
+            }
+        }
+        return null;
+    }
+
+    private static String format(Integer code) {
+        return code == null ? null : String.format("%04d", code);
     }
 
     /** "4001–4999" for a top group, "1201–1299" for a sub-group. */
