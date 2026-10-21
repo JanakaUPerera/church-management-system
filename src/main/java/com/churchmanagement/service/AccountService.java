@@ -210,9 +210,11 @@ public class AccountService {
     }
 
     /**
-     * Next free code under {@code parent}. Accounts continue the spacing their siblings use
-     * (hundreds, tens or units), falling back to smaller steps and then to the first free code;
-     * a new group takes the next free hundred under a main group. Null when nothing fits.
+     * Next free code under {@code parent}. The group's spacing is the step most of its accounts use
+     * (hundreds, tens or units). The first unused slot at that spacing, from the group's first slot
+     * up to its highest code, fills a gap; otherwise the next slot after the highest code is used,
+     * then finer steps after it, then any free code in the range. A new group takes the first free
+     * hundred under a main group. Codes used anywhere in the chart are skipped. Null when nothing fits.
      */
     static String suggestCode(Account parent, boolean group, List<Account> chart) {
         Set<Integer> used = chart.stream().map(account -> Integer.parseInt(account.code())).collect(Collectors.toSet());
@@ -222,25 +224,39 @@ public class AccountService {
                 .toList();
         int base = Integer.parseInt(parent.code());
         int high = parent.isTopGroup() ? base + 999 : base + 99;
-        int max = children.stream().max(Integer::compare).orElse(base);
         if (group) {
             if (!parent.isTopGroup()) {
                 return null;
             }
-            Integer next = firstFree(used, (max / 100) * 100 + 100, high, 100);
-            return format(next != null ? next : firstFree(used, base + 100, high, 100));
+            return format(firstFree(used, base + 100, high, 100));
         }
-        int[] steps = children.isEmpty() ? new int[]{1}
-                : children.stream().allMatch(code -> code % 100 == 0) ? new int[]{100, 10, 1}
-                : children.stream().allMatch(code -> code % 10 == 0) ? new int[]{10, 1}
-                : new int[]{1};
-        for (int step : steps) {
+        if (children.isEmpty()) {
+            return format(firstFree(used, base + 1, high, 1));
+        }
+        int max = children.stream().max(Integer::compare).orElse(base);
+        int spacing = spacing(children, parent.isTopGroup());
+        Integer gap = firstFree(used, base + spacing, max, spacing);
+        if (gap != null) {
+            return format(gap);
+        }
+        for (int step = spacing; step >= 1; step /= 10) {
             Integer next = firstFree(used, (max / step) * step + step, high, step);
             if (next != null) {
                 return format(next);
             }
         }
         return format(firstFree(used, base + 1, high, 1));
+    }
+
+    /** The coarsest step (100 for a main group, else 10) that at least half of the codes are a multiple of. */
+    private static int spacing(List<Integer> codes, boolean topGroup) {
+        for (int step : topGroup ? new int[]{100, 10} : new int[]{10}) {
+            long multiples = codes.stream().filter(code -> code % step == 0).count();
+            if (multiples * 2 >= codes.size()) {
+                return step;
+            }
+        }
+        return 1;
     }
 
     private static Integer firstFree(Set<Integer> used, int from, int to, int step) {

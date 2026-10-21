@@ -208,40 +208,84 @@ class AccountServiceTest {
 
     @Test
     void suggestsNextCodeFollowingTheGroupsNumbering() {
-        Account assets = FinanceFakes.account(1L, "1000", "Assets", AccountType.ASSET, null, true);
-        Account bank = FinanceFakes.account(3L, "1200", "Bank Accounts", AccountType.ASSET, 1L, true);
-        Account fixed = FinanceFakes.account(6L, "1500", "Fixed Assets", AccountType.ASSET, 1L, true);
-        Account income = FinanceFakes.account(4L, "4000", "Income", AccountType.INCOME, null, true);
-        Account expenses = FinanceFakes.account(7L, "5000", "Expenses", AccountType.EXPENSE, null, true);
+        Account assets = group(1L, "1000", AccountType.ASSET, null);
+        Account bank = group(3L, "1200", AccountType.ASSET, 1L);
+        Account fixed = group(6L, "1500", AccountType.ASSET, 1L);
         List<Account> chart = List.of(assets, bank, fixed,
-                FinanceFakes.account(2L, "1100", "Cash", AccountType.ASSET, 1L, false),
-                FinanceFakes.account(10L, "1510", "Land", AccountType.ASSET, 6L, false),
-                FinanceFakes.account(11L, "1520", "Vehicles", AccountType.ASSET, 6L, false),
-                income,
-                FinanceFakes.account(12L, "4100", "Tithes", AccountType.INCOME, 4L, false),
-                FinanceFakes.account(13L, "4900", "Other Income", AccountType.INCOME, 4L, false),
-                expenses,
-                FinanceFakes.account(14L, "5850", "Bank Charges", AccountType.EXPENSE, 7L, false),
-                FinanceFakes.account(15L, "5990", "Misc", AccountType.EXPENSE, 7L, false));
+                posting(2L, "1100", AccountType.ASSET, 1L),
+                posting(8L, "1300", AccountType.ASSET, 1L),
+                posting(9L, "1400", AccountType.ASSET, 1L),
+                posting(10L, "1510", AccountType.ASSET, 6L),
+                posting(11L, "1520", AccountType.ASSET, 6L));
 
         assertEquals("1600", AccountService.suggestCode(assets, false, chart));
         assertEquals("1201", AccountService.suggestCode(bank, false, chart));
         assertEquals("1530", AccountService.suggestCode(fixed, false, chart));
-        assertEquals("4910", AccountService.suggestCode(income, false, chart));
-        assertEquals("5991", AccountService.suggestCode(expenses, false, chart));
         assertEquals("1600", AccountService.suggestCode(assets, true, chart));
-        assertEquals("4200", AccountService.suggestCode(income, true, chart));
         assertEquals(null, AccountService.suggestCode(bank, true, chart));
     }
 
     @Test
+    void fillsGapsAtTheGroupsSpacingBeforeGoingPastTheLastCode() {
+        Account income = group(4L, "4000", AccountType.INCOME, null);
+        Account bank = group(3L, "1200", AccountType.ASSET, 1L);
+        List<Account> chart = List.of(income, bank,
+                posting(41L, "4100", AccountType.INCOME, 4L),
+                posting(42L, "4200", AccountType.INCOME, 4L),
+                posting(43L, "4300", AccountType.INCOME, 4L),
+                posting(44L, "4400", AccountType.INCOME, 4L),
+                posting(45L, "4500", AccountType.INCOME, 4L),
+                posting(46L, "4600", AccountType.INCOME, 4L),
+                posting(49L, "4900", AccountType.INCOME, 4L),
+                posting(21L, "1201", AccountType.ASSET, 3L),
+                posting(23L, "1203", AccountType.ASSET, 3L));
+
+        assertEquals("4700", AccountService.suggestCode(income, false, chart));
+        assertEquals("4700", AccountService.suggestCode(income, true, chart));
+        assertEquals("1202", AccountService.suggestCode(bank, false, chart));
+    }
+
+    @Test
+    void leadingSlotIsAGapWhenTheFirstAccountWasRemoved() {
+        Account bank = group(3L, "1200", AccountType.ASSET, 1L);
+        List<Account> chart = List.of(bank, posting(22L, "1202", AccountType.ASSET, 3L));
+
+        assertEquals("1201", AccountService.suggestCode(bank, false, chart));
+    }
+
+    @Test
+    void mixedSpacingUsesTheMajorityAndIgnoresFinerHolesBeforeTheLastCode() {
+        Account expenses = group(7L, "5000", AccountType.EXPENSE, null);
+        List<Account> chart = new java.util.ArrayList<>(List.of(expenses));
+        for (int code = 5100; code <= 5900; code += 100) {
+            chart.add(posting(code, String.valueOf(code), AccountType.EXPENSE, 7L));
+        }
+        chart.add(posting(5850L, "5850", AccountType.EXPENSE, 7L));
+        chart.add(posting(5950L, "5950", AccountType.EXPENSE, 7L));
+        chart.add(posting(5990L, "5990", AccountType.EXPENSE, 7L));
+
+        assertEquals("5991", AccountService.suggestCode(expenses, false, chart));
+
+        chart.removeIf(account -> account.code().equals("5300"));
+        assertEquals("5300", AccountService.suggestCode(expenses, false, chart));
+    }
+
+    @Test
     void suggestedCodeSkipsCodesAlreadyUsedAnywhere() {
-        Account bank = FinanceFakes.account(3L, "1200", "Bank Accounts", AccountType.ASSET, 1L, true);
+        Account bank = group(3L, "1200", AccountType.ASSET, 1L);
         List<Account> chart = List.of(bank,
-                FinanceFakes.account(20L, "1201", "BOC", AccountType.ASSET, 3L, false),
-                FinanceFakes.account(21L, "1202", "Old", AccountType.ASSET, 99L, false));
+                posting(20L, "1201", AccountType.ASSET, 3L),
+                posting(21L, "1202", AccountType.ASSET, 99L));
 
         assertEquals("1203", AccountService.suggestCode(bank, false, chart));
+    }
+
+    private static Account group(long id, String code, AccountType type, Long parentId) {
+        return FinanceFakes.account(id, code, "Group " + code, type, parentId, true);
+    }
+
+    private static Account posting(long id, String code, AccountType type, Long parentId) {
+        return FinanceFakes.account(id, code, "Account " + code, type, parentId, false);
     }
 
     @Test
