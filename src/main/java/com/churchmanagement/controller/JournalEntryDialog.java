@@ -115,14 +115,20 @@ public final class JournalEntryDialog {
             entry.lines().forEach(this::addRow);
         }
         Button addLineButton = new Button("Add line");
+        ButtonIconUtil.applyIcon(addLineButton, "fas-plus");
         addLineButton.setOnAction(event -> addRow(null));
-        addLineButton.setVisible(!readOnly);
-        addLineButton.setManaged(!readOnly);
+        // Directly under the last line, right-aligned under the remove buttons.
+        Region addLineSpacer = new Region();
+        HBox.setHgrow(addLineSpacer, Priority.ALWAYS);
+        HBox addLineRow = new HBox(addLineSpacer, addLineButton);
+        addLineRow.setAlignment(Pos.CENTER_RIGHT);
+        addLineRow.setVisible(!readOnly);
+        addLineRow.setManaged(!readOnly);
 
-        ScrollPane linesScroll = new ScrollPane(linesBox);
+        ScrollPane linesScroll = new ScrollPane(new VBox(8, linesBox, addLineRow));
         linesScroll.setFitToWidth(true);
         linesScroll.setPrefViewportHeight(280);
-        VBox content = new VBox(12, header, columnHeader, linesScroll, totalsRow(addLineButton));
+        VBox content = new VBox(12, header, columnHeader, linesScroll, totalsRow());
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().setPrefWidth(DIALOG_WIDTH);
 
@@ -266,10 +272,10 @@ public final class JournalEntryDialog {
         }
     }
 
-    private HBox totalsRow(Button addLineButton) {
+    private HBox totalsRow() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox row = new HBox(12, addLineButton, spacer, totalsLabel, balanceBadge);
+        HBox row = new HBox(12, spacer, totalsLabel, balanceBadge);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
