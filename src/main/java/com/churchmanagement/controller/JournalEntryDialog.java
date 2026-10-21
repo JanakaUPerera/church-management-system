@@ -147,9 +147,8 @@ public final class JournalEntryDialog {
             dialog.getDialogPane().getButtonTypes().add(reverseType);
         }
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        if (dialog.getDialogPane().lookup(".button-bar") instanceof ButtonBar buttonBar) {
-            buttonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
-        }
+        keepButtonsInAddedOrder(dialog);
+        dialog.setOnShowing(event -> keepButtonsInAddedOrder(dialog));
         icon(dialog, deleteType, "fas-trash-alt");
         icon(dialog, saveType, "fas-save");
         icon(dialog, postType, "fas-check");
@@ -186,6 +185,13 @@ public final class JournalEntryDialog {
         });
         updateTotals();
         dialog.showAndWait();
+    }
+
+    /** Right-aligned buttons in the order they were added, instead of the platform's grouping. */
+    private static void keepButtonsInAddedOrder(Dialog<ButtonType> dialog) {
+        if (dialog.getDialogPane().lookup(".button-bar") instanceof ButtonBar buttonBar) {
+            buttonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
+        }
     }
 
     private static void icon(Dialog<ButtonType> dialog, ButtonType type, String iconLiteral) {
@@ -298,7 +304,7 @@ public final class JournalEntryDialog {
         private final ComboBox<CollectionCategory> category = new ComboBox<>(FXCollections.observableArrayList(categories));
         private final ComboBox<Church> branch = new ComboBox<>();
         private final TextField memo = new TextField();
-        private final Button remove = new Button("✕");
+        private final Button remove = new Button();
         private final HBox node;
 
         private LineRow(JournalLine line) {
@@ -341,6 +347,9 @@ public final class JournalEntryDialog {
             credit.textProperty().addListener((observable, oldValue, newValue) -> updateTotals());
             node = new HBox(6, account, debit, credit, category, branch, memo, remove);
             node.setAlignment(Pos.CENTER_LEFT);
+            ButtonIconUtil.applyTableActionIcon(remove, "fas-times", "Remove line");
+            remove.setMinWidth(34);
+            remove.getStyleClass().add("table-action-button");
             remove.setOnAction(event -> {
                 rows.remove(this);
                 linesBox.getChildren().remove(node);
