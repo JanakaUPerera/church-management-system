@@ -15,6 +15,7 @@ import com.churchmanagement.service.AccountService;
 import com.churchmanagement.service.CollectionCategoryService;
 import com.churchmanagement.service.FinanceSettings;
 import com.churchmanagement.service.JournalService;
+import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.MoneyFormat;
@@ -48,6 +49,13 @@ import java.util.stream.Collectors;
 
 /** Create, edit, post, delete and reverse a journal entry. Posted entries open read-only. */
 public final class JournalEntryDialog {
+    private static final double DIALOG_WIDTH = 1240;
+    private static final double ACCOUNT_WIDTH = 300;
+    private static final double AMOUNT_WIDTH = 130;
+    private static final double CATEGORY_WIDTH = 150;
+    private static final double BRANCH_WIDTH = 210;
+    private static final double MEMO_WIDTH = 200;
+
     private final JournalService journalService = new JournalService();
     private final List<Account> accounts;
     private final Map<Long, Account> accountsById;
@@ -93,8 +101,9 @@ public final class JournalEntryDialog {
         header.add(DialogStyler.fieldLabel("Narration"), 0, 1);
         header.add(narrationField, 1, 1);
 
-        HBox columnHeader = new HBox(6, fixed("Account", 260), fixed("Debit", 110), fixed("Credit", 110),
-                fixed("Category", 130), fixed("Branch", 170), fixed("Memo", 170));
+        HBox columnHeader = new HBox(6, fixed("Account", ACCOUNT_WIDTH), fixed("Debit", AMOUNT_WIDTH),
+                fixed("Credit", AMOUNT_WIDTH), fixed("Category", CATEGORY_WIDTH), fixed("Branch", BRANCH_WIDTH),
+                fixed("Memo", MEMO_WIDTH));
         columnHeader.getStyleClass().add("field-label");
         if (entry == null) {
             addRow(null);
@@ -112,19 +121,20 @@ public final class JournalEntryDialog {
         linesScroll.setPrefViewportHeight(280);
         VBox content = new VBox(12, header, columnHeader, linesScroll, new HBox(12, addLineButton, totalsLabel));
         dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().setPrefWidth(1040);
+        dialog.getDialogPane().setPrefWidth(DIALOG_WIDTH);
 
-        ButtonType saveType = new ButtonType("Save draft", ButtonBar.ButtonData.LEFT);
+        ButtonType saveType = new ButtonType("Save draft", ButtonBar.ButtonData.OTHER);
         ButtonType postType = new ButtonType("Post", ButtonBar.ButtonData.OK_DONE);
-        ButtonType deleteType = new ButtonType("Delete draft", ButtonBar.ButtonData.LEFT);
+        ButtonType deleteType = new ButtonType("Delete draft", ButtonBar.ButtonData.OTHER);
         ButtonType reverseType = new ButtonType("Reverse…", ButtonBar.ButtonData.OTHER);
         boolean canEnter = AuthContext.getCurrentUser()
                 .map(user -> new PermissionGuard(user).can("finance.entry")).orElse(false);
-        if (!readOnly && canEnter) {
-            dialog.getDialogPane().getButtonTypes().add(saveType);
-        }
+        // Added in display order; the button bar keeps that order, right-aligned.
         if (entry != null && !entry.isPosted() && !readOnly && canEnter) {
             dialog.getDialogPane().getButtonTypes().add(deleteType);
+        }
+        if (!readOnly && canEnter) {
+            dialog.getDialogPane().getButtonTypes().add(saveType);
         }
         boolean approvalRequired = new FinanceSettings().approvalRequired();
         if (!readOnly && (entry == null ? canEnter && !approvalRequired : journalService.canPost(entry))) {
@@ -134,6 +144,14 @@ public final class JournalEntryDialog {
             dialog.getDialogPane().getButtonTypes().add(reverseType);
         }
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        if (dialog.getDialogPane().lookup(".button-bar") instanceof ButtonBar buttonBar) {
+            buttonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
+        }
+        icon(dialog, deleteType, "fas-trash-alt");
+        icon(dialog, saveType, "fas-save");
+        icon(dialog, postType, "fas-check");
+        icon(dialog, reverseType, "fas-undo");
+        icon(dialog, ButtonType.CLOSE, "fas-times");
         setEditable(!readOnly);
 
         action(dialog, saveType, () -> {
@@ -165,6 +183,12 @@ public final class JournalEntryDialog {
         });
         updateTotals();
         dialog.showAndWait();
+    }
+
+    private static void icon(Dialog<ButtonType> dialog, ButtonType type, String iconLiteral) {
+        if (dialog.getDialogPane().lookupButton(type) instanceof Button button) {
+            ButtonIconUtil.applyIcon(button, iconLiteral);
+        }
     }
 
     private void action(Dialog<ButtonType> dialog, ButtonType type, Runnable work) {
@@ -271,11 +295,11 @@ public final class JournalEntryDialog {
         private LineRow(JournalLine line) {
             account.setItems(new FilteredList<>(FXCollections.observableArrayList(accounts), item -> true));
             ComboBoxUtil.makeSearchable(account, Account::displayText);
-            account.setPrefWidth(260);
+            account.setPrefWidth(ACCOUNT_WIDTH);
             ComboBoxUtil.makeChurchSearchable(branch, FXCollections.observableArrayList(churches));
             branch.setPromptText("(none)");
-            branch.setPrefWidth(170);
-            category.setPrefWidth(130);
+            branch.setPrefWidth(BRANCH_WIDTH);
+            category.setPrefWidth(CATEGORY_WIDTH);
             category.setConverter(new javafx.util.StringConverter<>() {
                 @Override
                 public String toString(CollectionCategory value) {
@@ -287,11 +311,11 @@ public final class JournalEntryDialog {
                     return null;
                 }
             });
-            debit.setPrefWidth(110);
-            credit.setPrefWidth(110);
+            debit.setPrefWidth(AMOUNT_WIDTH);
+            credit.setPrefWidth(AMOUNT_WIDTH);
             debit.setAlignment(Pos.CENTER_RIGHT);
             credit.setAlignment(Pos.CENTER_RIGHT);
-            memo.setPrefWidth(170);
+            memo.setPrefWidth(MEMO_WIDTH);
             HBox.setHgrow(memo, Priority.ALWAYS);
             if (line != null) {
                 account.setValue(accountsById.get(line.accountId()));
