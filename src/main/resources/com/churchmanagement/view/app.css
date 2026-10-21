@@ -857,6 +857,29 @@
     -fx-background-color: #92400e;
 }
 
+/* Group accounts in the Chart of Accounts: tinted band, bold text */
+.tree-table-view .tree-table-row-cell.account-group-row,
+.tree-table-view .tree-table-row-cell.account-group-row:odd {
+    -fx-background-color: #fef3c7;
+}
+
+.tree-table-view .tree-table-row-cell.account-group-row:hover {
+    -fx-background-color: #fde68a;
+}
+
+.tree-table-view .tree-table-row-cell.account-group-row:selected {
+    -fx-background-color: #fcd34d;
+}
+
+.tree-table-view .tree-table-row-cell.account-group-row .tree-table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: #78350f;
+}
+
+.tree-table-view .tree-table-row-cell.account-group-row.muted-label .tree-table-cell {
+    -fx-text-fill: #a8a29e;
+}
+
 .tree-table-view .placeholder .label {
     -fx-text-fill: #92400e;
     -fx-font-size: 13px;
@@ -3125,6 +3148,25 @@
     -fx-background-color: #fbbf24;
 }
 
+.theme-dark .tree-table-view .tree-table-row-cell.account-group-row,
+.theme-dark .tree-table-view .tree-table-row-cell.account-group-row:odd {
+    -fx-background-color: #263244;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell.account-group-row:hover,
+.theme-dark .tree-table-view .tree-table-row-cell.account-group-row:selected {
+    -fx-background-color: #3b4a61;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell.account-group-row .tree-table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: #fbbf24;
+}
+
+.theme-dark .tree-table-view .tree-table-row-cell.account-group-row.muted-label .tree-table-cell {
+    -fx-text-fill: #6b7280;
+}
+
 .theme-dark .module-page,
 .theme-dark .backup-restore-card,
 .theme-dark .placeholder-page,
@@ -4180,6 +4222,25 @@
 
 .theme-orchid .tree-table-view .tree-disclosure-node .arrow {
     -fx-background-color: #8c23a0;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell.account-group-row,
+.theme-orchid .tree-table-view .tree-table-row-cell.account-group-row:odd {
+    -fx-background-color: #f8e1f9;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell.account-group-row:hover,
+.theme-orchid .tree-table-view .tree-table-row-cell.account-group-row:selected {
+    -fx-background-color: #f3cdf4;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell.account-group-row .tree-table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: #6e1871;
+}
+
+.theme-orchid .tree-table-view .tree-table-row-cell.account-group-row.muted-label .tree-table-cell {
+    -fx-text-fill: #b58bb7;
 }
 
 /* ── Table action buttons ── */

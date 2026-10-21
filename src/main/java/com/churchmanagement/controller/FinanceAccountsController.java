@@ -71,9 +71,14 @@ public class FinanceAccountsController {
                 @Override
                 protected void updateItem(AccountNode item, boolean empty) {
                     super.updateItem(item, empty);
-                    getStyleClass().remove("muted-label");
-                    if (!empty && item != null && !item.account().isActive()) {
-                        getStyleClass().add("muted-label");
+                    getStyleClass().removeAll("muted-label", "account-group-row");
+                    if (!empty && item != null) {
+                        if (item.account().group()) {
+                            getStyleClass().add("account-group-row");
+                        }
+                        if (!item.account().isActive()) {
+                            getStyleClass().add("muted-label");
+                        }
                     }
                 }
             };
@@ -101,12 +106,10 @@ public class FinanceAccountsController {
                 throwable -> showError(throwable.getMessage()));
     }
 
+    /** Opens a blank form; choosing a group fills in the next free code. */
     @FXML
     private void handleAdd() {
-        AccountNode selected = selectedNode();
-        Account parent = selected == null ? null
-                : selected.account().group() ? selected.account() : findParent(selected);
-        showAccountDialog(null, parent);
+        showAccountDialog(null, null);
     }
 
     @FXML
@@ -214,6 +217,23 @@ public class FinanceAccountsController {
         };
         refreshCashFlow.run();
         groupCombo.valueProperty().addListener((observable, oldValue, newValue) -> refreshCashFlow.run());
+
+        if (!editing) {
+            // Suggest the next free code; a code the user typed is never overwritten.
+            String[] lastSuggestion = {""};
+            Runnable suggestCode = () -> {
+                Account group = groupCombo.getValue();
+                String current = codeField.getText() == null ? "" : codeField.getText().strip();
+                if (group == null || !(current.isEmpty() || current.equals(lastSuggestion[0]))) {
+                    return;
+                }
+                String suggestion = accountService.suggestNextCode(group.id(), groupCheckBox.isSelected());
+                codeField.setText(suggestion);
+                lastSuggestion[0] = suggestion;
+            };
+            groupCombo.valueProperty().addListener((observable, oldValue, newValue) -> suggestCode.run());
+            groupCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> suggestCode.run());
+        }
 
         GridPane grid = new GridPane();
         grid.setHgap(12);
