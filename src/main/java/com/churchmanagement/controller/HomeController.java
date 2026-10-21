@@ -37,7 +37,6 @@ public class HomeController {
     private static final String STYLESHEET = "/com/churchmanagement/view/app.css";
 
     @FXML private Label greetingLabel;
-    @FXML private Label dateLabel;
     @FXML private TilePane tilePane;
 
     private final Map<String, Label> badgeLabels = new HashMap<>();
@@ -49,7 +48,6 @@ public class HomeController {
         this.access = access;
         this.navigator = navigator;
         greetingLabel.setText(greeting() + ", " + user.getFullName());
-        dateLabel.setText(LocalDate.now().format(dateFormatter()));
         tilePane.getChildren().setAll(access.visibleModules().stream().map(this::tile).toList());
         loadBadges();
     }
