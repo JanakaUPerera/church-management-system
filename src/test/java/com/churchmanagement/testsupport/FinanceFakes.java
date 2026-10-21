@@ -54,6 +54,8 @@ public final class FinanceFakes {
         public final Map<Long, Account> accounts = new LinkedHashMap<>();
         public final Map<Long, BigDecimal> netDebits = new HashMap<>();
         public final List<Long> usedIds = new ArrayList<>();
+        public final List<Long> draftIds = new ArrayList<>();
+        public final Map<Long, Integer> openYearUsage = new HashMap<>();
         private long nextId = 1000;
 
         public FakeAccountRepository() {
@@ -126,6 +128,21 @@ public final class FinanceFakes {
         @Override
         public Map<Long, BigDecimal> postedNetDebits() {
             return netDebits;
+        }
+
+        @Override
+        public BigDecimal postedNetDebit(long id) {
+            return netDebits.getOrDefault(id, BigDecimal.ZERO);
+        }
+
+        @Override
+        public boolean hasDraftLines(long id) {
+            return draftIds.contains(id);
+        }
+
+        @Override
+        public Optional<Integer> openYearWithPostedLines(long id) {
+            return Optional.ofNullable(openYearUsage.get(id));
         }
     }
 

@@ -1314,7 +1314,13 @@ The Finance module keeps the church's double-entry books. Open it from **Home �
 
 To add an account (needs *Manage accounts*): select the group (e.g. **1200 Bank Accounts**), click **Add account**, enter a 4-digit code inside the group's range shown in the dialog (e.g. 1201) and a name (e.g. *BOC Current Account*), then **Save**. Tick *This is a group* to create a new group (code ending in 00, directly under a main group).
 
-Accounts that have been used cannot change code or group and cannot be deleted — **Deactivate** them instead. Cash in Hand, Accumulated Fund, Tithes, Offerings and Other Donations are system accounts and stay active.
+Accounts that have been used cannot change code or group and cannot be deleted — **Deactivate** them instead. An account can only be deactivated when:
+
+- its balance is zero (move any balance to another account with a journal entry first),
+- it is not used on any draft entry, and
+- it has no entries in an accounting year that is still open (deactivate it after that year is closed).
+
+A group can be deactivated once every account under it is inactive. Cash in Hand, Accumulated Fund, Tithes, Offerings and Other Donations are system accounts and stay active.
 
 ### 19.3 General Journal
 

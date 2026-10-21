@@ -143,6 +143,58 @@ public class AccountRepository {
         return exists("SELECT 1 FROM accounts WHERE parent_id = ? AND status = 'ACTIVE' LIMIT 1", id);
     }
 
+    /** Posted debits minus credits on one account (zero when unused). */
+    public BigDecimal postedNetDebit(long id) {
+        String sql = """
+                SELECT COALESCE(SUM(jl.debit) - SUM(jl.credit), 0) AS net_debit
+                FROM journal_lines jl
+                JOIN journal_entries je ON je.id = jl.entry_id
+                WHERE jl.account_id = ? AND je.status = 'POSTED'
+                """;
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                BigDecimal value = resultSet.next() ? resultSet.getBigDecimal("net_debit") : null;
+                return value == null ? BigDecimal.ZERO : value;
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to load the account balance.", exception);
+        }
+    }
+
+    public boolean hasDraftLines(long id) {
+        return exists("""
+                SELECT 1 FROM journal_lines jl
+                JOIN journal_entries je ON je.id = jl.entry_id
+                WHERE jl.account_id = ? AND je.status = 'DRAFT' LIMIT 1
+                """, id);
+    }
+
+    /** The earliest still-OPEN accounting year with a posted line on this account, if any. */
+    public Optional<Integer> openYearWithPostedLines(long id) {
+        String sql = """
+                SELECT MIN(je.fiscal_year) AS open_year
+                FROM journal_lines jl
+                JOIN journal_entries je ON je.id = jl.entry_id
+                JOIN fiscal_years fy ON fy.year = je.fiscal_year
+                WHERE jl.account_id = ? AND je.status = 'POSTED' AND fy.status = 'OPEN'
+                """;
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                int year = resultSet.getInt("open_year");
+                return resultSet.wasNull() ? Optional.empty() : Optional.of(year);
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Unable to check the account's open-year entries.", exception);
+        }
+    }
+
     /** Posted debits minus credits per account id. */
     public Map<Long, BigDecimal> postedNetDebits() {
         String sql = """

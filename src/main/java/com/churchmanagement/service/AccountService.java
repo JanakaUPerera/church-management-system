@@ -8,6 +8,7 @@ import com.churchmanagement.repository.AccountRepository;
 import com.churchmanagement.security.AuthContext;
 import com.churchmanagement.security.AuthenticatedUser;
 import com.churchmanagement.security.PermissionGuard;
+import com.churchmanagement.util.MoneyFormat;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -160,6 +161,9 @@ public class AccountService {
             if (account.group() && accountRepository.hasActiveChildren(id)) {
                 throw new FinanceException("Deactivate the accounts under " + account.displayText() + " first.");
             }
+            if (!account.group()) {
+                requireDeactivatable(account);
+            }
             accountRepository.updateStatus(id, Account.Status.INACTIVE, LocalDateTime.now(clock));
             activityLogService.logFinance(user.getUserId(), ActivityLogService.ACCOUNT_DEACTIVATED,
                     String.valueOf(id), account.displayText());
@@ -250,6 +254,24 @@ public class AccountService {
 
     private static String format(Integer code) {
         return code == null ? null : String.format("%04d", code);
+    }
+
+    /** A posting account must be empty, off every draft and unused in open years before it is deactivated. */
+    private void requireDeactivatable(Account account) {
+        BigDecimal netDebit = accountRepository.postedNetDebit(account.id());
+        if (netDebit.signum() != 0) {
+            throw new FinanceException(account.displayText() + " has a balance of "
+                    + MoneyFormat.format(netDebit.abs())
+                    + ". Move it to another account with a journal entry before deactivating.");
+        }
+        if (accountRepository.hasDraftLines(account.id())) {
+            throw new FinanceException(account.displayText()
+                    + " is used on draft entries. Post or delete them before deactivating.");
+        }
+        accountRepository.openYearWithPostedLines(account.id()).ifPresent(year -> {
+            throw new FinanceException(account.displayText() + " has entries in the open " + year
+                    + " accounting year. It can be deactivated after that year is closed.");
+        });
     }
 
     /** "4001–4999" for a top group, "1201–1299" for a sub-group. */

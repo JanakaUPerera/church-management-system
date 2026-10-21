@@ -126,6 +126,46 @@ class AccountServiceTest {
     }
 
     @Test
+    void accountWithBalanceCannotBeDeactivated() {
+        repository.netDebits.put(5L, new BigDecimal("-2500.00"));
+
+        FinanceException exception = assertThrows(FinanceException.class, () -> service.deactivate(5L));
+
+        assertEquals("4400 Rent Income has a balance of 2,500.00. Move it to another account with a journal entry "
+                + "before deactivating.", exception.getMessage());
+    }
+
+    @Test
+    void accountOnDraftEntryCannotBeDeactivated() {
+        repository.draftIds.add(5L);
+
+        FinanceException exception = assertThrows(FinanceException.class, () -> service.deactivate(5L));
+
+        assertEquals("4400 Rent Income is used on draft entries. Post or delete them before deactivating.",
+                exception.getMessage());
+    }
+
+    @Test
+    void accountUsedInOpenYearCannotBeDeactivated() {
+        repository.openYearUsage.put(5L, 2027);
+
+        FinanceException exception = assertThrows(FinanceException.class, () -> service.deactivate(5L));
+
+        assertEquals("4400 Rent Income has entries in the open 2027 accounting year. It can be deactivated after "
+                + "that year is closed.", exception.getMessage());
+    }
+
+    @Test
+    void zeroBalanceAccountUsedOnlyInClosedYearsCanBeDeactivated() {
+        repository.usedIds.add(5L);
+        repository.netDebits.put(5L, BigDecimal.ZERO);
+
+        service.deactivate(5L);
+
+        assertEquals(Account.Status.INACTIVE, repository.accounts.get(5L).status());
+    }
+
+    @Test
     void usedAccountCannotBeDeleted() {
         repository.usedIds.add(5L);
 

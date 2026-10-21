@@ -26,6 +26,19 @@ class AccountRepositoryTest {
     }
 
     @Test
+    void deactivationChecksReadPostedDraftAndOpenYearLines() {
+        RecordingDataSource dataSource = new RecordingDataSource();
+        AccountRepository repository = new AccountRepository(dataSource);
+
+        assertEquals(0, java.math.BigDecimal.ZERO.compareTo(repository.postedNetDebit(7L)));
+        assertTrue(dataSource.lastSql().contains("je.status = 'POSTED'"));
+        assertFalse(repository.hasDraftLines(7L));
+        assertTrue(dataSource.lastSql().contains("je.status = 'DRAFT'"));
+        assertTrue(repository.openYearWithPostedLines(7L).isEmpty());
+        assertTrue(dataSource.lastSql().contains("fy.status = 'OPEN'"));
+    }
+
+    @Test
     void activeChildrenCheck() {
         RecordingDataSource dataSource = new RecordingDataSource();
 
