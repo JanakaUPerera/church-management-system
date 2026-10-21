@@ -12,6 +12,7 @@ import com.churchmanagement.service.OpeningBalanceService;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.MoneyFormat;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.StatusBadge;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -30,6 +31,8 @@ public class FinanceOpeningBalancesController {
     @FXML private GridPane accountGrid;
     @FXML private GridPane fundGrid;
     @FXML private Label totalsLabel;
+    @FXML private Label entryStatusBadge;
+    @FXML private Label balanceBadge;
     @FXML private Button saveButton;
     @FXML private Button postButton;
     @FXML private Button reverseButton;
@@ -86,8 +89,14 @@ public class FinanceOpeningBalancesController {
         form = loaded;
         JournalEntry entry = loaded.entry();
         boolean posted = entry != null && entry.isPosted();
-        statusLabel.setText("Go-live date " + loaded.goLiveDate() + " — "
-                + (entry == null ? "Not entered" : posted ? "Posted " + entry.entryNo() : "Draft"));
+        statusLabel.setText("Go-live date " + loaded.goLiveDate());
+        if (entry == null) {
+            StatusBadge.apply(entryStatusBadge, "Not entered", StatusBadge.Tone.DANGER);
+        } else if (posted) {
+            StatusBadge.apply(entryStatusBadge, "Posted " + entry.entryNo(), StatusBadge.Tone.SUCCESS);
+        } else {
+            StatusBadge.apply(entryStatusBadge, "Draft", StatusBadge.Tone.WARNING);
+        }
 
         accountFields.clear();
         accountGrid.getChildren().clear();
@@ -137,12 +146,12 @@ public class FinanceOpeningBalancesController {
         }
         BigDecimal funds = fundFields.values().stream().map(this::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal difference = assets.subtract(liabilities).subtract(funds);
-        totalsLabel.getStyleClass().remove("error-label");
         totalsLabel.setText("Assets " + MoneyFormat.format(assets) + "   Liabilities " + MoneyFormat.format(liabilities)
-                + "   Funds " + MoneyFormat.format(funds)
-                + (difference.signum() == 0 ? "   Balanced" : "   Difference " + MoneyFormat.format(difference)));
-        if (difference.signum() != 0) {
-            totalsLabel.getStyleClass().add("error-label");
+                + "   Funds " + MoneyFormat.format(funds));
+        if (difference.signum() == 0) {
+            StatusBadge.apply(balanceBadge, "Balanced", StatusBadge.Tone.SUCCESS);
+        } else {
+            StatusBadge.apply(balanceBadge, "Difference " + MoneyFormat.format(difference), StatusBadge.Tone.DANGER);
         }
     }
 

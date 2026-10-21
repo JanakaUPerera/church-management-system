@@ -19,6 +19,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.ComboBoxUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.MoneyFormat;
+import com.churchmanagement.util.StatusBadge;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
@@ -37,6 +38,7 @@ import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
@@ -64,6 +66,7 @@ public final class JournalEntryDialog {
     private final List<LineRow> rows = new ArrayList<>();
     private final VBox linesBox = new VBox(6);
     private final Label totalsLabel = new Label();
+    private final Label balanceBadge = StatusBadge.create();
     private final Runnable onChanged;
     private JournalEntry entry;
     private boolean readOnly;
@@ -119,7 +122,7 @@ public final class JournalEntryDialog {
         ScrollPane linesScroll = new ScrollPane(linesBox);
         linesScroll.setFitToWidth(true);
         linesScroll.setPrefViewportHeight(280);
-        VBox content = new VBox(12, header, columnHeader, linesScroll, new HBox(12, addLineButton, totalsLabel));
+        VBox content = new VBox(12, header, columnHeader, linesScroll, totalsRow(addLineButton));
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().setPrefWidth(DIALOG_WIDTH);
 
@@ -248,15 +251,21 @@ public final class JournalEntryDialog {
             credit = credit.add(row.amount(row.credit));
         }
         BigDecimal difference = debit.subtract(credit);
-        totalsLabel.getStyleClass().remove("error-label");
+        totalsLabel.setText("Debits " + MoneyFormat.format(debit) + "   Credits " + MoneyFormat.format(credit));
         if (difference.signum() == 0) {
-            totalsLabel.setText("Debits " + MoneyFormat.format(debit) + "   Credits " + MoneyFormat.format(credit)
-                    + "   Balanced");
+            StatusBadge.apply(balanceBadge, "Balanced", StatusBadge.Tone.SUCCESS);
         } else {
-            totalsLabel.setText("Debits " + MoneyFormat.format(debit) + "   Credits " + MoneyFormat.format(credit)
-                    + "   Out of balance by " + MoneyFormat.format(difference.abs()));
-            totalsLabel.getStyleClass().add("error-label");
+            StatusBadge.apply(balanceBadge, "Out of balance by " + MoneyFormat.format(difference.abs()),
+                    StatusBadge.Tone.DANGER);
         }
+    }
+
+    private HBox totalsRow(Button addLineButton) {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox row = new HBox(12, addLineButton, spacer, totalsLabel, balanceBadge);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 
     private static Label fixed(String text, double width) {

@@ -16,7 +16,10 @@
     <padding>
         <Insets bottom="22" left="22" right="22" top="22"/>
     </padding>
-    <Label fx:id="statusLabel" styleClass="report-card-title" wrapText="true"/>
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label fx:id="statusLabel" styleClass="report-card-title"/>
+        <Label fx:id="entryStatusBadge" styleClass="status-badge"/>
+    </HBox>
     <ScrollPane fitToWidth="true" styleClass="transparent-scroll-pane" VBox.vgrow="ALWAYS">
         <HBox spacing="40">
             <VBox spacing="8">
@@ -31,6 +34,7 @@
     </ScrollPane>
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Label fx:id="totalsLabel"/>
+        <Label fx:id="balanceBadge" styleClass="status-badge"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button fx:id="saveButton" onAction="#handleSave" text="Save draft"/>
         <Button fx:id="postButton" onAction="#handlePost" styleClass="primary-button" text="Post"/>

@@ -12,6 +12,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.MoneyFormat;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.StatusBadge;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -300,6 +301,21 @@ public class FinanceAccountsController {
         });
         statusColumn.setCellValueFactory(cell -> new SimpleStringProperty(
                 cell.getValue().getValue().account().isActive() ? "Active" : "Inactive"));
+        statusColumn.setCellFactory(column -> new TreeTableCell<>() {
+            private final Label badge = StatusBadge.create();
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(null);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+                StatusBadge.apply(badge, item, "Active".equals(item) ? StatusBadge.Tone.SUCCESS : StatusBadge.Tone.DANGER);
+                setGraphic(badge);
+            }
+        });
     }
 
     private TreeItem<AccountNode> treeItem(AccountNode node) {

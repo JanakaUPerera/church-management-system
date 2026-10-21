@@ -11,6 +11,7 @@ import com.churchmanagement.util.ButtonIconUtil;
 import com.churchmanagement.util.DialogStyler;
 import com.churchmanagement.util.MoneyFormat;
 import com.churchmanagement.util.ProcessingDialog;
+import com.churchmanagement.util.StatusBadge;
 import com.churchmanagement.util.TablePaginationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -128,6 +129,21 @@ public class FinanceJournalController {
             }
         });
         statusColumn.setCellValueFactory(cell -> new SimpleStringProperty(label(cell.getValue().status().name())));
+        statusColumn.setCellFactory(column -> new TableCell<>() {
+            private final Label badge = StatusBadge.create();
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(null);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+                StatusBadge.apply(badge, item, "Posted".equals(item) ? StatusBadge.Tone.SUCCESS : StatusBadge.Tone.WARNING);
+                setGraphic(badge);
+            }
+        });
         preparedByColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().preparedByName()));
         postedByColumn.setCellValueFactory(cell -> new SimpleStringProperty(
                 cell.getValue().postedByName() == null ? "" : cell.getValue().postedByName()));
